@@ -1,0 +1,23 @@
+<script>
+  import SwapSheet from './components/SwapSheet.svelte';
+  import { route } from './router.svelte.js';
+  import NotBuilt from './screens/NotBuilt.svelte';
+  import SetLog from './screens/SetLog.svelte';
+  import Today from './screens/Today.svelte';
+  import { day } from './stores/workout.svelte.js';
+
+  const logId = $derived(route.path.match(/^\/log\/(\w+)$/)?.[1]);
+</script>
+
+<div class="app">
+  {#if logId && day.slots[logId]}
+    {#key logId}<SetLog slotId={logId} />{/key}
+  {:else if route.path === '/library'}
+    <NotBuilt current="library" title="Exercise library" jjk="Inventory" />
+  {:else if route.path === '/progress'}
+    <NotBuilt current="progress" title="Progress" />
+  {:else}
+    <Today />
+  {/if}
+  <SwapSheet />
+</div>
