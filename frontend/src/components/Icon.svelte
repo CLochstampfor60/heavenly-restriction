@@ -6,6 +6,7 @@
     icons[path.split('/').pop().replace('.svg', '')] = svg
       .replace(' width="24" height="24"', '')
       .replace('stroke="#e9edea"', 'stroke="currentColor"')
+      .replaceAll('fill="#e9edea" stroke="none"', 'class="hr-fill"')
       .replace('<svg ', '<svg class="hr-icon" aria-hidden="true" focusable="false" ');
   }
 </script>

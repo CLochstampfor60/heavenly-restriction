@@ -54,6 +54,8 @@ a.hr-btn { text-decoration: none; }
 .finish-line { display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); }
 
 /* ---------- Today ---------- */
+.screen-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) 0 0; }
+.screen-top__btn { color: var(--text-2); }
 .day-progress { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
 .day-progress__meter { flex: 1 1 auto; }
 .gear-head {
@@ -100,3 +102,16 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 }
 .text-field::placeholder { color: var(--text-faded); opacity: 1; }
 .stop-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-2); }
+
+/* ---------- Settings ---------- */
+.choice {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap-row);
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-md);
+  background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-align: left; cursor: pointer;
+}
+.choice[aria-checked="true"] { background: var(--card-2); border-color: var(--accent); }
+.choice-check { color: var(--accent); }
+.swatch { width: var(--icon); height: var(--icon); flex: none; border-radius: var(--radius-pill); background: var(--accent); }
+.about-card { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); }
+.about-link { display: inline-flex; align-items: center; gap: var(--space-1); align-self: flex-start; min-height: var(--tap-min); color: var(--text-2); }
+.about-link .hr-icon { width: 18px; height: 18px; }

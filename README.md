@@ -2,7 +2,7 @@
 A self-hosted workout tracker for training hard within injury limits. FastAPI + PWA, offline logging, passkey login, private by design.
 
 ## Status
-Early build. Today's workout and set logging run on made-up demo data held in memory (a reload resets it). No API data, offline storage, login or Settings screen yet.
+Early build. Today's workout, set logging and Settings work on a made-up demo program. What you do in a session (sets, stop events, swaps, order, gear) is kept in the browser's IndexedDB, so a reload resumes it; Settings › Demo data clears it. No server sync, login, Library or Progress yet.
 
 ## Run it locally (PowerShell)
 Requires Python 3.12 (the version the container will run; the venv must be built with it) and Node.js 20 or later.
@@ -35,8 +35,6 @@ Checks before committing:
 .\.venv\Scripts\pre-commit run --all-files
 .\.venv\Scripts\python -m pytest
 ```
-
-Theme and accent follow `localStorage` keys `hr-theme` (`system`, `dark`, `light`) and `hr-accent` (`green`, `plum`, `blue`) until the Settings screen exists.
 
 ## Credits
 Made by Carl Lochstampfor ([CLochstampfor60](https://github.com/CLochstampfor60)).
