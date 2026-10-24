@@ -1,0 +1,102 @@
+/* App layout and the few patterns bundle.css has no class for. Tokens only: no raw colors. */
+
+html, body { margin: 0; height: 100%; }
+button, input { font: inherit; }
+a.hr-btn { text-decoration: none; }
+
+/* ---------- Accent presets (Settings > Accent); Green is the token default ---------- */
+[data-accent="plum"] {
+  --accent: var(--preset-plum);
+  --accent-strong: var(--preset-plum-strong);
+  --accent-soft: var(--preset-plum-soft);
+  --cursed: var(--preset-plum-cursed);
+  --cursed-soft: var(--preset-plum-cursed-soft);
+}
+[data-accent="blue"] {
+  --accent: var(--preset-blue);
+  --accent-strong: var(--preset-blue-strong);
+  --accent-soft: var(--preset-blue-soft);
+}
+
+/* ---------- Screen frame: scrolling content over a sticky bottom bar ---------- */
+.app {
+  position: relative; display: flex; flex-direction: column;
+  height: 100dvh; max-width: 480px; margin: 0 auto; overflow: hidden; background: var(--bg);
+}
+.app__scroll {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none;
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+.app__scroll::-webkit-scrollbar { display: none; }
+.app__bar {
+  flex: none; display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3) var(--space-4); background: var(--surface-1);
+  border-top: 1px solid var(--border); box-shadow: var(--shadow-sheet);
+}
+.app__bar--log { gap: var(--space-3); padding-bottom: max(var(--space-4), env(safe-area-inset-bottom)); }
+/* The bar and the nav under it read as one panel. */
+.app__bar + .hr-nav { position: static; border-top: 0; box-shadow: none; padding-bottom: max(var(--space-1), env(safe-area-inset-bottom)); }
+.sheet-layer { z-index: 10; }
+.sheet-layer .hr-sheet { max-height: 92%; overflow-y: auto; }
+.sheet-layer .hr-sheet:focus { outline: none; }
+
+/* ---------- Shared bits ---------- */
+.stack { display: flex; flex-direction: column; gap: var(--space-2); }
+.stack-tight { display: flex; flex-direction: column; gap: var(--space-1); }
+.screen-title { margin: 0; }
+.muted { color: var(--text-2); }
+.meta { font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2); }
+.meta-strong { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-2); }
+.hint { margin: 0; }
+.option-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.option-name { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 22px; }
+.finish-line { display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); }
+
+/* ---------- Today ---------- */
+.day-progress { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
+.day-progress__meter { flex: 1 1 auto; }
+.gear-head {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap-row);
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+  background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-align: left; cursor: pointer;
+}
+button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
+.exrow-tag { margin: var(--space-1) 0 2px; }
+.exrow-continue { flex: none; padding: 0 var(--space-3); }
+
+/* ---------- Set logging ---------- */
+.exh-row { display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap-row); }
+.exh-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.exh-indent { padding-left: calc(var(--tap-min) + var(--space-2)); }
+.exh-meta-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.exh-action { padding: 0 var(--space-3); }
+.note-toggle { grid-template-columns: var(--icon) 1fr auto; align-items: center; color: var(--text); text-align: left; font-size: 14px; line-height: 20px; cursor: pointer; }
+.note-toggle b { font-weight: 600; }
+.note-text--clamped { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-v-stopped { color: var(--stop); font-size: 18px; }
+.set-check-idle { cursor: default; }
+.set-check-idle .hr-box { border-color: var(--border); }
+.hr-set__check:disabled { cursor: default; }
+.timer-btn { padding: 0 10px; }
+.stepper-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.rir-row { display: grid; grid-template-columns: var(--tap-hero) minmax(0, 1fr); align-items: center; gap: var(--space-2); }
+.rir-label { color: var(--text); }
+
+/* ---------- Stop sheet ---------- */
+.eyebrow-stop { color: var(--stop); }
+.symptoms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.symptom {
+  display: flex; align-items: center; gap: 6px; min-height: var(--tap-row); padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: transparent; color: var(--text);
+  text-align: left; cursor: pointer; font-weight: 600; font-size: 15px; line-height: 20px;
+}
+.symptom .hr-icon { width: 20px; height: 20px; }
+.symptom[aria-pressed="true"] { background: var(--stop); color: var(--on-stop); border: 2px solid var(--stop); }
+.stop-summary { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); border-radius: var(--radius-md); background: var(--card-2); }
+.text-field {
+  height: var(--tap-row); padding: 0 var(--space-3); border-radius: var(--radius-md);
+  background: var(--card-2); border: 1px solid var(--border-strong); color: var(--text); font-size: 16px;
+}
+.text-field::placeholder { color: var(--text-faded); opacity: 1; }
+.stop-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-2); }

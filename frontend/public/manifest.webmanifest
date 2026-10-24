@@ -1,0 +1,12 @@
+{
+  "name": "Heavenly Restriction",
+  "short_name": "Heavenly",
+  "description": "Self-hosted workout tracker for training hard within injury limits.",
+  "author": "Carl Lochstampfor (CLochstampfor60)",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0d0c",
+  "theme_color": "#0b0d0c"
+}
