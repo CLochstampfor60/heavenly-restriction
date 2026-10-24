@@ -64,10 +64,11 @@
   <section class="stack" aria-labelledby="about-label">
     <span id="about-label" class="hr-eyebrow">About</span>
     <div class="about-card">
-      <span class="body-strong">Made by Carl Lochstampfor</span>
+      <span class="body-strong">Design and development by Carl Lochstampfor (CLochstampfor60).</span>
       <a class="about-link small" href="https://github.com/CLochstampfor60" target="_blank" rel="noopener noreferrer">
         CLochstampfor60 on GitHub<Icon name="external" />
       </a>
+      <span class="small muted">Built with help from Claude by Anthropic.</span>
       <span class="meta">Heavenly Restriction 0.1.0 · MIT License</span>
     </div>
   </section>
