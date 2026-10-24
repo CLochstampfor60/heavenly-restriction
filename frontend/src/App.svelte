@@ -4,6 +4,7 @@
   import { route } from './router.svelte.js';
   import ExerciseCard from './screens/ExerciseCard.svelte';
   import NotBuilt from './screens/NotBuilt.svelte';
+  import Progress from './screens/Progress.svelte';
   import SetLog from './screens/SetLog.svelte';
   import Settings from './screens/Settings.svelte';
   import Today from './screens/Today.svelte';
@@ -23,7 +24,7 @@
   {:else if route.path === '/settings'}
     <Settings />
   {:else if route.path === '/progress'}
-    <NotBuilt current="progress" title="Progress" />
+    <Progress />
   {:else}
     <Today />
   {/if}

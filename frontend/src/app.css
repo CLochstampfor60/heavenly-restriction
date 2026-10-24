@@ -155,3 +155,42 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
   border: 1px solid var(--border-strong); color: var(--text-2); font-family: var(--font-display); font-weight: 600; font-size: 15px;
 }
 .sub-rank--pick { background: var(--cursed-soft); border-color: transparent; color: var(--cursed); }
+
+/* ---------- Progress ---------- */
+.week-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.week-card { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: var(--space-3); border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); }
+.week-card__value { font-weight: 700; font-size: 28px; line-height: 30px; }
+.week-card__value small { font-size: 16px; font-weight: 600; color: var(--text-2); }
+.session-meter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+.session-meter__seg { height: 6px; border-radius: 3px; background: var(--surface-3); border: 1px solid var(--border-strong); }
+.session-meter__seg--done { background: var(--accent); border-color: var(--accent); }
+.eyebrow-icon { display: inline-flex; align-items: center; gap: 6px; }
+.eyebrow-icon .hr-icon { width: 14px; height: 14px; }
+.recover-ink { color: var(--recover); }
+.metric-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.metric-tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-1);
+  min-height: 60px; padding: 6px 0; border-radius: var(--radius-md); border: 1px solid var(--card-edge);
+  background: transparent; color: var(--text-2); cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.metric-tab[aria-selected="true"] { background: var(--card-2); color: var(--accent); border-color: var(--accent); }
+.metric-tab--recover[aria-selected="true"] { color: var(--recover); border-color: var(--recover); }
+.chart-panel { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-lg); background: var(--card); border: 1px solid var(--card-edge); }
+.chart-bar--sel { stroke: var(--text); stroke-width: 2; }
+.period-title { text-align: center; }
+.muscle-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 28px; align-items: center; gap: var(--space-2); min-height: 28px; }
+.muscle-row__name { font-weight: 600; }
+.muscle-row__n { font-weight: 600; font-size: 16px; text-align: right; }
+.muscle-bar { position: relative; height: 12px; border-radius: 4px; background: var(--surface-3); }
+.muscle-bar__fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--cursed); }
+.muscle-bar__tick { position: absolute; left: calc(50% - 1px); top: -3px; bottom: -3px; width: 2px; background: var(--grade); }
+.tick-key { width: 2px; height: 14px; background: var(--grade); }
+.cal-head { text-align: center; padding-bottom: 2px; }
+.cal-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px var(--space-3); }
+.cal-legend__item--done .hr-icon, .cal-legend__item--partial .hr-icon { color: var(--accent); }
+.cal-legend__item--stop .hr-icon { color: var(--stop); }
+.cal-legend__item--cardio .hr-icon, .cal-legend__item--rest .hr-icon { color: var(--recover); }
+.record-row { min-height: 64px; }
+.record-row__icon { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--flash-soft); color: var(--flash); }
+.record-row__icon .hr-icon { width: 18px; height: 18px; }
+.record-row__grade { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
