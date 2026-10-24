@@ -37,6 +37,8 @@ Checks before committing:
 ```
 
 ## Credits
-Made by Carl Lochstampfor ([CLochstampfor60](https://github.com/CLochstampfor60)).
+Design and development by Carl Lochstampfor ([CLochstampfor60](https://github.com/CLochstampfor60)).
+
+Built with help from Claude by Anthropic.
 
 Copyright (c) 2026 Carl Lochstampfor (CLochstampfor60). Released under the MIT License; see [LICENSE](LICENSE).
