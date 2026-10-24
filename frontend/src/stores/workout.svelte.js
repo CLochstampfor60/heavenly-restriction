@@ -213,6 +213,17 @@ export function slotNote(slot) {
   return null;
 }
 
+// How today stands for the calendar: null until something is logged, then partial, then
+// done or stop once every exercise has ended (stop wins if any exercise was stopped).
+export function dayStatus() {
+  const slots = Object.values(day.slots);
+  const ended = slots.every((s) => s.status === 'done' || s.status === 'stopped') || day.finished;
+  const stopped = slots.some((s) => s.status === 'stopped');
+  if (ended) return stopped ? 'stop' : 'done';
+  if (stopped) return 'stop';
+  return slots.some((s) => s.doneAs) ? 'partial' : null;
+}
+
 export function activeSlotId() {
   return day.order.find((id) => day.slots[id].status === 'active');
 }
