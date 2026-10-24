@@ -115,3 +115,43 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .about-card { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); }
 .about-link { display: inline-flex; align-items: center; gap: var(--space-1); align-self: flex-start; min-height: var(--tap-min); color: var(--text-2); }
 .about-link .hr-icon { width: 18px; height: 18px; }
+
+/* ---------- Exercise card ---------- */
+.app__scroll--roomy { gap: var(--space-5); padding-top: var(--space-2); }
+.card-top { display: flex; align-items: center; gap: var(--space-2); margin-left: calc(-1 * var(--space-2)); }
+.jjk-tight { font-size: 13px; line-height: 16px; }
+.name-link { color: inherit; text-decoration: none; }
+.stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-1); }
+.sub-flash { color: var(--flash); }
+.sub-accent { color: var(--accent); }
+.media-link {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap-row); padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-decoration: none;
+}
+.media-link__icon, .media-link__note { color: var(--info); }
+.note-block { display: block; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.readout { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-2); min-height: var(--tap-min); }
+.readout__value { font-weight: 700; font-size: 32px; line-height: 36px; }
+.readout .hr-pr, .readout .hr-chip { align-self: center; }
+.chart-card { padding: var(--space-3) var(--space-2) var(--space-1) var(--space-1); border-radius: var(--radius-lg); background: var(--card); border: 1px solid var(--card-edge); }
+.chart-stop { fill: var(--stop-soft); stroke: var(--stop); stroke-width: 2; }
+.chart-hit { fill: transparent; cursor: pointer; }
+.chart-key { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.chart-key__item { display: inline-flex; align-items: center; gap: 6px; }
+.key-dot { width: 10px; height: 10px; border-radius: var(--radius-pill); }
+.key-dot--pr { background: var(--flash); }
+.key-stop { color: var(--stop); }
+.key-stop .hr-icon { width: 14px; height: 14px; }
+.eyebrow-strong { color: var(--text); }
+.session-row { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3); border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); }
+.session-row--stop { background: var(--stop-soft); border-color: transparent; }
+.sub-row {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap-row); padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-decoration: none;
+}
+.sub-rank {
+  width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong); color: var(--text-2); font-family: var(--font-display); font-weight: 600; font-size: 15px;
+}
+.sub-rank--pick { background: var(--cursed-soft); border-color: transparent; color: var(--cursed); }

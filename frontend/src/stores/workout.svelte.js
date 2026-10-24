@@ -3,6 +3,7 @@
 // so a reload resumes where it left off.
 import { db, dateKey } from '../db.js';
 import { CATALOG, DEMO_SESSION, GEAR, PROGRAM } from '../fixtures/demo.js';
+import { HISTORY } from '../fixtures/history.js';
 
 const today = dateKey();
 
@@ -220,12 +221,20 @@ export function nextTodo() {
   return day.order.find((id) => day.slots[id].status === 'todo');
 }
 
-// Best estimated 1RM: last session's sets plus anything logged today for the same exercise.
+// Best estimated 1RM: every completed past set plus anything logged today for the same exercise.
 function bestFor(exerciseId) {
-  const today = Object.values(day.slots)
+  const past = (HISTORY[exerciseId] ?? []).flatMap((s) =>
+    s.sets.filter((_, k) => k !== s.stop?.set).map(([w, r]) => ({ w, r })),
+  );
+  return Math.max(0, ...[...CATALOG[exerciseId].last, ...past, ...todaySets(exerciseId)].map((s) => e1rm(s.w, s.r)));
+}
+
+// Completed sets logged today under this exercise, in program order.
+export function todaySets(exerciseId) {
+  return day.order
+    .map((id) => day.slots[id])
     .filter((s) => s.doneAs === exerciseId)
     .flatMap((s) => s.sets.filter((set) => set.status === 'done' || set.status === 'pr'));
-  return Math.max(0, ...[...CATALOG[exerciseId].last, ...today].map((s) => e1rm(s.w, s.r)));
 }
 
 // Ranked substitutions first, then other exercises for the same muscle.
