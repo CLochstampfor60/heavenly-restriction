@@ -218,3 +218,22 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Heavenly Restriction: never commit ---
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# Personal data: real program, logs, uploads
+data/
+media/
+*.db
+*.sqlite
+*.sqlite3
+backups/
+seed/private/
+# Frontend build output
+node_modules/
+frontend/dist/
