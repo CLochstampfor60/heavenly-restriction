@@ -114,5 +114,5 @@ The five screen designs (Today's workout, set logging, exercise card, progress, 
 ## Credits
 
 - The app is credited to its author in this order everywhere it is named: full name first, GitHub handle second. **Carl Lochstampfor**, then **CLochstampfor60**.
-- In the app: Settings › About reads "Made by Carl Lochstampfor" with "CLochstampfor60 on GitHub" on the line under it (`small`, `text-2`), linking to the profile.
-- In the repo: the README's credit line, the MIT `LICENSE` copyright line ("Copyright (c) 2026 Carl Lochstampfor (CLochstampfor60)"), and the web app manifest's author field use the same order.
+- In the app: Settings › About reads "Design and development by Carl Lochstampfor (CLochstampfor60)." (`body-strong`), then "CLochstampfor60 on GitHub" (`small`, `text-2`) linking to the profile, then "Built with help from Claude by Anthropic." (`small`, `text-2`). The author line always comes first; the Claude line always sits below it.
+- In the repo: the README's Credits section repeats the same two lines in the same order: "Design and development by Carl Lochstampfor (CLochstampfor60)." then "Built with help from Claude by Anthropic." The MIT `LICENSE` copyright line ("Copyright (c) 2026 Carl Lochstampfor (CLochstampfor60)") and the web app manifest's author field name the author only.
