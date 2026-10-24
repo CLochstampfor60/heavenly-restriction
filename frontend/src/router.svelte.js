@@ -1,4 +1,4 @@
-// Hash routes: #/ (Today), #/log/<slot>, #/library, #/progress.
+// Hash routes: #/ (Today), #/log/<slot>, #/library, #/progress, #/settings.
 export const route = $state({ path: current() });
 
 function current() {

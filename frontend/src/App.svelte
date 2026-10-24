@@ -3,6 +3,7 @@
   import { route } from './router.svelte.js';
   import NotBuilt from './screens/NotBuilt.svelte';
   import SetLog from './screens/SetLog.svelte';
+  import Settings from './screens/Settings.svelte';
   import Today from './screens/Today.svelte';
   import { day } from './stores/workout.svelte.js';
 
@@ -14,6 +15,8 @@
     {#key logId}<SetLog slotId={logId} />{/key}
   {:else if route.path === '/library'}
     <NotBuilt current="library" title="Exercise library" jjk="Inventory" />
+  {:else if route.path === '/settings'}
+    <Settings />
   {:else if route.path === '/progress'}
     <NotBuilt current="progress" title="Progress" />
   {:else}

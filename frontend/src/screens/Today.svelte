@@ -47,7 +47,10 @@
 
 <div class="app__scroll">
   <header class="stack-tight">
-    <span class="hr-eyebrow">{date} · program {day.version}</span>
+    <div class="screen-top">
+      <span class="hr-eyebrow">{date} · program {day.version}</span>
+      <a href="#/settings" class="hr-icon-btn screen-top__btn" aria-label="Settings"><Icon name="more" /></a>
+    </div>
     <h1 class="title screen-title">Today's workout: {day.name}</h1>
     <span class="hr-jjk">Today's Mission</span>
     <div class="day-progress">
