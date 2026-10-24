@@ -5,10 +5,12 @@ import './app.css';
 
 import { mount } from 'svelte';
 import App from './App.svelte';
+import { loadToday } from './stores/workout.svelte.js';
 
 // "System" follows the phone; re-apply when it switches between light and dark.
 window
   .matchMedia('(prefers-color-scheme: light)')
   .addEventListener('change', () => window.hrApplySettings());
 
-mount(App, { target: document.getElementById('app') });
+// Resume today's session from this device before the first render.
+loadToday().then(() => mount(App, { target: document.getElementById('app') }));
