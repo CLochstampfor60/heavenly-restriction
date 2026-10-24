@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Progress</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/heavenlyrestriction/tokens.css">
+<link rel="stylesheet" href="ds/heavenlyrestriction/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0b0d0c}
+a{color:#7fa889}a:hover{color:#9cc3a5}
+.hr-plain{text-decoration:none}
+.hr-navlink{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;text-decoration:none;font-family:var(--font-body);font-size:13px;line-height:16px;font-weight:600;color:var(--text-2);border-radius:var(--radius-md)}
+.hr-navlink[aria-current="page"]{color:var(--accent)}
+</style>
+</helmet>
+<div class="hr-root" data-theme="{{theme}}" style="box-sizing: border-box; width: 100%; max-width: 360px; min-height: 1840px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-body); {{accentVars}}">
+
+  <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 24px;">
+
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <span class="hr-eyebrow">Sat, Oct 31 · week of Oct 26</span>
+      <h1 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 36px;">Progress</h1>
+    </div>
+
+    <section aria-label="This week" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge);">
+        <span class="hr-eyebrow">Sessions</span>
+        <span style="font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 30px; font-variant-numeric: tabular-nums;">4 <span style="font-size: 16px; font-weight: 600; color: var(--text-2);">of 5</span></span>
+        <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px;">
+          <span style="height: 6px; border-radius: 3px; background: var(--accent);"></span>
+          <span style="height: 6px; border-radius: 3px; background: var(--accent);"></span>
+          <span style="height: 6px; border-radius: 3px; background: var(--accent);"></span>
+          <span style="height: 6px; border-radius: 3px; background: var(--surface-3); border: 1px solid var(--border-strong);"></span>
+          <span style="height: 6px; border-radius: 3px; background: var(--accent);"></span>
+        </div>
+        <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">Thu skipped</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge);">
+        <span class="hr-eyebrow" style="display: flex; align-items: center; gap: 4px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--recover);"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>Cardio</span>
+        <span style="font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 30px; font-variant-numeric: tabular-nums;">120 <span style="font-size: 16px; font-weight: 600; color: var(--text-2);">/ 345 min</span></span>
+        <div role="progressbar" aria-label="Cardio minutes this week" aria-valuemin="0" aria-valuemax="345" aria-valuenow="120" style="position: relative; height: 6px; border-radius: 3px; background: var(--surface-3);">
+          <span style="position: absolute; left: 0; top: 0; bottom: 0; width: 35%; border-radius: 3px; background: var(--recover);"></span>
+        </div>
+        <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">90 min planned today</span>
+      </div>
+    </section>
+
+    <section aria-label="Measurements" style="display: flex; flex-direction: column; gap: 12px;">
+      <div role="tablist" aria-label="Measurement" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+        <sc-for list="{{metricTabs}}" as="t" hint-placeholder-count="4">
+          <button role="tab" aria-selected="{{t.selected}}" onClick="{{t.pick}}" style="{{t.style}}">
+            <sc-if value="{{t.isBody}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9.5a4 4 0 0 1 6 0"></path><path d="M12 9.5l1.2-1.5"></path></svg></sc-if>
+            <sc-if value="{{t.isWaist}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v6H3z"></path><path d="M7 9v3"></path><path d="M11 9v2"></path><path d="M15 9v3"></path><path d="M19 9v2"></path></svg></sc-if>
+            <sc-if value="{{t.isLift}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4"></path><path d="M6 7v10"></path><path d="M18 7v10"></path><path d="M21 10v4"></path><path d="M6 12h12"></path></svg></sc-if>
+            <sc-if value="{{t.isCardio}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path><path d="M7.5 12h2.5l1.5-2.5 2 4 1.5-1.5h1.5"></path></svg></sc-if>
+            {{t.label}}
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: var(--radius-lg); background: var(--card); border: 1px solid var(--card-edge);">
+        <div role="group" aria-label="Time range" style="display: flex; padding: 2px; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--border);">
+          <sc-for list="{{rangeTabs}}" as="rt" hint-placeholder-count="2">
+            <button aria-pressed="{{rt.pressed}}" onClick="{{rt.pick}}" style="{{rt.style}}">{{rt.label}}</button>
+          </sc-for>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <button class="hr-icon-btn" aria-label="Previous period"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></button>
+          <span style="font-size: 15px; line-height: 20px; font-weight: 600; text-align: center;">{{periodTitle}}</span>
+          <button class="hr-icon-btn" aria-label="Next period" disabled style="opacity: 0.4; cursor: default;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></button>
+        </div>
+        <div style="display: flex; flex-direction: column; min-height: 52px;">
+          <span class="hr-eyebrow">{{chartName}}</span>
+          <span style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+            <span style="font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 36px; font-variant-numeric: tabular-nums;">{{readValue}}</span>
+            <span style="font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-2);">{{readDetail}}</span>
+          </span>
+        </div>
+        <svg viewBox="0 0 316 200" width="100%" role="img" aria-label="{{chartAria}}" style="display: block; overflow: visible;">
+          <sc-for list="{{grid}}" as="g" hint-placeholder-count="4">
+            <line x1="36" x2="304" y1="{{g.y}}" y2="{{g.y}}" style="stroke: var(--card-edge); stroke-width: 1;"></line>
+            <text x="30" y="{{g.ty}}" text-anchor="end" style="fill: var(--text-2); font-family: var(--font-body); font-size: 12px; font-weight: 500;">{{g.label}}</text>
+          </sc-for>
+          <sc-if value="{{isArea}}" hint-placeholder-val="{{true}}">
+            <path d="{{areaPath}}" style="fill: var(--accent-soft); stroke: none;"></path>
+            <path d="{{linePath}}" style="fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;"></path>
+          </sc-if>
+          <sc-for list="{{bars}}" as="b" hint-placeholder-count="4">
+            <rect x="{{b.x}}" y="{{b.y}}" width="{{b.w}}" height="{{b.h}}" rx="4" style="{{b.style}}" onClick="{{b.pick}}"></rect>
+            <text x="{{b.cx}}" y="{{b.ly}}" text-anchor="middle" style="fill: var(--text); font-family: var(--font-display); font-size: 13px; font-weight: 600;">{{b.label}}</text>
+          </sc-for>
+          <sc-if value="{{hasGoal}}" hint-placeholder-val="{{true}}">
+            <line x1="36" x2="304" y1="{{goalY}}" y2="{{goalY}}" style="stroke: var(--grade); stroke-width: 2; stroke-dasharray: 6 4;"></line>
+            <text x="304" y="{{goalTy}}" text-anchor="end" style="fill: var(--grade); font-family: var(--font-display); font-size: 13px; font-weight: 600;">{{goalLabel}}</text>
+          </sc-if>
+          <sc-for list="{{pts}}" as="p" hint-placeholder-count="4">
+            <text x="{{p.x}}" y="{{p.ly}}" text-anchor="middle" style="fill: var(--text); font-family: var(--font-display); font-size: 13px; font-weight: 600;">{{p.label}}</text>
+            <circle cx="{{p.x}}" cy="{{p.y}}" r="{{p.r}}" style="{{p.dot}}"></circle>
+            <circle cx="{{p.x}}" cy="{{p.y}}" r="18" onClick="{{p.pick}}" style="fill: transparent; cursor: pointer;"></circle>
+          </sc-for>
+          <sc-for list="{{xlabels}}" as="xl" hint-placeholder-count="4">
+            <text x="{{xl.x}}" y="196" text-anchor="middle" style="fill: var(--text-2); font-family: var(--font-body); font-size: 12px; font-weight: 500;">{{xl.label}}</text>
+          </sc-for>
+        </svg>
+        <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">{{chartFoot}}</span>
+      </div>
+    </section>
+
+    <section aria-label="Sets per muscle group this week" style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+        <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">Sets per muscle group</h2>
+        <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">This week</span>
+      </div>
+      <sc-for list="{{muscles}}" as="mu" hint-placeholder-count="6">
+        <div style="display: grid; grid-template-columns: 76px minmax(0, 1fr) 28px; align-items: center; gap: 8px; min-height: 28px;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600;">{{mu.name}}</span>
+          <span style="position: relative; height: 12px; border-radius: 4px; background: var(--surface-3);">
+            <span style="{{mu.barStyle}}"></span>
+            <span style="{{mu.tickStyle}}"></span>
+          </span>
+          <span style="font-family: var(--font-display); font-weight: 600; font-size: 16px; text-align: right; font-variant-numeric: tabular-nums;">{{mu.sets}}</span>
+        </div>
+      </sc-for>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);"><span style="width: 2px; height: 14px; background: var(--grade);"></span>Target: at least 10 sets</span>
+    </section>
+
+    <section aria-label="October calendar" style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">October</h2>
+        <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">20 of 22 sessions</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px;">
+        <sc-for list="{{weekdays}}" as="wd" hint-placeholder-count="7">
+          <span class="hr-eyebrow" style="text-align: center; padding-bottom: 2px;">{{wd}}</span>
+        </sc-for>
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="35">
+          <span aria-label="{{d.aria}}" style="{{d.style}}">
+            <span style="font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 16px; font-variant-numeric: tabular-nums;">{{d.n}}</span>
+            <sc-if value="{{d.done}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--accent);"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+            <sc-if value="{{d.stop}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--stop);"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg></sc-if>
+            <sc-if value="{{d.cardio}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--recover);"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg></sc-if>
+            <sc-if value="{{d.rest}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--recover);"><path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"></path></svg></sc-if>
+            <sc-if value="{{d.skip}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--text-2);"><path d="M6 12h12"></path></svg></sc-if>
+            <sc-if value="{{d.partial}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--accent);"><path d="M12 4a8 8 0 0 1 0 16z" class="hr-fill"></path><circle cx="12" cy="12" r="8"></circle></svg></sc-if>
+            <sc-if value="{{d.pr}}" hint-placeholder-val="{{false}}"><span aria-hidden="true" style="position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 999px; background: var(--flash);"></span></sc-if>
+          </span>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">
+        <span style="display: flex; align-items: center; gap: 6px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--accent);"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Done</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--accent);"><path d="M12 4a8 8 0 0 1 0 16z" class="hr-fill"></path><circle cx="12" cy="12" r="8"></circle></svg>Partial</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--text-2);"><path d="M6 12h12"></path></svg>Skipped</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--stop);"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg>Stop event</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--recover);"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>Cardio</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--recover);"><path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"></path></svg>Recovery</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; margin: 0 3px; border-radius: 999px; background: var(--flash);"></span>Personal record</span>
+      </div>
+    </section>
+
+    <section aria-label="Recent records" style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column;">
+        <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">Recent records</h2>
+        <span class="hr-jjk">Black Flash</span>
+      </div>
+      <sc-for list="{{records}}" as="rc" hint-placeholder-count="3">
+        <a href="{{rc.href}}" class="hr-plain" style="display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text);">
+          <span style="width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--flash-soft); color: var(--flash);"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px;"><path d="M13.5 2.5L5 13.5h6l-1.5 8 9-11.5h-6l1-7.5z"></path></svg></span>
+          <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+            <span style="font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 22px;">{{rc.name}}</span>
+            <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">{{rc.detail}}</span>
+          </span>
+          <span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+            <span style="height: 24px; padding: 0 8px; border-radius: var(--radius-sm); background: var(--grade-soft); color: var(--grade); font-size: 13px; line-height: 24px; font-weight: 600; white-space: nowrap;">{{rc.grade}}</span>
+            <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: var(--text-2); white-space: nowrap;">{{rc.level}}</span>
+          </span>
+        </a>
+      </sc-for>
+    </section>
+  </div>
+
+  <nav aria-label="Main" style="position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px 16px; background: var(--surface-1); border-top: 1px solid var(--border); box-shadow: var(--shadow-sheet);">
+    <a href="Today.dc.html" class="hr-navlink"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg>Today</a>
+    <a href="Library.dc.html" class="hr-navlink"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg>Library</a>
+    <a href="#" class="hr-navlink" aria-current="page"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M5 15l4.5-5 4 3L19 6"></path></svg>Progress</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Theme"},"accent":{"editor":"enum","options":["green","plum","blue"],"default":"green","section":"Settings accent"},"metric":{"editor":"enum","options":["body","waist","lift","cardio"],"default":"body","section":"Start on"},"$preview":{"width":360,"height":1840}}'>
+class Component extends DCLogic {
+  series() {
+    return {
+      body: { tab: 'Weight', name: 'Bodyweight', unit: 'lb', goal: 185, goalLabel: 'Goal 185', kind: 'area', ranges: {
+        month: { title: 'October 2026', pts: [['10/4', 196.4], ['10/11', 195.8], ['10/18', 194.6], ['10/25', 194.0]] },
+        year: { title: 'Nov 2025 – Oct 2026', pts: [['N', 204.0], ['D', 203.1], ['J', 202.5], ['F', 201.0], ['M', 200.2], ['A', 199.6], ['M', 199.0], ['J', 198.1], ['J', 197.5], ['A', 197.0], ['S', 196.2], ['O', 194.6]] } } },
+      waist: { tab: 'Waist', name: 'Waist', unit: 'in', goal: 34, goalLabel: 'Goal 34', kind: 'area', ranges: {
+        month: { title: 'October 2026', pts: [['10/4', 37.5], ['10/11', 37.25], ['10/18', 37.0], ['10/25', 37.0]] },
+        year: { title: 'Nov 2025 – Oct 2026', pts: [['N', 39.5], ['D', 39.25], ['J', 39.0], ['F', 38.75], ['M', 38.5], ['A', 38.5], ['M', 38.25], ['J', 38.0], ['J', 37.75], ['A', 37.5], ['S', 37.25], ['O', 37.0]] } } },
+      lift: { tab: 'Lift', name: 'Lat Pulldown · est. 1RM', unit: 'lb', goal: 190, goalLabel: 'Grade 1 · 190', kind: 'area', ranges: {
+        month: { title: 'October 2026', pts: [['10/12', 186.7], ['10/19', 186.7], ['10/26', 188.5]] },
+        year: { title: 'Nov 2025 – Oct 2026', pts: [['N', 150.0], ['D', 153.3], ['J', 156.0], ['F', 158.7], ['M', 160.0], ['A', 163.3], ['M', 166.7], ['J', 170.0], ['J', 172.0], ['A', 173.3], ['S', 180.0], ['O', 188.5]] } } },
+      cardio: { tab: 'Cardio', name: 'Cardio minutes', unit: 'min', goal: 345, goalLabel: 'Target 345', kind: 'bars', ranges: {
+        week: { title: 'Oct 26 – Nov 1', goal: null, pts: [['M', 30], ['T', 25], ['W', 30], ['T', 0], ['F', 35], ['S', 0, 90], ['S', 0]] },
+        month: { title: 'October 2026 · per week', pts: [['10/5', 330], ['10/12', 350], ['10/19', 300], ['10/26', 120]] },
+        year: { title: 'Nov 2025 – Oct 2026 · weekly avg', pts: [['N', 250], ['D', 220], ['J', 260], ['F', 280], ['M', 300], ['A', 310], ['M', 320], ['J', 340], ['J', 335], ['A', 345], ['S', 340], ['O', 325]] } } }
+    };
+  }
+  nice(lo, hi) {
+    const span = hi - lo;
+    const raw = span / 3;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+    return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step };
+  }
+  fmt(n) { return String(Math.round(n * 10) / 10); }
+  renderVals() {
+    const st = this.state || {};
+    const S = this.series();
+    const metric = st.metric || this.props.metric || 'body';
+    const m = S[metric];
+    const rangeIds = Object.keys(m.ranges);
+    const range = rangeIds.indexOf(st.range) >= 0 ? st.range : 'month';
+    const r = m.ranges[range];
+    const goal = r.goal === null ? null : m.goal;
+    const vals = r.pts.map((p) => p[1]);
+    const X0 = 44, X1 = 296, Y0 = 176, Y1 = 26;
+    const n = r.pts.length;
+    const sel = st.sel !== undefined && st.sel < n ? st.sel : n - 1;
+    const put = (patch) => this.setState(Object.assign({ metric, range, sel: undefined }, patch));
+
+    let lo, hi;
+    if (m.kind === 'bars') {
+      lo = 0; hi = Math.max.apply(null, vals.concat(goal || 0, (r.pts.find((p) => p[2]) || [0, 0, 0])[2]));
+    } else {
+      lo = Math.min.apply(null, vals.concat(goal)); hi = Math.max.apply(null, vals.concat(goal));
+      const pad = (hi - lo) * 0.12 || 1; lo -= pad; hi += pad;
+    }
+    const nz = this.nice(lo, hi);
+    if (m.kind === 'bars') nz.lo = 0;
+    const sy = (v) => Y0 - (Y0 - Y1) * (v - nz.lo) / (nz.hi - nz.lo);
+    const grid = [];
+    for (let v = nz.lo; v <= nz.hi + 1e-9; v += nz.step) grid.push({ y: sy(v).toFixed(1), ty: (sy(v) + 4).toFixed(1), label: this.fmt(v) });
+
+    let pts = [], bars = [], xlabels = [], areaPath = '', linePath = '';
+    if (m.kind === 'area') {
+      const sx = (i) => n === 1 ? (X0 + X1) / 2 : X0 + (X1 - X0) * i / (n - 1);
+      const minI = vals.indexOf(Math.min.apply(null, vals)), maxI = vals.indexOf(Math.max.apply(null, vals));
+      linePath = r.pts.map((p, i) => (i ? 'L' : 'M') + sx(i).toFixed(1) + ' ' + sy(p[1]).toFixed(1)).join(' ');
+      areaPath = linePath + ' L' + sx(n - 1).toFixed(1) + ' ' + Y0 + ' L' + sx(0).toFixed(1) + ' ' + Y0 + ' Z';
+      pts = r.pts.map((p, i) => {
+        const show = n <= 6 || i === 0 || i === n - 1 || i === minI || i === maxI;
+        const isSel = i === sel;
+        return {
+          x: sx(i).toFixed(1), y: sy(p[1]).toFixed(1), ly: (sy(p[1]) - 12).toFixed(1),
+          label: show ? this.fmt(p[1]) : '', r: isSel ? 7 : 5,
+          dot: isSel ? 'fill: var(--accent); stroke: var(--text); stroke-width: 2;' : 'fill: var(--card); stroke: var(--accent); stroke-width: 2;',
+          pick: () => put({ sel: i })
+        };
+      });
+      xlabels = r.pts.map((p, i) => ({ x: sx(i).toFixed(1), label: (n <= 6 || i % 2 === 1 || i === n - 1) ? p[0] : '' }));
+    } else {
+      const slot = (X1 - X0 + 24) / n;
+      const bw = Math.min(28, slot * 0.6);
+      bars = r.pts.map((p, i) => {
+        const cx = X0 - 12 + slot * (i + 0.5);
+        const planned = p[2];
+        const v = planned || p[1];
+        const y = sy(v);
+        const isSel = i === sel;
+        let style = 'fill: var(--recover); cursor: pointer;';
+        if (planned) style = 'fill: var(--recover-soft); stroke: var(--recover); stroke-width: 1.5; stroke-dasharray: 4 3; cursor: pointer;';
+        if (isSel && !planned) style += ' stroke: var(--text); stroke-width: 2;';
+        return {
+          x: (cx - bw / 2).toFixed(1), y: y.toFixed(1), w: bw.toFixed(1), h: Math.max(0, Y0 - y).toFixed(1),
+          cx: cx.toFixed(1), ly: (y - 6).toFixed(1), label: planned ? 'plan ' + planned : (p[1] ? String(p[1]) : ''),
+          style, pick: () => put({ sel: i })
+        };
+      });
+      xlabels = r.pts.map((p, i) => ({ x: (X0 - 12 + slot * (i + 0.5)).toFixed(1), label: (n <= 7 || i % 2 === 1 || i === n - 1) ? p[0] : '' }));
+    }
+
+    const cur = r.pts[sel];
+    const first = r.pts[0][1], last = r.pts[n - 1][1];
+    const delta = last - first;
+    let readValue, readDetail, chartFoot;
+    if (m.kind === 'area') {
+      readValue = this.fmt(cur[1]) + ' ' + m.unit;
+      readDetail = (range === 'year' ? 'month ' : '') + cur[0] + ' · ' + (delta <= 0 ? '−' : '+') + this.fmt(Math.abs(delta)) + ' ' + m.unit + ' over the period';
+      chartFoot = goal !== null ? this.fmt(Math.abs(last - goal)) + ' ' + m.unit + ' to ' + m.goalLabel.toLowerCase() + '. Tap a point for its value.' : '';
+    } else {
+      readValue = (cur[2] ? '0' : String(cur[1])) + ' min';
+      readDetail = range === 'week' ? (cur[2] ? 'Sat · ' + cur[2] + ' min planned today' : 'day ' + (sel + 1) + ' · 120 of 345 min this week') : cur[0] + ' · target 345 a week';
+      chartFoot = range === 'week' ? 'Saturday cardio and Sunday recovery count toward the weekly target.' : 'Weeks at or above the gold line met the 345-minute target.';
+    }
+
+    const metricTabs = Object.keys(S).map((id) => ({
+      label: S[id].tab, selected: id === metric ? 'true' : 'false',
+      isBody: id === 'body', isWaist: id === 'waist', isLift: id === 'lift', isCardio: id === 'cardio',
+      pick: () => this.setState({ metric: id, range: 'month', sel: undefined }),
+      style: 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 6px 0; border-radius: var(--radius-md); cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 600; '
+        + (id === metric ? 'background: var(--card-2); color: ' + (id === 'cardio' ? 'var(--recover)' : 'var(--accent)') + '; border: 1px solid ' + (id === 'cardio' ? 'var(--recover)' : 'var(--accent)') + ';' : 'background: transparent; color: var(--text-2); border: 1px solid var(--card-edge);')
+    }));
+    const rangeLabels = { week: 'Week', month: 'Month', year: 'Year' };
+    const rangeTabs = rangeIds.map((id) => ({
+      label: rangeLabels[id], pressed: id === range ? 'true' : 'false',
+      pick: () => put({ range: id }),
+      style: 'flex: 1 1 0; min-height: 44px; border-radius: 8px; border: 0; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 15px; '
+        + (id === range ? 'background: var(--card-2); color: var(--text);' : 'background: transparent; color: var(--text-2);')
+    }));
+
+    const muscles = [['Back', 16], ['Legs', 14], ['Chest', 12], ['Arms', 10], ['Shoulders', 9], ['Core', 8]].map(([name, sets]) => ({
+      name, sets: String(sets),
+      barStyle: 'position: absolute; left: 0; top: 0; bottom: 0; width: ' + (sets / 20 * 100) + '%; border-radius: 4px; background: var(--cursed);',
+      tickStyle: 'position: absolute; left: calc(50% - 1px); top: -3px; bottom: -3px; width: 2px; background: var(--grade);'
+    }));
+
+    const status = {};
+    const set = (list, s) => list.forEach((d) => { status[d] = s; });
+    set([1, 2, 6, 7, 8, 12, 13, 14, 15, 16, 19, 20, 22, 23, 26, 27, 28, 30], 'done');
+    set([9], 'partial'); set([5], 'stop'); set([21, 29], 'skip');
+    set([3, 10, 17, 24], 'cardio'); set([4, 11, 18, 25], 'rest');
+    const prs = { 12: true, 26: true };
+    const days = [];
+    for (let k = 0; k < 3; k++) days.push({ n: '', aria: '', style: 'min-height: 44px;', done: false, stop: false, cardio: false, rest: false, skip: false, partial: false, pr: false });
+    const cellBase = 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 46px; border-radius: 8px; ';
+    const names = { done: 'done', partial: 'partial', stop: 'stop event', skip: 'skipped', cardio: 'cardio', rest: 'recovery' };
+    for (let d = 1; d <= 31; d++) {
+      const s = status[d];
+      let style = cellBase;
+      if (s === 'done') style += 'background: var(--accent-soft);';
+      else if (s === 'partial') style += 'background: var(--card); border: 1px dashed var(--accent);';
+      else if (s === 'stop') style += 'background: var(--stop-soft);';
+      else if (s === 'skip') style += 'background: transparent; border: 1px solid var(--card-edge); color: var(--text-2);';
+      else if (s === 'cardio' || s === 'rest') style += 'background: var(--recover-soft);';
+      else style += 'background: transparent; color: var(--text-2);';
+      if (d === 31) style += ' border: 2px solid var(--text); background: var(--recover-soft);';
+      days.push({
+        n: String(d), style,
+        aria: 'October ' + d + (s ? ', ' + names[s] : d === 31 ? ', today, cardio planned' : '') + (prs[d] ? ', personal record' : ''),
+        done: s === 'done', partial: s === 'partial', stop: s === 'stop', skip: s === 'skip',
+        cardio: s === 'cardio' || d === 31, rest: s === 'rest', pr: !!prs[d]
+      });
+    }
+    days.push({ n: '', aria: '', style: 'min-height: 44px;', done: false, stop: false, cardio: false, rest: false, skip: false, partial: false, pr: false });
+
+    const records = [
+      { name: 'Lat Pulldown', detail: '145 × 9 · Mon, Oct 26', grade: 'Grade 2', level: 'Level 3 of 5', href: 'ExerciseCard.dc.html' },
+      { name: 'Seated Cable Row', detail: '125 × 12 · Mon, Oct 19', grade: 'Grade 2', level: 'Level 3 of 5', href: '#' },
+      { name: 'Hammer Curl', detail: '35 lb DBs × 10 · Fri, Oct 16', grade: 'Grade 3', level: 'Level 2 of 5', href: '#' }
+    ];
+
+    const theme = this.props.theme ?? 'dark';
+    const preset = this.props.accent ?? 'green';
+    const accentVars = preset === 'green' ? ''
+      : '--accent: var(--preset-' + preset + '); --accent-strong: var(--preset-' + preset + '-strong); --accent-soft: var(--preset-' + preset + '-soft);' + (preset === 'plum' ? ' --cursed: var(--preset-plum-cursed); --cursed-soft: var(--preset-plum-cursed-soft);' : '');
+
+    return {
+      theme, accentVars, metricTabs, rangeTabs, grid, pts, bars, xlabels, areaPath, linePath,
+      isArea: m.kind === 'area',
+      hasGoal: goal !== null,
+      goalY: goal !== null ? sy(goal).toFixed(1) : '0',
+      goalTy: goal !== null ? (sy(goal) - 6).toFixed(1) : '0',
+      goalLabel: m.goalLabel,
+      periodTitle: r.title, chartName: m.name, readValue, readDetail, chartFoot,
+      chartAria: m.name + ', ' + r.title + ', from ' + this.fmt(first) + ' to ' + this.fmt(last) + ' ' + m.unit + (goal !== null ? ', goal ' + goal : ''),
+      muscles, days, records,
+      weekdays: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+    };
+  }
+}
+</script>
+</body>
+</html>

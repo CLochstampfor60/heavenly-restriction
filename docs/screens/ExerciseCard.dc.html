@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exercise card, Lat Pulldown</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/heavenlyrestriction/tokens.css">
+<link rel="stylesheet" href="ds/heavenlyrestriction/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0b0d0c}
+a{color:#7fa889}a:hover{color:#9cc3a5}
+.hr-plain{text-decoration:none}
+.hr-thumbs::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div class="hr-root" data-theme="{{theme}}" style="box-sizing: border-box; width: 100%; max-width: 360px; min-height: 1720px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-body); {{accentVars}}">
+
+  <div style="display: flex; align-items: center; gap: 8px; padding: 8px 8px 0;">
+    <a href="Today.dc.html" class="hr-icon-btn hr-plain" aria-label="Back"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="flex: 1 1 auto; display: flex; flex-direction: column;">
+      <span class="hr-eyebrow">Exercise library</span>
+      <span class="hr-jjk" style="font-size: 13px; line-height: 16px;">Inventory</span>
+    </span>
+    <button class="hr-icon-btn" aria-label="Edit exercise"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.25" class="hr-fill"></circle><circle cx="12" cy="12" r="1.25" class="hr-fill"></circle><circle cx="12" cy="18.5" r="1.25" class="hr-fill"></circle></svg></button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 32px;">
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h1 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 36px;">Lat Pulldown</h1>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+        <span class="hr-tag">Back › Lats</span>
+        <span style="font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-2);">Also works biceps, rear delts</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 4px;">
+        <div style="display: flex; flex-direction: column; padding: 10px; min-width: 0; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge);">
+          <span class="hr-eyebrow">Best</span>
+          <span style="font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 26px; font-variant-numeric: tabular-nums;">145 × 9</span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--flash);">PR · Oct 26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; padding: 10px; min-width: 0; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge);">
+          <span class="hr-eyebrow">Est. 1RM</span>
+          <span style="font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 26px; font-variant-numeric: tabular-nums;">189 lb</span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--accent);">+15 in 8 wk</span>
+        </div>
+        <div style="display: flex; flex-direction: column; padding: 10px; min-width: 0; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge);">
+          <span class="hr-eyebrow">Plan</span>
+          <span style="font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 26px; font-variant-numeric: tabular-nums;">4 × 8–10</span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">Rest 1:30</span>
+        </div>
+      </div>
+    </div>
+
+    <section aria-label="Form media" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">Form</h2>
+        <button class="hr-btn hr-btn--ghost hr-btn--compact" style="padding: 0 10px;" aria-label="Add photo, clip or link"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Add</button>
+      </div>
+      <button aria-label="Play form video, lat pulldown, YouTube" style="position: relative; display: block; width: 100%; height: 184px; padding: 0; border-radius: var(--radius-lg); background: var(--card-2); border: 1px solid var(--card-edge); color: var(--text); cursor: pointer; overflow: hidden;">
+        <span style="position: absolute; inset: 0; display: grid; place-items: center;">
+          <span style="width: 64px; height: 64px; border-radius: 999px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px;"><path d="M9 6.5v11l9-5.5z"></path></svg></span>
+        </span>
+        <span style="position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left;">
+          <span style="display: flex; flex-direction: column;"><span style="font-weight: 600; font-size: 15px; line-height: 20px;">Lat pulldown form · 4:12</span><span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">YouTube · plays here, privacy mode</span></span>
+        </span>
+      </button>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <button style="min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 0; background: transparent; border: 0; color: var(--text); text-align: left; cursor: pointer;" aria-label="My clip from Oct 12, 18 seconds, saved for offline">
+          <span style="position: relative; display: grid; place-items: center; width: 100%; height: 80px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text-2);">
+            <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M10.5 9.5v5l4-2.5z"></path></svg>
+            <span style="position: absolute; left: 6px; bottom: 6px; height: 20px; padding: 0 6px; border-radius: var(--radius-sm); background: var(--recover-soft); color: var(--recover); font-size: 12px; line-height: 20px; font-weight: 600;">Offline</span>
+          </span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 600;">My clip · 0:18<br><span style="font-weight: 500; color: var(--text-2);">Oct 12</span></span>
+        </button>
+        <button style="min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 0; background: transparent; border: 0; color: var(--text); text-align: left; cursor: pointer;" aria-label="Photo, grip width">
+          <span style="display: grid; place-items: center; width: 100%; height: 80px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text-2);">
+            <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"></rect><circle cx="9" cy="10" r="1.5"></circle><path d="M21 16l-5-5-8 8"></path></svg>
+          </span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 600;">Grip width<br><span style="font-weight: 500; color: var(--text-2);">Photo</span></span>
+        </button>
+        <a href="#" class="hr-plain" style="min-width: 0; display: flex; flex-direction: column; gap: 6px; color: var(--text);" aria-label="Coach video, opens in Brave">
+          <span style="display: grid; place-items: center; width: 100%; height: 80px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--info);">
+            <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>
+          </span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 600;">Coach link<br><span style="font-weight: 500; color: var(--info);">Opens in Brave</span></span>
+        </a>
+      </div>
+    </section>
+
+    <section aria-label="Notes" style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">Notes</h2>
+      <div class="hr-note"><span class="hr-note__icon"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6l-1 5.5 3 3H7l3-3-1-5.5z"></path><path d="M12 12v8.5"></path></svg></span><span><span class="hr-note__kind">Pinned · cue</span><div class="hr-note__body">Elbows under the bar, chest up. Pull to the collarbone, not the chin.</div></span></div>
+      <div class="hr-note"><span class="hr-note__icon"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6l-1 5.5 3 3H7l3-3-1-5.5z"></path><path d="M12 12v8.5"></path></svg></span><span><span class="hr-note__kind">Pinned · load cap</span><div class="hr-note__body">Cap at 150 lb for now; drop 10 lb if form breaks.</div><span class="hr-jjk" style="font-size: 13px;">Binding Vow</span></span></div>
+      <div class="hr-note hr-note--session"><span class="hr-note__icon"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v11l-5 5H5z"></path><path d="M14 20v-5h5"></path><path d="M8.5 9h7"></path><path d="M8.5 12.5h4"></path></svg></span><span><span class="hr-note__kind">Last session · Oct 19</span><div class="hr-note__body">Cable machine 2 had a sticky pulley.</div></span></div>
+    </section>
+
+    <section aria-label="History" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">{{chartTitle}}</h2>
+        <div role="group" aria-label="Chart measure" style="display: flex; padding: 2px; border-radius: var(--radius-md); background: var(--surface-1); border: 1px solid var(--border);">
+          <sc-for list="{{metrics}}" as="m" hint-placeholder-count="2">
+            <button aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; min-height: 44px;">
+        <span style="font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 36px; font-variant-numeric: tabular-nums;">{{readValue}}</span>
+        <span style="font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-2);">{{readDetail}}</span>
+        <sc-if value="{{readPr}}" hint-placeholder-val="{{false}}"><span class="hr-pr hr-pr--quiet"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5L5 13.5h6l-1.5 8 9-11.5h-6l1-7.5z"></path></svg>PR</span></sc-if>
+        <sc-if value="{{readStop}}" hint-placeholder-val="{{false}}"><span class="hr-chip hr-chip--stopped"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg>Stopped</span></sc-if>
+      </div>
+      <div style="padding: 12px 8px 4px 4px; border-radius: var(--radius-lg); background: var(--card); border: 1px solid var(--card-edge);">
+        <svg viewBox="0 0 316 176" width="100%" role="img" aria-label="{{chartAria}}" style="display: block; overflow: visible;">
+          <sc-for list="{{grid}}" as="g" hint-placeholder-count="3">
+            <line x1="34" x2="312" y1="{{g.y}}" y2="{{g.y}}" style="stroke: var(--border); stroke-width: 1;"></line>
+            <text x="28" y="{{g.ty}}" text-anchor="end" style="fill: var(--text-2); font-family: var(--font-body); font-size: 12px; font-weight: 500;">{{g.label}}</text>
+          </sc-for>
+          <path d="{{linePath}}" style="fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;"></path>
+          <sc-for list="{{pts}}" as="p" hint-placeholder-count="8">
+            <text x="{{p.x}}" y="172" text-anchor="middle" style="fill: var(--text-2); font-family: var(--font-body); font-size: 12px; font-weight: 500;">{{p.xl}}</text>
+            <circle cx="{{p.x}}" cy="{{p.y}}" r="{{p.r}}" style="{{p.dotStyle}}"></circle>
+            <circle cx="{{p.x}}" cy="{{p.y}}" r="18" onClick="{{p.pick}}" style="fill: transparent; cursor: pointer;"></circle>
+          </sc-for>
+          <sc-for list="{{stops}}" as="s" hint-placeholder-count="1">
+            <polygon points="{{s.poly}}" style="fill: var(--stop-soft); stroke: var(--stop); stroke-width: 2;"></polygon>
+          </sc-for>
+          <text x="{{lastLabelX}}" y="{{lastLabelY}}" text-anchor="end" style="fill: var(--text); font-family: var(--font-display); font-size: 14px; font-weight: 700;">{{lastLabel}}</text>
+        </svg>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">
+        <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 999px; background: var(--flash);"></span>PR (Black Flash)</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px;"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><polygon points="4,1 8,1 11,4 11,8 8,11 4,11 1,8 1,4" style="fill: var(--stop-soft); stroke: var(--stop); stroke-width: 1.5;"></polygon></svg>Stop event</span>
+        <span>Tap a point for details</span>
+      </div>
+    </section>
+
+    <section aria-label="Recent sessions" style="display: flex; flex-direction: column; gap: 8px;">
+      <h2 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">Recent sessions</h2>
+      <sc-for list="{{sessions}}" as="se" hint-placeholder-count="4">
+        <div style="{{se.style}}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span class="hr-eyebrow" style="color: var(--text);">{{se.date}}</span>
+            <sc-if value="{{se.pr}}" hint-placeholder-val="{{false}}"><span class="hr-pr hr-pr--quiet"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5L5 13.5h6l-1.5 8 9-11.5h-6l1-7.5z"></path></svg>PR</span></sc-if>
+            <sc-if value="{{se.stopped}}" hint-placeholder-val="{{false}}"><span class="hr-chip hr-chip--stopped"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg>Stopped</span></sc-if>
+          </div>
+          <span style="font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 22px; font-variant-numeric: tabular-nums;">{{se.sets}}</span>
+          <sc-if value="{{se.hasNote}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">{{se.note}}</span></sc-if>
+        </div>
+      </sc-for>
+    </section>
+
+    <section aria-label="Substitutions" style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: column;">
+        <h2 style="margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px;">Substitutions</h2>
+        <span class="hr-jjk">Weapon Swap · first pick shows first when a machine is taken</span>
+      </div>
+      <sc-for list="{{subs}}" as="sb" hint-placeholder-count="3">
+        <a href="#" class="hr-plain" style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text);">
+          <span style="{{sb.rankStyle}}">{{sb.rank}}</span>
+          <span style="flex: 1 1 auto; display: flex; flex-direction: column;"><span style="font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 22px;">{{sb.name}}</span><span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">{{sb.meta}}</span></span>
+          <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--text-2);"><path d="M9 5l7 7-7 7"></path></svg>
+        </a>
+      </sc-for>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Theme"},"accent":{"editor":"enum","options":["green","plum","blue"],"default":"green","section":"Settings accent"},"$preview":{"width":360,"height":1720}}'>
+class Component extends DCLogic {
+  data() {
+    return [
+      { d: 'Aug 31', xl: '8/31', w: 130, r: 10 },
+      { d: 'Sep 7', xl: '9/7', w: 132.5, r: 10 },
+      { d: 'Sep 14', xl: '9/14', w: 135, r: 9 },
+      { d: 'Sep 21', xl: '9/21', w: 135, r: 10 },
+      { d: 'Oct 5', xl: '10/5', w: 145, r: 4, stopped: true },
+      { d: 'Oct 12', xl: '10/12', w: 140, r: 10 },
+      { d: 'Oct 19', xl: '10/19', w: 140, r: 10 },
+      { d: 'Oct 26', xl: '10/26', w: 145, r: 9 }
+    ];
+  }
+  renderVals() {
+    const st = this.state || {};
+    const metric = st.metric || 'top';
+    const raw = this.data();
+    let best = 0;
+    const rows = raw.map((s) => {
+      const e1 = s.w * (1 + s.r / 30);
+      const pr = !s.stopped && e1 > best + 0.01;
+      if (pr) best = e1;
+      return Object.assign({}, s, { e1, pr });
+    });
+    const val = (s) => metric === 'top' ? s.w : s.e1;
+    const lo = metric === 'top' ? 125 : 165, hi = metric === 'top' ? 150 : 195, step = metric === 'top' ? 5 : 10;
+    const X0 = 50, X1 = 300, Y0 = 150, Y1 = 10;
+    const sx = (i) => X0 + (X1 - X0) * i / (rows.length - 1);
+    const sy = (v) => Y0 - (Y0 - Y1) * (v - lo) / (hi - lo);
+    const sel = st.sel ?? rows.length - 1;
+    const pts = rows.map((s, i) => {
+      const x = sx(i), y = sy(val(s));
+      const isSel = i === sel;
+      let dot = 'fill: var(--card); stroke: var(--accent); stroke-width: 2;';
+      if (s.pr) dot = 'fill: var(--flash); stroke: var(--card); stroke-width: 2;';
+      if (s.stopped) dot = 'fill: var(--card); stroke: var(--text-2); stroke-width: 2; stroke-dasharray: 2 2;';
+      return {
+        x: x.toFixed(1), y: y.toFixed(1), xl: (i % 2 === 0 || i === rows.length - 1) ? s.xl : '',
+        r: isSel ? 7 : 5, dotStyle: dot + (isSel ? ' stroke: var(--text);' : ''),
+        pick: () => this.setState({ metric, sel: i })
+      };
+    });
+    const linePath = rows.filter((s) => !s.stopped).map((s) => {
+      const i = rows.indexOf(s);
+      return (i === 0 ? 'M' : 'L') + sx(i).toFixed(1) + ' ' + sy(val(s)).toFixed(1);
+    }).join(' ').replace(/^L/, 'M');
+    const grid = [];
+    for (let v = lo; v <= hi; v += step) {
+      const y = sy(v);
+      grid.push({ y: y.toFixed(1), ty: (y + 4).toFixed(1), label: String(v) });
+    }
+    const stops = rows.map((s, i) => s.stopped ? i : -1).filter((i) => i >= 0).map((i) => {
+      const cx = sx(i), cy = Y0 + 2;
+      const k = 6, q = 2.5;
+      return { poly: [[cx - q, cy - k], [cx + q, cy - k], [cx + k, cy - q], [cx + k, cy + q], [cx + q, cy + k], [cx - q, cy + k], [cx - k, cy + q], [cx - k, cy - q]].map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') };
+    });
+    const s = rows[sel];
+    const fmt = (n) => String(Math.round(n * 10) / 10);
+    const last = rows[rows.length - 1];
+    const metrics = [['top', 'Top set'], ['e1', 'Est. 1RM']].map(([id, label]) => ({
+      label, pressed: metric === id ? 'true' : 'false',
+      pick: () => this.setState({ metric: id, sel }),
+      style: 'min-height: 44px; padding: 0 12px; border-radius: 8px; border: 0; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 15px; '
+        + (metric === id ? 'background: var(--card-2); color: var(--text);' : 'background: transparent; color: var(--text-2);')
+    }));
+    const theme = this.props.theme ?? 'dark';
+    const preset = this.props.accent ?? 'green';
+    const accentVars = preset === 'green' ? ''
+      : '--accent: var(--preset-' + preset + '); --accent-strong: var(--preset-' + preset + '-strong); --accent-soft: var(--preset-' + preset + '-soft);' + (preset === 'plum' ? ' --cursed: var(--preset-plum-cursed); --cursed-soft: var(--preset-plum-cursed-soft);' : '');
+
+    const sessions = [
+      { date: 'Mon, Oct 26 · today', sets: '140×10 · 145×9 · 140×9 · 140×8', note: 'RIR 2 on the top set', pr: true },
+      { date: 'Mon, Oct 19', sets: '140×10 · 140×10 · 140×9 · 140×8', note: '' },
+      { date: 'Mon, Oct 12', sets: '140×10 · 140×10 · 140×9 · 135×9', note: '' },
+      { date: 'Mon, Oct 5', sets: '140×10 · 145×4', note: 'Pinch at 145 lb, set 2 · sets 3–4 skipped', stopped: true }
+    ].map((x) => Object.assign({ pr: false, stopped: false }, x, { hasNote: !!x.note,
+      style: 'display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: var(--radius-md); '
+        + (x.stopped ? 'background: var(--stop-soft); border: 1px solid transparent;' : 'background: var(--card); border: 1px solid var(--card-edge);')
+    }));
+
+    const subRank = 'width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 999px; font-family: var(--font-display); font-weight: 600; font-size: 15px; ';
+    const subs = [
+      { rank: '1', name: 'Single-Arm Cable Pulldown', meta: 'Your pick · last 60 × 12' },
+      { rank: '2', name: 'Straight-Arm Pulldown', meta: 'Your pick · last 50 × 15' },
+      { rank: '—', name: 'Assisted Pull-up', meta: 'Same muscle · last −50 lb assist × 8' }
+    ].map((x) => Object.assign({}, x, { rankStyle: subRank + (x.rank === '—' ? 'border: 1px solid var(--border-strong); color: var(--text-2);' : 'background: var(--cursed-soft); color: var(--cursed);') }));
+
+    return {
+      theme, accentVars, metrics, pts, grid, stops, linePath, sessions, subs,
+      chartTitle: metric === 'top' ? 'Top set, last 8 weeks' : 'Est. 1RM, last 8 weeks',
+      chartAria: (metric === 'top' ? 'Top set weight' : 'Estimated one-rep max') + ' over 8 sessions, from ' + fmt(val(rows[0])) + ' to ' + fmt(val(last)) + ' pounds, one stop event on October 5',
+      readValue: metric === 'top' ? fmt(s.w) + ' × ' + s.r : fmt(s.e1) + ' lb',
+      readDetail: s.d + (metric === 'top' ? ' · lb' : ' · from ' + fmt(s.w) + ' × ' + s.r),
+      readPr: !!s.pr, readStop: !!s.stopped,
+      lastLabel: metric === 'top' ? fmt(last.w) : String(Math.round(last.e1)),
+      lastLabelX: (sx(rows.length - 1) - 10).toFixed(1),
+      lastLabelY: (sy(val(last)) - 10).toFixed(1)
+    };
+  }
+}
+</script>
+</body>
+</html>

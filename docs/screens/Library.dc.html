@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exercise library</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/heavenlyrestriction/tokens.css">
+<link rel="stylesheet" href="ds/heavenlyrestriction/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0b0d0c}
+a{color:#7fa889}a:hover{color:#9cc3a5}
+.hr-plain{text-decoration:none}
+.hr-navlink{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;text-decoration:none;font-family:var(--font-body);font-size:13px;line-height:16px;font-weight:600;color:var(--text-2);border-radius:var(--radius-md)}
+.hr-navlink[aria-current="page"]{color:var(--accent)}
+.hr-searchinput::placeholder{color:var(--text-faded);opacity:1}
+</style>
+</helmet>
+<div class="hr-root" data-theme="{{theme}}" style="box-sizing: border-box; width: 100%; max-width: 360px; min-height: 1500px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-body); {{accentVars}}">
+
+  <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 16px; padding: 16px 16px 24px;">
+
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 36px;">Exercise library</h1>
+        <span class="hr-jjk">Inventory · 62 exercises</span>
+      </div>
+      <button class="hr-btn hr-btn--secondary hr-btn--compact" style="padding: 0 12px; flex: none;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>New</button>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 12px; border-radius: var(--radius-md); background: var(--card-2); border: 1px solid var(--border-strong);">
+      <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--text-2);"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
+      <input class="hr-searchinput" type="search" placeholder="Search exercises" aria-label="Search exercises" value="{{query}}" onChange="{{onSearch}}" style="flex: 1 1 auto; min-width: 0; height: 54px; background: transparent; border: 0; outline: none; color: var(--text); font-family: var(--font-body); font-size: 16px;">
+    </div>
+
+    <div role="group" aria-label="Filter" style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+        <button aria-pressed="{{f.pressed}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <sc-for list="{{regions}}" as="rg" hint-placeholder-count="7">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button aria-expanded="{{rg.expanded}}" onClick="{{rg.toggle}}" style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px 0 16px; border-radius: var(--radius-md); background: var(--surface-1); border: 1px solid var(--border); color: var(--text); cursor: pointer; text-align: left;">
+            <span style="flex: 1 1 auto; font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 24px;">{{rg.name}}</span>
+            <span style="font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-2);">{{rg.count}}</span>
+            <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="{{rg.chevStyle}}"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <sc-if value="{{rg.open}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; flex-direction: column; gap: 12px; padding-left: 8px;">
+              <sc-for list="{{rg.muscles}}" as="mu" hint-placeholder-count="3">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <span style="display: flex; align-items: center; gap: 8px;"><span class="hr-tag">{{mu.label}}</span><span style="font-size: 13px; font-weight: 600; color: var(--text-2);">{{mu.count}}</span></span>
+                  <sc-for list="{{mu.items}}" as="ex" hint-placeholder-count="3">
+                    <a href="{{ex.href}}" class="hr-plain" aria-label="{{ex.aria}}" style="{{ex.rowStyle}}">
+                      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+                        <span style="{{ex.nameStyle}}">{{ex.name}}</span>
+                        <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">{{ex.meta}}</span>
+                      </span>
+                      <span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                          <sc-if value="{{ex.hasVideo}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; color: var(--text-2);"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M10.5 9.5v5l4-2.5z"></path></svg></sc-if>
+                          <sc-if value="{{ex.hasGrade}}" hint-placeholder-val="{{false}}"><span style="height: 22px; padding: 0 6px; border-radius: var(--radius-sm); background: var(--grade-soft); color: var(--grade); font-size: 12px; line-height: 22px; font-weight: 600; white-space: nowrap;">{{ex.grade}}</span></sc-if>
+                        </span>
+                        <sc-if value="{{ex.hasDay}}" hint-placeholder-val="{{false}}"><span style="height: 22px; padding: 0 6px; border-radius: var(--radius-sm); background: var(--card-2); color: var(--text-2); font-size: 12px; line-height: 22px; font-weight: 600; white-space: nowrap;">{{ex.day}}</span></sc-if>
+                        <sc-if value="{{ex.excluded}}" hint-placeholder-val="{{false}}"><span style="height: 22px; padding: 0 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); color: var(--text-2); font-size: 12px; line-height: 20px; font-weight: 600;">Excluded</span></sc-if>
+                      </span>
+                    </a>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+        <span style="padding: 24px 0; text-align: center; font-size: 14px; color: var(--text-2);">No exercises match. Try another name or clear the filter.</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <nav aria-label="Main" style="position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px 16px; background: var(--surface-1); border-top: 1px solid var(--border); box-shadow: var(--shadow-sheet);">
+    <a href="Today.dc.html" class="hr-navlink"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg>Today</a>
+    <a href="#" class="hr-navlink" aria-current="page"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg>Library</a>
+    <a href="Progress.dc.html" class="hr-navlink"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M5 15l4.5-5 4 3L19 6"></path></svg>Progress</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Theme"},"accent":{"editor":"enum","options":["green","plum","blue"],"default":"green","section":"Settings accent"},"$preview":{"width":360,"height":1500}}'>
+class Component extends DCLogic {
+  catalog() {
+    const E = (name, equip, last, opts) => Object.assign({ name, equip, last }, opts || {});
+    return [
+      { id: 'back', name: 'Back', total: 14, muscles: [
+        { label: 'Lats', items: [
+          E('Lat Pulldown', 'Cable', '145 × 9', { grade: 'Grade 2', day: 'Pull A', video: true, href: 'ExerciseCard.dc.html' }),
+          E('Assisted Pull-up', 'Machine', '−50 lb assist × 8', { grade: 'Grade 3', day: 'Pull A', video: true }),
+          E('Single-Arm Cable Pulldown', 'Cable', '60 × 12', { sub: true }),
+          E('Straight-Arm Pulldown', 'Cable', '50 × 15', { sub: true }),
+          E('Behind-the-Neck Pulldown', 'Cable', 'not logged', { excluded: true }) ] },
+        { label: 'Mid-back', items: [
+          E('Seated Cable Row', 'Cable', '125 × 12', { grade: 'Grade 2', day: 'Pull A', video: true }),
+          E('Chest-Supported Row', 'Dumbbells', '50 lb × 10', { grade: 'Grade 3', day: 'Pull B' }),
+          E('Machine Row', 'Machine', '110 × 10', {}) ] },
+        { label: 'Rear delts', items: [
+          E('Face Pull', 'Cable or Bands', '40 × 15', { day: 'Pull A', video: true }),
+          E('Reverse Pec Deck', 'Machine', '70 × 15', { day: 'Pull B' }) ] } ] },
+      { id: 'core', name: 'Core', total: 8, muscles: [
+        { label: 'Anti-extension', items: [
+          E('Dead Bug', 'Bodyweight', '3 × 10 each side', { grade: 'Grade 3', day: 'Push A', video: true }),
+          E('Ab Wheel Rollout', 'Ab wheel', '8 reps', { day: 'Push B' }) ] },
+        { label: 'Anti-rotation', items: [
+          E('Pallof Press', 'Cable or Bands', '30 × 12 each side', { day: 'Pull B', video: true }) ] },
+        { label: 'Anti-lateral-flexion', items: [
+          E('Suitcase Carry', 'Dumbbell', '60 lb × 40 s each side', { day: 'Push A' }) ] } ] },
+      { id: 'chest', name: 'Chest', total: 8, muscles: [] },
+      { id: 'shoulders', name: 'Shoulders', total: 7, muscles: [] },
+      { id: 'arms', name: 'Arms', total: 9, muscles: [] },
+      { id: 'legs', name: 'Legs', total: 11, muscles: [] },
+      { id: 'hips', name: 'Hips', total: 5, muscles: [] }
+    ];
+  }
+  renderVals() {
+    const st = this.state || {};
+    const open = st.open || { back: true, core: true };
+    const filter = st.filter || 'all';
+    const q = (st.query || '').trim().toLowerCase();
+    const put = (patch) => this.setState(Object.assign({ open, filter, query: st.query || '' }, patch));
+
+    const keep = (e) => {
+      if (q && e.name.toLowerCase().indexOf(q) < 0) return false;
+      if (filter === 'program') return !!e.day;
+      if (filter === 'excluded') return !!e.excluded;
+      if (filter === 'video') return !!e.video;
+      return !e.excluded;
+    };
+    const filtering = filter !== 'all' || !!q;
+
+    const regions = this.catalog().map((rg) => {
+      const muscles = rg.muscles.map((mu) => {
+        const items = mu.items.filter(keep).map((e) => ({
+          name: e.name,
+          meta: e.equip + ' · last ' + e.last + (e.sub ? ' · substitute' : ''),
+          href: e.href || '#',
+          aria: e.name + (e.day ? ', in ' + e.day : '') + (e.grade ? ', ' + e.grade : '') + (e.excluded ? ', excluded' : ''),
+          grade: e.grade || '', hasGrade: !!e.grade,
+          day: e.day || '', hasDay: !!e.day,
+          hasVideo: !!e.video, excluded: !!e.excluded,
+          nameStyle: 'font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 22px; color: ' + (e.excluded ? 'var(--text-2)' : 'var(--text)') + ';',
+          rowStyle: 'display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 8px 12px; border-radius: var(--radius-md); color: var(--text); '
+            + (e.excluded ? 'background: transparent; border: 1px dashed var(--border-strong);' : 'background: var(--card); border: 1px solid var(--card-edge);')
+        }));
+        return { label: mu.label, count: String(items.length), items };
+      }).filter((mu) => mu.items.length);
+      const shown = muscles.reduce((a, mu) => a + mu.items.length, 0);
+      const isOpen = filtering ? shown > 0 : !!open[rg.id];
+      return {
+        name: rg.name,
+        count: filtering ? shown + ' match' + (shown === 1 ? '' : 'es') : rg.total + ' exercises',
+        expanded: isOpen ? 'true' : 'false', open: isOpen, muscles,
+        chevStyle: 'color: var(--text-2); transition: transform var(--duration-base) var(--ease-in-out);' + (isOpen ? ' transform: rotate(180deg);' : ''),
+        toggle: () => put({ open: Object.assign({}, open, { [rg.id]: !open[rg.id] }) }),
+        visible: !filtering || shown > 0
+      };
+    }).filter((rg) => rg.visible);
+
+    const filterDefs = [['all', 'All'], ['program', 'In my program'], ['video', 'Has video'], ['excluded', 'Excluded']];
+    const filters = filterDefs.map(([id, label]) => ({
+      label, pressed: filter === id ? 'true' : 'false',
+      pick: () => put({ filter: id }),
+      style: 'min-height: 44px; padding: 0 14px; border-radius: 999px; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 14px; '
+        + (filter === id ? 'background: var(--cursed); color: var(--on-cursed); border: 1px solid var(--cursed);' : 'background: transparent; color: var(--text); border: 1px solid var(--border-strong);')
+    }));
+
+    const theme = this.props.theme ?? 'dark';
+    const preset = this.props.accent ?? 'green';
+    const accentVars = preset === 'green' ? ''
+      : '--accent: var(--preset-' + preset + '); --accent-strong: var(--preset-' + preset + '-strong); --accent-soft: var(--preset-' + preset + '-soft);' + (preset === 'plum' ? ' --cursed: var(--preset-plum-cursed); --cursed-soft: var(--preset-plum-cursed-soft);' : '');
+
+    return {
+      theme, accentVars, regions, filters,
+      query: st.query || '',
+      onSearch: (e) => put({ query: e.target.value }),
+      empty: regions.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>
