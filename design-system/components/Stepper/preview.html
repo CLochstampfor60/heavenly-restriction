@@ -1,0 +1,14 @@
+<!-- @dsCard group="Inputs" height=230 subtitle="Weight and reps with faded prior values" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;padding:16px} .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center} .col{display:grid;gap:12px;max-width:380px}</style>
+</head><body class="hr-root">
+<div class="col" style="grid-template-columns:1fr 1fr;max-width:380px">
+<label class="hr-stepper"><span class="hr-stepper__label"><span class="hr-eyebrow">Weight · lb</span></span>
+<span class="hr-stepper__box"><button class="hr-stepper__step" aria-label="Decrease weight by 2.5"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><input inputmode="decimal" placeholder="140" aria-label="Weight in pounds, last time 140"><button class="hr-stepper__step" aria-label="Increase weight by 2.5"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button></span>
+<span class="hr-stepper__hint">Last time 140</span></label>
+<label class="hr-stepper"><span class="hr-stepper__label"><span class="hr-eyebrow">Reps</span></span>
+<span class="hr-stepper__box"><button class="hr-stepper__step" aria-label="Decrease reps"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><input inputmode="numeric" value="10" aria-label="Reps"><button class="hr-stepper__step" aria-label="Increase reps"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button></span>
+<span class="hr-stepper__hint">Target 8–10</span></label>
+</div>
+</body></html>

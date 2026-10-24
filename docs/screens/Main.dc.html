@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Set logging</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/heavenlyrestriction/tokens.css">
+<link rel="stylesheet" href="ds/heavenlyrestriction/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0b0d0c}
+a{color:#7fa889}a:hover{color:#9cc3a5}
+.hr-scroll::-webkit-scrollbar{display:none}
+.hr-stop-text{color:var(--stop) !important;font-size:18px}
+</style>
+</helmet>
+<div class="hr-root" data-theme="{{theme}}" style="position: relative; width: 360px; height: 780px; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-body); {{accentVars}}">
+
+  <div class="hr-scroll" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
+
+    <div class="hr-exh">
+      <div style="display: flex; align-items: center; gap: 8px; min-height: 56px;">
+        <a href="Today.dc.html" class="hr-icon-btn" aria-label="Back to today's workout"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+        <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+          <span class="hr-eyebrow">Pull A · exercise 2 of 6</span>
+          <h1 class="hr-exh__name">Lat Pulldown</h1>
+        </div>
+        <button class="hr-stop" onClick="{{openStop}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg>Stop</button>
+      </div>
+      <div style="padding-left: 52px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span class="hr-tag">Back › Lats</span><span class="hr-exh__meta">4 sets · 8–10 reps · rest 1:30</span></div>
+      <div class="hr-exh__actions" style="padding-left: 52px; margin-top: 8px;">
+        <button class="hr-btn hr-btn--ghost hr-btn--compact" style="padding: 0 12px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10.5l5 5 5-5"></path><path d="M5 20h14"></path></svg>Later</button>
+        <button class="hr-btn hr-btn--secondary hr-btn--compact" style="padding: 0 12px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5L3.5 7 7 10.5"></path><path d="M3.5 7H17"></path><path d="M17 13.5l3.5 3.5-3.5 3.5"></path><path d="M20.5 17H7"></path></svg>Swap</button>
+        <button class="hr-btn hr-btn--ghost hr-btn--compact" style="padding: 0 12px;"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M10.5 9.5v5l4-2.5z"></path></svg>Video</button>
+      </div>
+    </div>
+
+    <button onClick="{{toggleNote}}" aria-expanded="{{noteExpanded}}" style="display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px 8px 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-align: left; font-family: var(--font-body); font-size: 14px; line-height: 20px; cursor: pointer;">
+      <svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--cursed);"><path d="M9 3.5h6l-1 5.5 3 3H7l3-3-1-5.5z"></path><path d="M12 12v8.5"></path></svg>
+      <span style="{{noteStyle}}"><b style="font-weight: 600;">Pinned · </b>Elbows under the bar, chest up. Cap at 150 lb for now; drop 10 lb if form breaks.</span>
+      <span style="font-size: 13px; font-weight: 600; color: var(--text-2);">{{noteToggleLabel}}</span>
+    </button>
+
+    <sc-if value="{{banner.show}}" hint-placeholder-val="{{false}}">
+      <div class="hr-pr-banner" role="status">
+        <span class="hr-pr-banner__icon"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5L5 13.5h6l-1.5 8 9-11.5h-6l1-7.5z"></path></svg></span>
+        <span><b>New personal record</b><span class="hr-pr-banner__sub"><span class="hr-flash-text">Black Flash</span> · {{banner.text}}</span></span>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;" role="list" aria-label="Sets">
+      <sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+        <div class="{{row.cls}}" role="listitem">
+          <span class="hr-set__n hr-num">
+            <sc-if value="{{row.stopped}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" role="img" aria-label="Stopped"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg></sc-if>
+            <sc-if value="{{row.showN}}" hint-placeholder-val="{{true}}">{{row.n}}</sc-if>
+          </span>
+          <span class="{{row.vCls}}">{{row.w}}<small>{{row.wUnit}}</small></span>
+          <span class="{{row.rCls}}">{{row.r}}<small>{{row.rUnit}}</small></span>
+          <sc-if value="{{row.canTap}}" hint-placeholder-val="{{true}}">
+            <button class="hr-set__check" aria-label="{{row.aria}}" onClick="{{row.tap}}">
+              <span class="hr-box">
+                <sc-if value="{{row.done}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+                <sc-if value="{{row.pr}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5L5 13.5h6l-1.5 8 9-11.5h-6l1-7.5z"></path></svg></sc-if>
+              </span>
+            </button>
+          </sc-if>
+          <sc-if value="{{row.idleBox}}" hint-placeholder-val="{{false}}">
+            <span class="hr-set__check" aria-hidden="true" style="cursor: default;"><span class="hr-box" style="border-color: var(--border);"></span></span>
+          </sc-if>
+          <sc-if value="{{row.blank}}" hint-placeholder-val="{{false}}"><span></span></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex: none; display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; background: var(--surface-1); border-top: 1px solid var(--border); box-shadow: var(--shadow-sheet);">
+
+    <sc-if value="{{working}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <sc-if value="{{resting}}" hint-placeholder-val="{{true}}">
+          <div class="{{timerCls}}" role="timer" aria-label="{{timerAria}}">
+            <svg class="hr-timer__ring" viewBox="0 0 32 32" aria-hidden="true"><circle class="hr-track" cx="16" cy="16" r="13"></circle><circle class="hr-prog" cx="16" cy="16" r="13" style="{{ringStyle}}"></circle></svg>
+            <span class="hr-timer__grow"><span class="hr-timer__time">{{timerText}}</span><span class="hr-timer__label">{{timerLabel}}</span></span>
+            <button class="hr-btn hr-btn--ghost hr-btn--compact" style="padding: 0 10px;" aria-label="Add 15 seconds" onClick="{{add15}}">+15 s</button>
+            <button class="hr-btn hr-btn--ghost hr-btn--compact" style="padding: 0 10px;" onClick="{{skipRest}}">Skip</button>
+          </div>
+        </sc-if>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <div class="hr-stepper">
+            <span class="hr-eyebrow">Weight · lb</span>
+            <span class="hr-stepper__box">
+              <button class="hr-stepper__step" aria-label="Decrease weight by 2.5 pounds" onClick="{{decW}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+              <input inputmode="decimal" placeholder="{{wPh}}" value="{{wVal}}" onChange="{{onW}}" aria-label="{{wAria}}">
+              <button class="hr-stepper__step" aria-label="Increase weight by 2.5 pounds" onClick="{{incW}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></button>
+            </span>
+          </div>
+          <div class="hr-stepper">
+            <span class="hr-eyebrow">Reps · target 8–10</span>
+            <span class="hr-stepper__box">
+              <button class="hr-stepper__step" aria-label="Decrease reps" onClick="{{decR}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+              <input inputmode="numeric" placeholder="{{rPh}}" value="{{rVal}}" onChange="{{onR}}" aria-label="{{rAria}}">
+              <button class="hr-stepper__step" aria-label="Increase reps" onClick="{{incR}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></button>
+            </span>
+          </div>
+        </div>
+
+        <div role="group" aria-label="Reps in reserve, optional" style="display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 8px;">
+          <span style="display: flex; flex-direction: column;"><span class="hr-eyebrow" style="color: var(--text);">RIR</span><span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">optional</span></span>
+          <div class="hr-rir__cells">
+            <sc-for list="{{rirCells}}" as="c" hint-placeholder-count="5">
+              <button class="hr-rir__cell" aria-pressed="{{c.pressed}}" aria-label="{{c.aria}}" onClick="{{c.pick}}">{{c.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <button class="hr-btn hr-btn--primary hr-btn--hero" onClick="{{log}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>{{logLabel}}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{finished}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; min-height: 44px;">
+          <span class="{{finishChipCls}}">{{finishChip}}</span>
+          <span style="font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-2);">{{finishText}}</span>
+        </div>
+        <button class="hr-btn hr-btn--primary hr-btn--hero" onClick="{{reset}}">Next: Seated Cable Row</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{stopOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;">
+      <div onClick="{{closeStop}}" aria-hidden="true" style="position: absolute; inset: 0; background: var(--scrim);"></div>
+      <div role="dialog" aria-modal="true" aria-label="Stop exercise" style="position: relative; display: flex; flex-direction: column; gap: 16px; padding: 20px 16px 16px; background: var(--surface-1); border-top: 2px solid var(--stop); border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: var(--shadow-sheet); animation: hr-rise var(--duration-slow) var(--ease-out);">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span class="hr-eyebrow" style="color: var(--stop);">Stop exercise</span>
+          <h2 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 32px;">What happened?</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <sc-for list="{{symptoms}}" as="sy" hint-placeholder-count="6">
+            <button aria-pressed="{{sy.pressed}}" onClick="{{sy.pick}}" style="{{sy.style}}">
+              <sc-if value="{{sy.on}}" hint-placeholder-val="{{false}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px;"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+              {{sy.label}}
+            </button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--radius-md); background: var(--card-2);">
+          <span class="hr-eyebrow">Saved with it</span>
+          <span style="font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 24px; font-variant-numeric: tabular-nums;">{{stopSummary}}</span>
+          <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-2);">Shows on this exercise's history and the calendar.</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label for="stop-note" class="hr-eyebrow">Note · optional</label>
+          <input id="stop-note" type="text" placeholder="Where, and how it felt" style="height: 56px; padding: 0 12px; border-radius: var(--radius-md); background: var(--card-2); border: 1px solid var(--border-strong); color: var(--text); font-family: var(--font-body); font-size: 16px;">
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px;">
+          <button class="hr-btn hr-btn--secondary" onClick="{{closeStop}}">Cancel</button>
+          <button class="hr-stop hr-stop--solid" onClick="{{confirmStop}}"><svg class="hr-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"></polygon></svg>Stop and record</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Theme"},"scenario":{"editor":"enum","options":["resting","personal-record","stop-sheet"],"default":"resting","section":"State"},"accent":{"editor":"enum","options":["green","plum","blue"],"default":"green","section":"Settings accent"},"$preview":{"width":360,"height":780}}'>
+class Component extends DCLogic {
+  seed() {
+    const scenario = this.props.scenario ?? 'resting';
+    const prior = [{ w: 140, r: 10 }, { w: 140, r: 9 }, { w: 140, r: 9 }, { w: 140, r: 8 }];
+    const todo = { status: 'todo' };
+    let sets = [{ w: 140, r: 10, status: 'done' }, { w: 140, r: 10, status: 'done' }, todo, todo];
+    let banner = null;
+    let best = 140 * (1 + 10 / 30);
+    let rest = 72;
+    if (scenario === 'personal-record') {
+      sets = [{ w: 140, r: 10, status: 'done' }, { w: 145, r: 9, status: 'pr' }, todo, todo];
+      best = 145 * (1 + 9 / 30);
+      banner = { w: 145, r: 9, e1: Math.round(best) };
+      rest = 86;
+    }
+    return {
+      scenario, prior, sets, banner, best, rest, total: 90, resting: true,
+      active: 2, w: null, r: null, rir: null, noteOpen: false,
+      stopOpen: scenario === 'stop-sheet', symptom: scenario === 'stop-sheet' ? 'Pinch' : null, ended: null
+    };
+  }
+  cur() {
+    const s = this.state;
+    if (!s || !s.sets || s.scenario !== (this.props.scenario ?? 'resting')) return this.seed();
+    return s;
+  }
+  put(patch) { this.setState(Object.assign({}, this.cur(), patch)); }
+  componentDidMount() {
+    this.tick = setInterval(() => {
+      const s = this.cur();
+      if (s.resting && s.rest > 0 && !s.stopOpen) this.put({ rest: s.rest - 1 });
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.tick); }
+  fmt(n) { return String(Math.round(n * 10) / 10); }
+  renderVals() {
+    const s = this.cur();
+    const i = s.active;
+    const p = s.prior[Math.min(i, 3)];
+    const curW = s.w ?? p.w;
+    const curR = s.r ?? p.r;
+
+    const rows = s.sets.map((set, k) => {
+      const st = set.status;
+      const isActive = k === i && !s.ended;
+      const future = st === 'todo';
+      const faded = future;
+      const w = future ? s.prior[k].w : (st === 'skipped' ? '—' : set.w);
+      const r = future ? s.prior[k].r : (st === 'skipped' ? 'Skipped' : (st === 'stopped' ? 'Stopped' : set.r));
+      let cls = 'hr-set';
+      if (isActive && future) cls += ' hr-set--active';
+      if (st === 'done') cls += ' hr-set--done';
+      if (st === 'pr') cls += ' hr-set--pr';
+      if (st === 'skipped') cls += ' hr-set--skipped';
+      if (st === 'stopped') cls += ' hr-set--stopped';
+      const undoable = (st === 'done' || st === 'pr') && k === i - 1 && !s.ended;
+      return {
+        n: k + 1, cls, showN: st !== 'stopped', stopped: st === 'stopped',
+        w: this.fmt0(w), r: r,
+        wUnit: (st === 'skipped') ? '' : 'lb',
+        rUnit: (st === 'skipped' || st === 'stopped') ? '' : 'reps',
+        vCls: 'hr-set__v' + (faded ? ' hr-set__v--faded' : ''),
+        rCls: 'hr-set__v' + (faded ? ' hr-set__v--faded' : '') + (st === 'stopped' ? ' hr-stop-text' : ''),
+        done: st === 'done', pr: st === 'pr',
+        canTap: (isActive && future) || st === 'done' || st === 'pr',
+        idleBox: future && !isActive,
+        blank: st === 'skipped' || st === 'stopped',
+        aria: (isActive && future) ? 'Log set ' + (k + 1) + ' with last time’s values, ' + s.prior[k].w + ' pounds for ' + s.prior[k].r + ' reps'
+          : 'Set ' + (k + 1) + ' done' + (st === 'pr' ? ', personal record' : '') + (undoable ? ', tap to undo' : ''),
+        tap: (isActive && future) ? () => this.logSet() : (undoable ? () => this.undo(k) : () => {})
+      };
+    });
+
+    const rirLabels = ['0', '1', '2', '3', '4+'];
+    const rirCells = rirLabels.map((label, k) => ({
+      label, pressed: s.rir === k ? 'true' : 'false', aria: label + ' reps in reserve',
+      pick: () => this.put({ rir: s.rir === k ? null : k })
+    }));
+
+    const symptomLabels = ['Pinch', 'Sharp pain', 'Numbness or tingling', 'Dull ache', 'Form breaking down', 'Other'];
+    const symptoms = symptomLabels.map((label) => {
+      const on = s.symptom === label;
+      return {
+        label, on, pressed: on ? 'true' : 'false',
+        pick: () => this.put({ symptom: label }),
+        style: 'display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-height: 48px; padding: 8px 12px; border-radius: var(--radius-md); text-align: left; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 15px; line-height: 20px; '
+          + (on ? 'background: var(--stop); color: var(--on-stop); border: 2px solid var(--stop);' : 'background: transparent; color: var(--text); border: 1px solid var(--border-strong);')
+      };
+    });
+
+    const C = 81.68;
+    const done = s.rest === 0;
+    const mm = Math.floor(s.rest / 60), ss = s.rest % 60;
+    const working = !s.ended && i < 4;
+    const finishedByStop = s.ended === 'stopped';
+
+    const theme = this.props.theme ?? 'dark';
+    const preset = this.props.accent ?? 'green';
+    const accentVars = preset === 'green' ? ''
+      : '--accent: var(--preset-' + preset + '); --accent-strong: var(--preset-' + preset + '-strong); --accent-soft: var(--preset-' + preset + '-soft);' + (preset === 'plum' ? ' --cursed: var(--preset-plum-cursed); --cursed-soft: var(--preset-plum-cursed-soft);' : '');
+
+    return {
+      theme, accentVars,
+      rows, rirCells, symptoms,
+      banner: { show: !!s.banner, text: s.banner ? s.banner.w + ' lb × ' + s.banner.r + ' · est. 1RM ' + s.banner.e1 + ' lb' : '' },
+      noteExpanded: s.noteOpen ? 'true' : 'false',
+      noteStyle: s.noteOpen ? '' : 'display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
+      noteToggleLabel: s.noteOpen ? 'Less' : 'More',
+      toggleNote: () => this.put({ noteOpen: !s.noteOpen }),
+      working, finished: !working,
+      resting: s.resting && working,
+      timerCls: 'hr-timer' + (done ? ' hr-timer--done' : ''),
+      timerText: mm + ':' + String(ss).padStart(2, '0'),
+      timerLabel: done ? 'Rest done · go' : 'Rest · target 1:30',
+      timerAria: done ? 'Rest done' : 'Rest, ' + mm + ' minutes ' + ss + ' seconds left',
+      ringStyle: 'stroke-dasharray: ' + C + '; stroke-dashoffset: ' + (done ? 0 : (C * (1 - s.rest / s.total)).toFixed(1)) + ';',
+      add15: () => this.put({ rest: s.rest + 15, total: Math.max(s.total, s.rest + 15) }),
+      skipRest: () => this.put({ resting: false }),
+      wPh: this.fmt(p.w), rPh: String(p.r),
+      wVal: s.w === null ? '' : this.fmt(s.w), rVal: s.r === null ? '' : String(s.r),
+      wAria: 'Weight in pounds for set ' + (i + 1) + ', last time ' + p.w,
+      rAria: 'Reps for set ' + (i + 1) + ', last time ' + p.r,
+      onW: (e) => { const v = parseFloat(e.target.value); this.put({ w: isNaN(v) ? null : v }); },
+      onR: (e) => { const v = parseInt(e.target.value, 10); this.put({ r: isNaN(v) ? null : v }); },
+      incW: () => this.put({ w: curW + 2.5 }),
+      decW: () => this.put({ w: Math.max(0, curW - 2.5) }),
+      incR: () => this.put({ r: curR + 1 }),
+      decR: () => this.put({ r: Math.max(0, curR - 1) }),
+      logLabel: 'Log set ' + Math.min(i + 1, 4),
+      log: () => this.logSet(),
+      openStop: () => this.put({ stopOpen: true }),
+      closeStop: () => this.put({ stopOpen: false }),
+      confirmStop: () => this.stopNow(),
+      stopSummary: 'Lat Pulldown · set ' + Math.min(i + 1, 4) + ' · ' + this.fmt(curW) + ' lb',
+      finishChip: finishedByStop ? 'Stopped' : 'Done',
+      finishChipCls: finishedByStop ? 'hr-chip hr-chip--stopped' : 'hr-chip hr-chip--done',
+      finishText: finishedByStop ? (s.symptom || 'Stop') + ' at ' + this.fmt(s.stopLoad || curW) + ' lb, set ' + (s.stopSet || i + 1) : 'All 4 sets logged',
+      reset: () => this.setState(this.seed())
+    };
+  }
+  fmt0(v) { return typeof v === 'number' ? this.fmt(v) : v; }
+  logSet() {
+    const s = this.cur();
+    const i = s.active;
+    if (i > 3) return;
+    const p = s.prior[i];
+    const w = s.w ?? p.w, r = s.r ?? p.r;
+    const e1 = w * (1 + r / 30);
+    const isPr = e1 > s.best + 0.01;
+    const sets = s.sets.slice();
+    sets[i] = { w, r, rir: s.rir, status: isPr ? 'pr' : 'done' };
+    this.put({
+      sets, active: i + 1, w: null, r: null, rir: null,
+      best: isPr ? e1 : s.best,
+      banner: isPr ? { w, r, e1: Math.round(e1) } : null,
+      rest: 90, total: 90, resting: i + 1 < 4
+    });
+  }
+  undo(k) {
+    const s = this.cur();
+    const sets = s.sets.slice();
+    sets[k] = { status: 'todo' };
+    this.put({ sets, active: k, banner: null, resting: false });
+  }
+  stopNow() {
+    const s = this.cur();
+    const i = Math.min(s.active, 3);
+    const p = s.prior[i];
+    const w = s.w ?? p.w;
+    const sets = s.sets.map((set, k) => k < i ? set : (k === i ? { w, r: 'Stopped', status: 'stopped' } : { status: 'skipped' }));
+    this.put({ sets, stopOpen: false, ended: 'stopped', resting: false, stopLoad: w, stopSet: i + 1, symptom: s.symptom || 'Other' });
+  }
+}
+</script>
+</body>
+</html>
