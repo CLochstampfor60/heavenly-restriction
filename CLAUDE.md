@@ -44,6 +44,7 @@ Warmup Routine module, injury guardrails as enforced rules (they are pinned note
 - If a secret is ever committed: stop, tell the owner, rotate it first, then scrub history.
 
 ## Working style
+- `C:\Users\Carl\Desktop\repos\dev_workflow\CONVENTIONS.md` governs git and repo hygiene: explicit `git add <file>`, no AI co-author trailers, `internal_docs/` and `purgatory/` stay local.
 - American English everywhere (color, behavior, center, license).
 - Commands and code must work the first time; test before saying something works.
 - Mark clearly what is required vs optional. No padded caveats.
