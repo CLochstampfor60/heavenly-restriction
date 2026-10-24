@@ -85,7 +85,7 @@
       <a href="#/" class="hr-icon-btn" aria-label="Back to today's workout"><Icon name="back" /></a>
       <div class="exh-title">
         <span class="hr-eyebrow">{day.name} · exercise {position} of {day.order.length}</span>
-        <h1 class="hr-exh__name">{ex.name}</h1>
+        <h1 class="hr-exh__name"><a class="name-link" href="#/exercise/{ex.id}">{ex.name}</a></h1>
       </div>
       {#if working}
         <button class="hr-stop" onclick={openStop}><Icon name="stop" />Stop</button>
@@ -109,10 +109,10 @@
     {/if}
   </header>
 
-  {#if ex.note}
+  {#if ex.pinned?.length}
     <button class="hr-note note-toggle" aria-expanded={noteOpen} onclick={() => (noteOpen = !noteOpen)}>
       <span class="hr-note__icon"><Icon name="pin" /></span>
-      <span class="note-text" class:note-text--clamped={!noteOpen}><b>Pinned ·</b>{' '}{ex.note}</span>
+      <span class="note-text" class:note-text--clamped={!noteOpen}><b>Pinned ·</b>{' '}{ex.pinned.map((p) => p.text).join(' ')}</span>
       <span class="meta-strong">{noteOpen ? 'Less' : 'More'}</span>
     </button>
   {/if}
