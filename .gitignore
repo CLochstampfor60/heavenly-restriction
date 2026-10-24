@@ -237,3 +237,7 @@ seed/private/
 # Frontend build output
 node_modules/
 frontend/dist/
+
+# ---- Local-only: never pushed ----
+internal_docs/
+purgatory/
