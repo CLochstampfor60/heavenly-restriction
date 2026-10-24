@@ -15,7 +15,7 @@ Heavenly Restriction is a single-user workout tracker used mid-set, on a Galaxy 
   | Recovery day | Reverse Cursed Technique |
 
 - **Sentence case** everywhere: "Log set", "Rest done". Uppercase only in `eyebrow` labels (SET, LB, REPS).
-- **First person is the app talking to John, briefly.** "Last time 140", not "Your previous session's weight was 140 lb."
+- **The app talks to its one user, briefly.** "Last time 140", not "Your previous session's weight was 140 lb."
 - **Numbers before words.** "145 lb × 9", "1:30", "est. 1RM 187". Units in American notation: lb, s, min.
 - **No emoji, no exclamation marks.** A personal record is announced by the Black Flash banner, not by "Amazing!!".
 - **No character art or official imagery.** The theme lives in names and color only; the app icon will be an original chain or weapon motif.

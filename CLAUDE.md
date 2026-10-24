@@ -5,7 +5,7 @@ Full scope: "Heavenly Restriction — Scope v0.1" (Claude doc). This file is the
 
 ## What it is
 - Python FastAPI backend + small PWA frontend, served from ONE origin (no Netlify, no CORS).
-- Runs in Docker Compose on Moria (Windows 11 workstation) now; moves unchanged to Gondor (NAS, Linux) later.
+- Runs in Docker Compose on the owner's Windows 11 workstation now; moves unchanged to a Linux NAS later.
 - Phone: Galaxy S23, Brave browser, installed as a PWA. Remote access only through Tailscale; HTTPS via `tailscale serve`.
 - One user. No accounts system, no social features, no third-party services or paid APIs.
 
@@ -45,7 +45,7 @@ Warmup Routine module, injury guardrails as enforced rules (they are pinned note
 - If a secret is ever committed: stop, tell the owner, rotate it first, then scrub history.
 
 ## Working style
-- `C:\Users\Carl\Desktop\repos\dev_workflow\CONVENTIONS.md` governs git and repo hygiene: explicit `git add <file>`, no AI co-author trailers, `internal_docs/` and `purgatory/` stay local.
+- `../dev_workflow/CONVENTIONS.md` (the owner's private conventions repo, cloned beside this one) governs git and repo hygiene: explicit `git add <file>`, no AI co-author trailers, `internal_docs/` and `purgatory/` stay local.
 - American English everywhere (color, behavior, center, license).
 - Commands and code must work the first time; test before saying something works.
 - Mark clearly what is required vs optional. No padded caveats.
