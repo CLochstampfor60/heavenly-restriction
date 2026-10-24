@@ -2,7 +2,7 @@
 A self-hosted workout tracker for training hard within injury limits. FastAPI + PWA, offline logging, passkey login, private by design.
 
 ## Status
-Early build. Today's workout, set logging and Settings work on a made-up demo program. What you do in a session (sets, stop events, swaps, order, gear) is kept in the browser's IndexedDB, so a reload resumes it; Settings › Demo data clears it. No server sync, login, Library or Progress yet.
+Early build. All five designed screens (Today's workout, set logging, exercise card, Progress, Exercise library) plus Settings run on a made-up demo program and history. What you do in a session (sets, stop events, swaps, order, gear) is kept in the browser's IndexedDB, so a reload resumes it; Settings › Demo data clears it. No server sync, login, program editing or media upload yet.
 
 ## Run it locally (PowerShell)
 Requires Python 3.12 (the version the container will run; the venv must be built with it) and Node.js 20 or later.
