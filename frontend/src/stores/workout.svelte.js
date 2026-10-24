@@ -1,32 +1,28 @@
-// Today's session, held in memory and seeded from made-up demo data.
-// The API and Dexie (offline set logging) replace the seed in a later step.
+// Today's session. The program and exercise catalog are made-up demo data until the API
+// lands; what happens in the session (sets, stops, swaps, order, gear) is kept in IndexedDB
+// so a reload resumes where it left off.
+import { db, dateKey } from '../db.js';
 import { CATALOG, DEMO_SESSION, GEAR, PROGRAM } from '../fixtures/demo.js';
 
-export const day = $state(seedDay());
+const today = dateKey();
+
+export const day = $state(blankDay());
 export const rest = $state({ running: false, endsAt: 0, total: 0, now: Date.now(), buzzed: false });
 export const ui = $state({ swapFor: null, banner: null });
 
-if (DEMO_SESSION.restLeft) {
-  startRest(day.slots.s2.plan.rest);
-  rest.endsAt = Date.now() + DEMO_SESSION.restLeft * 1000;
-}
-
-function seedDay() {
+function blankDay() {
   const slots = {};
   for (const p of PROGRAM.slots) {
-    const logged = DEMO_SESSION.logged[p.id] ?? [];
     slots[p.id] = {
       id: p.id,
       exerciseId: p.exercise,
       plan: { sets: p.sets, reps: p.reps, rest: p.rest },
-      status: DEMO_SESSION.status[p.id] ?? 'todo',
+      status: 'todo',
       swappedTo: null,
       // The exercise actually done; fixed once the first set is logged.
-      doneAs: logged.length ? p.exercise : null,
+      doneAs: null,
       later: false,
-      sets: Array.from({ length: p.sets }, (_, k) =>
-        logged[k] ? { ...logged[k], rir: null, status: 'done' } : { status: 'todo' },
-      ),
+      sets: Array.from({ length: p.sets }, () => ({ status: 'todo' })),
     };
   }
   return {
@@ -34,10 +30,134 @@ function seedDay() {
     version: PROGRAM.version,
     order: PROGRAM.slots.map((p) => p.id),
     slots,
-    gear: Object.fromEntries(GEAR.map((g) => [g, DEMO_SESSION.gear[g] ?? false])),
+    gear: Object.fromEntries(GEAR.map((g) => [g, false])),
     gearOpen: false,
     finished: false,
   };
+}
+
+// First visit of the day: the demo starts mid-workout, as in the design.
+function applyDemoSeed() {
+  for (const [id, status] of Object.entries(DEMO_SESSION.status)) day.slots[id].status = status;
+  for (const [id, logged] of Object.entries(DEMO_SESSION.logged)) {
+    const slot = day.slots[id];
+    slot.doneAs = slot.exerciseId;
+    logged.forEach((set, k) => {
+      slot.sets[k] = { ...set, rir: null, status: 'done' };
+    });
+  }
+  Object.assign(day.gear, DEMO_SESSION.gear);
+  const resting = Object.keys(DEMO_SESSION.status).find((id) => DEMO_SESSION.status[id] === 'active');
+  if (resting && DEMO_SESSION.restLeft) {
+    startRest(day.slots[resting].plan.rest);
+    rest.endsAt = Date.now() + DEMO_SESSION.restLeft * 1000;
+  }
+}
+
+// ---------- Persistence ----------
+
+const setId = (slotId, k) => `${today}/${slotId}/${k}`;
+
+function warn(error) {
+  console.warn('Could not save to this device; the session will not survive a reload.', error);
+}
+
+function sessionRow() {
+  return $state.snapshot({
+    date: today,
+    program: day.version,
+    order: day.order,
+    gear: day.gear,
+    finished: day.finished,
+    slots: Object.fromEntries(
+      Object.values(day.slots).map((s) => [
+        s.id,
+        { status: s.status, swappedTo: s.swappedTo, doneAs: s.doneAs, later: s.later },
+      ]),
+    ),
+    rest: { running: rest.running, endsAt: rest.endsAt, total: rest.total },
+  });
+}
+
+function saveSet(slot, k) {
+  const set = slot.sets[k];
+  db.sets
+    .put({
+      id: setId(slot.id, k),
+      date: today,
+      slotId: slot.id,
+      set: k,
+      exerciseId: slot.doneAs,
+      w: set.w,
+      r: set.r,
+      rir: set.rir,
+      pr: set.status === 'pr',
+      loggedAt: new Date().toISOString(),
+    })
+    .catch(warn);
+}
+
+function restore(session, sets, stops) {
+  Object.assign(day, { order: session.order, gear: session.gear, finished: session.finished });
+  for (const [id, meta] of Object.entries(session.slots)) {
+    if (day.slots[id]) Object.assign(day.slots[id], meta);
+  }
+  for (const row of sets) {
+    const slot = day.slots[row.slotId];
+    if (!slot) continue;
+    slot.sets[row.set] = { w: row.w, r: row.r, rir: row.rir, status: row.pr ? 'pr' : 'done' };
+  }
+  for (const row of stops) {
+    const slot = day.slots[row.slotId];
+    if (!slot) continue;
+    slot.sets = slot.sets.map((set, k) => {
+      if (k < row.set) return set;
+      if (k === row.set) return { w: row.w, status: 'stopped', symptom: row.symptom, note: row.note };
+      return { status: 'skipped' };
+    });
+  }
+  if (session.rest.running) {
+    Object.assign(rest, session.rest, { now: Date.now(), buzzed: session.rest.endsAt <= Date.now() });
+  }
+}
+
+// Call once before the first render.
+export async function loadToday() {
+  try {
+    const [session, sets, stops] = await Promise.all([
+      db.sessions.get(today),
+      db.sets.where('date').equals(today).toArray(),
+      db.stops.where('date').equals(today).toArray(),
+    ]);
+    if (session) {
+      restore(session, sets, stops);
+    } else {
+      applyDemoSeed();
+      for (const slot of Object.values(day.slots)) {
+        slot.sets.forEach((set, k) => set.status === 'done' && saveSet(slot, k));
+      }
+    }
+  } catch (error) {
+    warn(error);
+    applyDemoSeed();
+  }
+  // From here on, every change to session-level state is written through.
+  $effect.root(() => {
+    $effect(() => {
+      db.sessions.put(sessionRow()).catch(warn);
+    });
+  });
+}
+
+// Clears today's session from this device and starts the demo over.
+export async function resetToday() {
+  await db.transaction('rw', db.sessions, db.sets, db.stops, async () => {
+    await db.sessions.delete(today);
+    await db.sets.where('date').equals(today).delete();
+    await db.stops.where('date').equals(today).delete();
+  });
+  location.hash = '#/';
+  location.reload();
 }
 
 // ---------- Reading ----------
@@ -176,6 +296,7 @@ export function logSet(slotId, { w, r, rir }) {
   const isPr = e1rm(w, r) > bestFor(ex.id) + 0.01;
   slot.doneAs = ex.id;
   slot.sets[k] = { w, r, rir, status: isPr ? 'pr' : 'done' };
+  saveSet(slot, k);
   ui.banner = isPr ? { slotId, w, r, e1: Math.round(e1rm(w, r)) } : null;
   if (k === slot.sets.length - 1) {
     slot.status = 'done';
@@ -189,6 +310,7 @@ export function logSet(slotId, { w, r, rir }) {
 export function undoSet(slotId, k) {
   const slot = day.slots[slotId];
   slot.sets[k] = { status: 'todo' };
+  db.sets.delete(setId(slotId, k)).catch(warn);
   slot.status = 'active';
   if (!loggedCount(slot)) slot.doneAs = null;
   ui.banner = null;
@@ -206,6 +328,19 @@ export function stopSlot(slotId, { w, symptom, note }) {
     if (i === k) return { w, status: 'stopped', symptom, note };
     return { status: 'skipped' };
   });
+  db.stops
+    .put({
+      id: `${today}/${slotId}`,
+      date: today,
+      slotId,
+      set: k,
+      exerciseId: slot.doneAs,
+      w,
+      symptom,
+      note,
+      at: new Date().toISOString(),
+    })
+    .catch(warn);
   slot.status = 'stopped';
   ui.banner = null;
   skipRest();
