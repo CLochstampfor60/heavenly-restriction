@@ -104,7 +104,8 @@
           <span class="hr-stat__value">{slot.sets} × {slot.reps}</span>
           <span class="hr-stat__sub">Rest {clock(slot.rest)}</span>
         {:else}
-          <span class="hr-stat__value">—</span><span class="hr-stat__sub">Not in program</span>
+          <span class="hr-stat__value">—</span>
+          <span class="hr-stat__sub">{ex.excluded ? 'Excluded' : ex.day ? `On ${ex.day}` : 'Not in program'}</span>
         {/if}
       </div>
     </div>

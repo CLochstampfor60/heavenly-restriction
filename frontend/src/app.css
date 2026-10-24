@@ -194,3 +194,26 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .record-row__icon { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--flash-soft); color: var(--flash); }
 .record-row__icon .hr-icon { width: 18px; height: 18px; }
 .record-row__grade { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+
+/* ---------- Library ---------- */
+.filter-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.region-head {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap-row); padding: 0 var(--space-3) 0 var(--space-4);
+  border-radius: var(--radius-md); background: var(--surface-1); border: 1px solid var(--border); color: var(--text); text-align: left; cursor: pointer;
+}
+.region-head__name { flex: 1 1 auto; font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 24px; }
+.region-head__chev { color: var(--text-2); transition: transform var(--duration-base) var(--ease-in-out); }
+.region-head__chev--open { transform: rotate(180deg); }
+.region-body { display: flex; flex-direction: column; gap: var(--space-3); padding-left: var(--space-2); }
+.muscle-group { gap: 6px; }
+.lib-row {
+  display: flex; align-items: center; gap: 10px; min-height: 60px; padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-decoration: none;
+}
+.lib-row--excluded { background: transparent; border: 1px dashed var(--border-strong); }
+.lib-row--excluded .option-name { color: var(--text-2); }
+.lib-row__marks { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
+.lib-row__top { display: flex; align-items: center; gap: 6px; }
+.lib-video .hr-icon { width: 16px; height: 16px; }
+.excluded-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); color: var(--text-2); font-size: 12px; font-weight: 600; }
+.empty-note { margin: 0; padding: var(--space-5) 0; text-align: center; }
