@@ -29,6 +29,15 @@ npm --prefix frontend run build
 .\.venv\Scripts\python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
+Database and program import (required once, and again whenever the spreadsheet changes). Copy `.env.example` to `.env` first and set `DATABASE_URL` and `PROGRAM_XLSX_PATH`; the spreadsheet stays outside the repo:
+
+```powershell
+.\.venv\Scripts\alembic -c backend\alembic.ini upgrade head
+.\.venv\Scripts\python -m app.importer
+```
+
+Run the importer from `backend\` (or set `$env:PYTHONPATH = "backend"`). Re-running updates the same program version. Anything it cannot map cleanly is listed in `internal_docs\import-obstacles.md` (local only) instead of being guessed.
+
 Checks before committing:
 
 ```powershell
