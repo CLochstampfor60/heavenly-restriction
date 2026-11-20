@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import {
   canWipe,
   finishMessage,
+  finishPrompt,
+  openAtFinish,
   outboxDisposition,
   placeholderFor,
   queueCounts,
@@ -77,4 +79,47 @@ test('outbox: 401 pauses for sign-in and keeps the change', () => {
 test('outbox: network errors and server trouble retry, bad requests drop', () => {
   for (const s of [null, undefined, 500, 503, 403, 408, 429]) assert.equal(outboxDisposition(s), 'retry', String(s));
   for (const s of [400, 404, 409, 422]) assert.equal(outboxDisposition(s), 'drop', String(s));
+});
+
+// ---------- Finish workout with exercises still open ----------
+
+const row = (id, status, extra = {}) => ({ id, status, optional: false, loggable: true, logged: 0, ...extra });
+
+test('finish: untouched required exercises are skipped, logged ones keep their sets', () => {
+  const open = openAtFinish([
+    row('a', 'done', { logged: 3 }),
+    row('b', 'active', { logged: 2 }),
+    row('c', 'todo'),
+    row('d', 'stopped', { logged: 1 }),
+    row('e', 'skipped'),
+    row('f', 'todo'),
+  ]);
+  assert.deepEqual(open, { skip: ['c', 'f'], end: ['b'], reset: [] });
+});
+
+test('finish: optional and checklist items are never marked missed', () => {
+  const open = openAtFinish([
+    row('wu', 'todo', { loggable: false }),
+    row('opt', 'todo', { optional: true }),
+    row('opt2', 'active', { optional: true }),
+    row('opt3', 'active', { optional: true, logged: 1 }),
+  ]);
+  assert.deepEqual(open, { skip: [], end: ['opt3'], reset: ['opt2'] });
+});
+
+test('finish prompt: none when nothing is open, so Finish needs no confirm', () => {
+  assert.equal(finishPrompt({ skip: [], end: [], reset: ['x'] }), null);
+});
+
+test('finish prompt wording', () => {
+  assert.deepEqual(finishPrompt({ skip: ['a', 'b', 'c'], end: [] }), {
+    title: '3 exercises not done',
+    question: 'Mark them Skipped and finish?',
+    keeps: null,
+  });
+  assert.equal(finishPrompt({ skip: ['a'], end: [] }).question, 'Mark it Skipped and finish?');
+  const mixed = finishPrompt({ skip: ['a'], end: ['b'] }, ['Lat Pulldown']);
+  assert.equal(mixed.title, '2 exercises not done');
+  assert.equal(mixed.keeps, 'Lat Pulldown keeps its logged sets; the rest of its sets are skipped.');
+  assert.equal(finishPrompt({ skip: [], end: ['b'] }, ['Lat Pulldown']).question, 'Finish now?');
 });

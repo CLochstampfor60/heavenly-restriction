@@ -2,7 +2,8 @@
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
   import SaveStatus from '../components/SaveStatus.svelte';
-  import { finishMessage } from '../logic.js';
+  import Sheet from '../components/Sheet.svelte';
+  import { finishMessage, finishPrompt } from '../logic.js';
   import { setDemo } from '../mode.js';
   import { go } from '../router.svelte.js';
   import { source } from '../stores/source.svelte.js';
@@ -18,6 +19,7 @@
     markCardio,
     markItem,
     nextTodo,
+    openSlots,
     openSwap,
     planText,
     requiredIds,
@@ -33,7 +35,9 @@
   const doneCount = $derived(required.filter((id) => day.slots[id].status === 'done').length);
   const activeId = $derived(activeSlotId());
   const todoId = $derived(nextTodo());
-  const begun = $derived(day.order.some((id) => day.slots[id].status !== 'todo'));
+  const begun = $derived(
+    day.order.some((id) => day.slots[id].status !== 'todo') || day.cardio.some((c) => c.status !== 'todo'),
+  );
   const brought = $derived(Object.keys(day.gear).filter((g) => day.gear[g]));
 
   // Program order by block; cardio goes after the forearm block, before the cool-down; anything
@@ -77,7 +81,18 @@
     return parts.join(' · ');
   }
 
+  // Finish is reachable once the workout has begun. With exercises still open it asks first.
+  let confirm = $state(null);
+
+  function askFinish() {
+    const open = openSlots();
+    const partial = open.end.map((id) => exerciseFor(day.slots[id]).name);
+    confirm = finishPrompt(open, partial);
+    if (!confirm) finishWorkout();
+  }
+
   async function finishWorkout() {
+    confirm = null;
     finishText = 'Saving…';
     const result = await finishAndSync();
     finishText = source.demo ? 'Demo data: nothing is sent to the server.' : finishMessage(result);
@@ -85,7 +100,7 @@
 
   function heroAction() {
     const id = hero.slot; // `hero` re-derives as soon as start() runs
-    if (!id) return finishWorkout();
+    if (!id) return askFinish();
     start(id);
     go(`/log/${id}`);
   }
@@ -257,6 +272,9 @@
     <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={heroAction}>
       {#if hero.icon}<Icon name={hero.icon} />{/if}{hero.label}
     </button>
+    {#if hero.slot && begun}
+      <button class="hr-btn hr-btn--secondary" onclick={askFinish}><Icon name="check" />Finish workout</button>
+    {/if}
   {:else if day.finished}
     <div class="finish-line">
       <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
@@ -265,3 +283,18 @@
   {/if}
 </div>
 <Nav current="today" />
+
+{#if confirm}
+  <Sheet label="Finish workout" onclose={() => (confirm = null)}>
+    <div class="stack-tight">
+      <span class="hr-eyebrow">Finish workout</span>
+      <h2 class="hr-sheet__title">{confirm.title}</h2>
+    </div>
+    <p class="body hint">{confirm.question}</p>
+    {#if confirm.keeps}<p class="meta hint">{confirm.keeps}</p>{/if}
+    <div class="sheet-actions">
+      <button class="hr-btn hr-btn--secondary" onclick={() => (confirm = null)}>Cancel</button>
+      <button class="hr-btn hr-btn--primary" onclick={finishWorkout}><Icon name="check" />Finish</button>
+    </div>
+  </Sheet>
+{/if}

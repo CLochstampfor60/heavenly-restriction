@@ -506,7 +506,7 @@
       />
     </div>
     <span class="meta">Leave a field empty to skip it. Last value shown faded{bw === null && waist === null ? '' : `: saving ${[bw !== null && `${fmt(bw)} lb`, waist !== null && `${fmt(waist)} in`].filter(Boolean).join(' and ')}`}.</span>
-    <div class="stop-actions">
+    <div class="sheet-actions">
       {#if entry}
         <button class="hr-btn hr-btn--secondary" onclick={deleteLog}>Delete entry</button>
       {:else}

@@ -217,7 +217,7 @@
     </button>
     <span class="meta">Reset clears today's session from this device{source.demo ? ' and starts the demo again' : ''}.{source.demo ? '' : ' Anything already sent to the server stays there.'}</span>
     {#if confirmReset}
-      <div class="stop-actions">
+      <div class="sheet-actions">
         <button class="hr-btn hr-btn--secondary" onclick={() => (confirmReset = false)}>Cancel</button>
         <button class="hr-btn hr-btn--primary" onclick={resetToday}>Clear today's session</button>
       </div>

@@ -321,7 +321,7 @@
       <label for="stop-note" class="hr-eyebrow">Note · optional</label>
       <input id="stop-note" class="text-field" type="text" placeholder="Where, and how it felt" bind:value={stopNote}>
     </div>
-    <div class="stop-actions">
+    <div class="sheet-actions">
       <button class="hr-btn hr-btn--secondary" onclick={() => (stopOpen = false)}>Cancel</button>
       <button class="hr-stop hr-stop--solid" onclick={confirmStop}><Icon name="stop" />Stop and record</button>
     </div>

@@ -4,7 +4,7 @@
 import { tick } from 'svelte';
 import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
-import { placeholderFor } from '../logic.js';
+import { openAtFinish, placeholderFor } from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
 import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
 import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
@@ -457,8 +457,32 @@ export function finish() {
   day.finished = true;
 }
 
+// What Finish would end: see openAtFinish in logic.js.
+export function openSlots() {
+  return openAtFinish(
+    day.order.map((id) => {
+      const s = day.slots[id];
+      return { id, status: s.status, optional: s.plan.optional, loggable: s.plan.loggable, logged: loggedCount(s) };
+    }),
+  );
+}
+
+// Ends every open exercise (Skipped, or kept with its logged sets) so the day can finish.
+function endOpen() {
+  const { skip, end, reset } = openSlots();
+  for (const id of skip) day.slots[id].status = 'skipped';
+  for (const id of reset) day.slots[id].status = 'todo';
+  for (const id of end) {
+    const slot = day.slots[id];
+    slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
+    slot.status = 'done';
+  }
+  skipRest();
+}
+
 // Finish, then push everything to the server now and report what is still waiting.
 export async function finishAndSync() {
+  endOpen();
   finish();
   await tick(); // run the effect that queues the session-state change
   return syncNow();

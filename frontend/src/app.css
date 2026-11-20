@@ -101,7 +101,7 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
   background: var(--card-2); border: 1px solid var(--border-strong); color: var(--text); font-size: 16px;
 }
 .text-field::placeholder { color: var(--text-faded); opacity: 1; }
-.stop-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-2); }
+.sheet-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-2); }
 
 /* ---------- Settings ---------- */
 .choice {

@@ -32,7 +32,7 @@ The visual reference is the "Heavenly Restriction — App Screens" design canvas
 - "What I brought today": collapsible row of `hr-toggle` switches (Bands, Hip Halo, Straps). A missing item swaps the dependent exercise to its alternative with an `info` note; it is never counted as missed.
 - Exercise list in program order (`hr-exrow`): done (check + Done chip), current (violet edge + Continue → set logging), upcoming (Later and Swap icon buttons), swapped (swap mark + "Swapped from …").
 - Later moves the exercise to the bottom. Swap opens a bottom sheet (`hr-sheet`): the exercise's ranked substitutions first, then same-muscle options; the set is logged under the exercise actually done.
-- Bottom: hero button (Start workout / Continue: <exercise> / Finish workout) and `hr-nav` (Today, Library, Progress).
+- Bottom: hero button (Start workout / Continue: <exercise> / Next: <exercise> / Finish workout) and `hr-nav` (Today, Library, Progress). Once the workout has begun, a secondary Finish workout button sits under the hero; with exercises still open it asks first in a sheet ("N exercises not done", Cancel / Finish): untouched required exercises become Skipped, a started one keeps its logged sets.
 
 ### 2. Set logging (`Main.dc.html`)
 - Header: back to Today, "Pull A · exercise 2 of 6", exercise name, amber Stop button top-right (far from Log set), region tag and plan, Later / Swap / Video.

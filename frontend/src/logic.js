@@ -39,6 +39,43 @@ export function finishMessage({ total, sets, offline }) {
   return `${offline ? 'Offline: ' : ''}${what} waiting to save. ${total === 1 ? 'It sends' : 'They send'} automatically when you're back online.`;
 }
 
+// ---------- Finish workout with exercises still open ----------
+
+const ENDED = ['done', 'stopped', 'skipped'];
+
+// What Finish does to each loggable slot that has not ended. `slots` are plain rows:
+// { id, status, optional, loggable, logged } where logged is the number of sets logged.
+// - skip: required exercises with nothing logged become Skipped.
+// - end: any exercise with sets logged keeps them; its remaining sets are skipped (as with
+//   "Finish after N sets").
+// - reset: an optional exercise opened but not logged goes back to to-do (optional work never
+//   counts as missed).
+export function openAtFinish(slots) {
+  const out = { skip: [], end: [], reset: [] };
+  for (const s of slots) {
+    if (!s.loggable || ENDED.includes(s.status)) continue;
+    if (s.logged) out.end.push(s.id);
+    else if (!s.optional) out.skip.push(s.id);
+    else if (s.status === 'active') out.reset.push(s.id);
+  }
+  return out;
+}
+
+// The confirm sheet's wording, or null when nothing is open and Finish needs no confirm.
+// `partial` names the exercises that keep their logged sets.
+export function finishPrompt({ skip, end }, partial = []) {
+  const open = skip.length + end.length;
+  if (!open) return null;
+  const title = `${plural(open, 'exercise')} not done`;
+  let question = 'Mark them Skipped and finish?';
+  if (open === 1) question = 'Mark it Skipped and finish?';
+  if (!skip.length) question = 'Finish now?';
+  const keeps = partial.length
+    ? `${partial.join(', ')} ${partial.length === 1 ? 'keeps its' : 'keep their'} logged sets; the rest of ${partial.length === 1 ? 'its' : 'their'} sets are skipped.`
+    : null;
+  return { title, question, keeps };
+}
+
 // Logout may wipe this phone's copy only when nothing is waiting for the server.
 export function canWipe(total) {
   return total === 0;
