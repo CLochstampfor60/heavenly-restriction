@@ -247,6 +247,7 @@ def session_dict(db: Session, session: WorkoutSession) -> dict:
     return {
         "date": session.date.isoformat(),
         "gear": session.gear,
+        "cardio": session.cardio or {},
         "finished": session.finished,
         "order": [s.slot_key for s in session.slots],
         "slots": {
@@ -371,6 +372,7 @@ class SlotState(BaseModel):
 
 class SessionState(BaseModel):
     gear: dict[str, bool] = Field(default_factory=dict)
+    cardio: dict[str, str] = Field(default_factory=dict)  # cardio1: done | skipped | todo
     finished: bool = False
     order: list[str] = Field(default_factory=list)
     slots: dict[str, SlotState] = Field(default_factory=dict)
@@ -382,6 +384,11 @@ def put_session(date: Date, body: SessionState, db: DB) -> dict:
     session = get_session(db, date)
     session.gear = {g: bool(body.gear.get(g, session.gear.get(g, False))) for g in GEAR}
     session.finished = body.finished
+    if body.cardio:
+        bad = {v for v in body.cardio.values()} - {"todo", "done", "skipped"}
+        if bad:
+            raise HTTPException(422, f"Unknown cardio status {sorted(bad)}")
+        session.cardio = dict(body.cardio)
     by_key = {s.slot_key: s for s in session.slots}
     for key, state in body.slots.items():
         if key not in by_key:

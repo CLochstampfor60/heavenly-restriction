@@ -9,25 +9,79 @@
   import { calendarStatus, MUSCLE_SETS, SERIES, SETS_TARGET, YEAR_END } from '../fixtures/progress.js';
   import { longDate, sessionsFor, shortDate } from '../stores/history.js';
   import { source } from '../stores/source.svelte.js';
-  import { dayStatus } from '../stores/workout.svelte.js';
+  import { cachedGet } from '../stores/sync.svelte.js';
+  import { dayStatus, setText } from '../stores/workout.svelte.js';
 
-  // Progress is not connected to real logs yet: in real mode it shows the made-up history.
-  const sessionsOf = (id) => (source.demo ? sessionsFor(id) : sessionsFor(id, HISTORY, CATALOG));
+  // Demo mode draws everything from the made-up fixtures; real mode from /api/progress.
+  const sessionsOf = (id) => sessionsFor(id);
+  let api = $state(null);
+  let apiStatus = $state(source.demo ? 'demo' : 'loading');
+  if (!source.demo) {
+    cachedGet(`/api/progress?date=${dateKey()}`)
+      .then(({ data }) => {
+        api = data;
+        apiStatus = 'ready';
+      })
+      .catch(() => (apiStatus = 'error'));
+  }
+  const real = $derived(!source.demo && api);
 
   const now = new Date();
   const todayKey = dateKey(now);
   const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const STRENGTH = [1, 2, 4, 5, 6]; // Mon, Tue, Thu, Fri, Sat
+  const DEMO_STRENGTH = [1, 2, 4, 5, 6]; // Mon, Tue, Thu, Fri, Sat
   const GRADES = ['Grade 4', 'Grade 3', 'Grade 2', 'Grade 1', 'Special Grade'];
 
   const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const monday = addDays(now, -((now.getDay() + 6) % 7));
+  // Lifting days by JS weekday (0 = Sunday); the API counts from Monday.
+  const STRENGTH = $derived(real ? api.lifting_weekdays.map((wd) => (wd + 1) % 7) : DEMO_STRENGTH);
+  const realStatus = $derived(
+    real ? { ...api.calendar, ...Object.fromEntries(api.week.map((w) => [w.date, w.status])) } : {},
+  );
   const statusOn = (d) => {
     const key = dateKey(d);
-    if (key === todayKey) return dayStatus();
-    return key < todayKey ? calendarStatus(key) : null;
+    if (key === todayKey) return dayStatus(); // this phone's copy of today is the freshest
+    if (key > todayKey) return null;
+    return real ? (realStatus[key] ?? null) : calendarStatus(key);
   };
+
+  // Real-mode series, shaped like the demo SERIES; a range with no points is left out.
+  const monthTitle = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  function realSeries(a) {
+    const rng = (pts, title) => (pts?.length ? { title, pts, goal: false } : undefined);
+    const body = (base, data) => ({
+      ...base,
+      goal: null,
+      goalLabel: '',
+      ranges: { month: rng(data.month, monthTitle), year: rng(data.year, 'Last 12 months · monthly average') },
+    });
+    return {
+      body: body(SERIES.body, a.body.bodyweight),
+      waist: body(SERIES.waist, a.body.waist),
+      lift: {
+        tab: 'Lift',
+        icon: 'dumbbell',
+        name: a.lift?.name ?? 'Your most-logged lift',
+        unit: a.lift ? (a.lift.assisted ? 'lb assist' : a.lift.unit) : 'lb',
+        goal: null,
+        goalLabel: '',
+        ranges: { month: rng(a.lift?.month, monthTitle), year: rng(a.lift?.year, 'Last 12 months · best per month') },
+      },
+      cardio: {
+        ...SERIES.cardio,
+        goal: a.cardio.target,
+        goalLabel: `Target ${a.cardio.target}`,
+        ranges: {
+          week: { title: `Week of ${shortDate(dateKey(monday))}`, goal: false, pts: a.cardio.week },
+          month: rng(a.cardio.month, `${monthTitle} · per week`),
+          year: rng(a.cardio.year, 'Last 12 months · weekly average'),
+        },
+      },
+    };
+  }
+  const S = $derived(real ? realSeries(api) : SERIES);
   const attended = (s) => s === 'done' || s === 'partial' || s === 'stop';
 
   // ---------- This week ----------
@@ -42,10 +96,14 @@
     const skipped = week.filter((w) => w.status === 'skip').map((w) => w.name);
     return skipped.length ? `${skipped.join(', ')} skipped` : 'None skipped';
   });
-  const cardioWeek = SERIES.cardio.ranges.week.pts;
-  const cardioDone = cardioWeek.reduce((a, p) => a + p[1], 0);
-  const plannedIdx = cardioWeek.findIndex((p) => p[2]);
-  const cardioPlanned = plannedIdx === -1 ? null : `${cardioWeek[plannedIdx][2]} min planned ${DAY_NAMES[(plannedIdx + 1) % 7]}`;
+  const cardioWeek = $derived(S.cardio.ranges.week.pts);
+  const cardioDone = $derived(cardioWeek.reduce((a, p) => a + p[1], 0));
+  const cardioPlanned = $derived.by(() => {
+    const planned = cardioWeek.map((p, k) => [p[2], k]).filter(([v]) => v);
+    if (!planned.length) return null;
+    if (planned.length === 1) return `${planned[0][0]} min planned ${DAY_NAMES[(planned[0][1] + 1) % 7]}`;
+    return `${planned.reduce((a, [v]) => a + v, 0)} min still planned`;
+  });
 
   // ---------- Measurement chart ----------
   let metric = $state('body');
@@ -53,13 +111,14 @@
   let picked = $state(null);
 
   const liftMonth = $derived.by(() => {
+    if (real) return { pts: [] }; // real mode: the API's month series is used instead
     const month = todayKey.slice(0, 7);
     const pts = sessionsOf(SERIES.lift.exercise)
       .filter((s) => s.date.startsWith(month))
       .map((s) => [shortDate(s.date), s.stop ? s.stop.w : s.e1, s.stop ? 'stop' : null]);
     return { title: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), pts };
   });
-  const m = $derived(SERIES[metric]);
+  const m = $derived(S[metric]);
   const ranges = $derived(
     ['week', 'month', 'year'].filter(
       (id) => m.ranges[id] || (metric === 'lift' && id === 'month' && liftMonth.pts.length),
@@ -69,10 +128,10 @@
   const r = $derived(
     metric === 'lift' && range === 'month' && liftMonth.pts.length
       ? liftMonth
-      : (m.ranges[range] ?? m.ranges[ranges[0]]),
+      : (m.ranges[range] ?? m.ranges[ranges[0]] ?? { title: 'No entries yet', pts: [], goal: false }),
   );
   const isBars = $derived(metric === 'cardio');
-  const goal = $derived(r.goal === false ? null : { value: m.goal, label: m.goalLabel });
+  const goal = $derived(r.goal === false || m.goal == null ? null : { value: m.goal, label: m.goalLabel });
   const sel = $derived(picked !== null && picked < r.pts.length ? picked : r.pts.length - 1);
   const cur = $derived(r.pts[sel]);
   const live = $derived(r.pts.filter((p) => p[2] !== 'stop'));
@@ -95,20 +154,22 @@
   const delta = $derived(last - first);
 
   const readValue = $derived.by(() => {
+    if (!cur) return '';
     if (isBars) return `${cur[1]} min`;
     if (cur[2] === 'stop') return `${fmt1(cur[1])} lb`;
     return `${fmt1(cur[1])} ${m.unit}`;
   });
   const readDetail = $derived.by(() => {
+    if (!cur) return '';
     if (isBars) {
       if (range === 'week') {
         return cur[2] ? `${cur[2]} min planned` : `${cardioDone} of ${m.goal} min this week`;
       }
-      return `${range === 'year' ? yearMonth(sel) : `week of ${cur[0]}`} · target ${m.goal} a week`;
+      return `${range === 'year' ? (cur[3] ?? yearMonth(sel)) : `week of ${cur[0]}`} · target ${m.goal} a week`;
     }
     if (cur[2] === 'stop') return `${cur[0]} · stop event`;
     const change = Math.abs(delta) < 0.05 ? 'no change' : `${delta < 0 ? '−' : '+'}${fmt1(Math.abs(delta))} ${m.unit}`;
-    return `${range === 'year' ? yearMonth(sel) : cur[0]} · ${change} over the period`;
+    return `${range === 'year' ? (cur[3] ?? yearMonth(sel)) : cur[0]} · ${change} over the period`;
   });
 
   // Year views hold one point per month, ending with YEAR_END; the axis shows only initials.
@@ -123,6 +184,7 @@
         ? 'Every cardio day counts toward the weekly target.'
         : `Weeks at or above the gold line met the ${m.goal}-minute target.`;
     }
+    if (m.goal == null) return 'Tap a point for its value.';
     return `${fmt1(Math.abs(last - m.goal))} ${m.unit} to ${m.goalLabel.toLowerCase()}. Tap a point for its value.`;
   });
   const chartAria = $derived(
@@ -131,7 +193,15 @@
 
   // ---------- Records and calendar ----------
   const records = $derived(
-    Object.keys(HISTORY)
+    real
+      ? api.records.map((x) => ({
+          id: x.exercise_id,
+          name: x.name,
+          detail: `${setText({ assisted: x.assisted, measure: x.measure }, x.set, x.per_side)} · ${longDate(x.date)}`,
+          grade: null,
+          level: 0,
+        }))
+      : Object.keys(HISTORY)
       .map((id) => ({ id, s: sessionsOf(id).findLast((x) => x.pr) }))
       .filter((x) => x.s)
       .sort((a, b) => (a.s.date < b.s.date ? 1 : -1))
@@ -144,8 +214,11 @@
       })),
   );
   const prDays = $derived(
-    new Set(Object.keys(HISTORY).flatMap((id) => sessionsOf(id).filter((s) => s.pr).map((s) => s.date))),
+    real
+      ? new Set(api.pr_days)
+      : new Set(Object.keys(HISTORY).flatMap((id) => sessionsOf(id).filter((s) => s.pr).map((s) => s.date))),
   );
+  const muscleSets = $derived(real ? api.muscle_sets : MUSCLE_SETS);
 
   const monthName = now.toLocaleDateString('en-US', { month: 'long' });
   const days = $derived.by(() => {
@@ -178,8 +251,10 @@
   <header class="stack-tight">
     <span class="hr-eyebrow">{longDate(todayKey)} · week of {shortDate(dateKey(monday))}</span>
     <h1 class="title screen-title">Progress</h1>
-    {#if !source.demo}
-      <p class="hr-exrow__note sample-note">Sample data: Progress is not connected to your logs yet.</p>
+    {#if apiStatus === 'loading'}
+      <span class="meta" role="status">Loading your progress…</span>
+    {:else if apiStatus === 'error'}
+      <p class="hr-exrow__note sample-note">Can't load progress without a connection. Today's session still counts below.</p>
     {/if}
   </header>
 
@@ -196,16 +271,16 @@
     </div>
     <div class="week-card">
       <span class="hr-eyebrow eyebrow-icon"><span class="recover-ink"><Icon name="pulse" /></span>Cardio</span>
-      <span class="week-card__value hr-num">{cardioDone} <small>/ {SERIES.cardio.goal} min</small></span>
+      <span class="week-card__value hr-num">{cardioDone} <small>/ {S.cardio.goal} min</small></span>
       <div
         class="hr-meter hr-meter--recover"
         role="progressbar"
         aria-label="Cardio minutes this week"
         aria-valuemin="0"
-        aria-valuemax={SERIES.cardio.goal}
+        aria-valuemax={S.cardio.goal}
         aria-valuenow={cardioDone}
       >
-        <div class="hr-meter__fill" style:width="{Math.min(100, (cardioDone / SERIES.cardio.goal) * 100)}%"></div>
+        <div class="hr-meter__fill" style:width="{Math.min(100, (cardioDone / (S.cardio.goal || 1)) * 100)}%"></div>
       </div>
       <span class="meta">{cardioPlanned ?? 'Nothing planned'}</span>
     </div>
@@ -213,7 +288,7 @@
 
   <section class="stack" aria-label="Measurements">
     <div class="metric-tabs" role="tablist" aria-label="Measurement">
-      {#each Object.entries(SERIES) as [id, s] (id)}
+      {#each Object.entries(S) as [id, s] (id)}
         <button
           class="metric-tab"
           class:metric-tab--recover={id === 'cardio'}
@@ -236,12 +311,18 @@
         </div>
       {/if}
       <span class="body-strong period-title">{r.title}</span>
+      {#if !r.pts.length}
+        <span class="hr-eyebrow">{m.name}</span>
+        <p class="body muted hint">
+          {metric === 'body' || metric === 'waist' ? 'No measurements logged yet.' : 'Nothing logged in this period yet.'}
+        </p>
+      {:else}
       <div class="stack-tight">
         <span class="hr-eyebrow">{m.name}</span>
         <span class="readout">
           <span class="readout__value hr-num">{readValue}</span>
           <span class="small muted">{readDetail}</span>
-          {#if cur[2] === 'stop'}<span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>{/if}
+          {#if cur?.[2] === 'stop'}<span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>{/if}
         </span>
       </div>
       {#if isBars}
@@ -250,6 +331,7 @@
         <LineChart points={linePoints} selected={sel} onselect={(i) => (picked = i)} {goal} area aria={chartAria} />
       {/if}
       <span class="meta">{chartFoot}</span>
+      {/if}
     </div>
   </section>
 
@@ -258,7 +340,7 @@
       <h2 id="muscles-h" class="heading screen-title">Sets per muscle group</h2>
       <span class="meta">This week</span>
     </div>
-    {#each MUSCLE_SETS as [name, sets] (name)}
+    {#each muscleSets as [name, sets] (name)}
       <div class="muscle-row">
         <span class="small muscle-row__name">{name}</span>
         <span class="muscle-bar" role="img" aria-label="{name}: {sets} sets, target {SETS_TARGET}">
@@ -267,6 +349,8 @@
         </span>
         <span class="muscle-row__n hr-num">{sets}</span>
       </div>
+    {:else}
+      <p class="body muted hint">No sets logged this week yet.</p>
     {/each}
     <span class="meta eyebrow-icon"><span class="tick-key"></span>Target: at least {SETS_TARGET} sets</span>
   </section>
@@ -328,6 +412,8 @@
           </span>
         {/if}
       </a>
+    {:else}
+      <p class="body muted hint">No records yet. A record needs a session to beat.</p>
     {/each}
   </section>
 </div>

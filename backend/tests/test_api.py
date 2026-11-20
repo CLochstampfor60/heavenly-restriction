@@ -2,36 +2,11 @@
 
 from datetime import date, timedelta
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
-
-from app import importer
-from app.db import get_db
-from app.main import app
 from app.prs import SetValue, is_pr
-from tests.conftest import FIXTURES
 
 MON = date(2026, 11, 16)
 WED = MON + timedelta(days=2)
 assert MON.weekday() == 0
-
-
-@pytest.fixture
-def client(engine, db):
-    importer.run(db, FIXTURES / "demo_program.xlsx", None)
-    factory = sessionmaker(bind=engine, expire_on_commit=False)
-
-    def override():
-        s = factory()
-        try:
-            yield s
-        finally:
-            s.close()
-
-    app.dependency_overrides[get_db] = override
-    yield TestClient(app)
-    app.dependency_overrides.clear()
 
 
 def plan(client, on=MON):

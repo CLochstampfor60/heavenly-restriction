@@ -40,3 +40,27 @@ def db(engine) -> Iterator[Session]:
     session = sessionmaker(bind=engine, expire_on_commit=False)()
     yield session
     session.close()
+
+
+@pytest.fixture
+def client(engine, db):
+    """API client on the made-up demo program."""
+    from fastapi.testclient import TestClient
+
+    from app import importer
+    from app.db import get_db
+    from app.main import app
+
+    importer.run(db, FIXTURES / "demo_program.xlsx", None)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+
+    def override():
+        s = factory()
+        try:
+            yield s
+        finally:
+            s.close()
+
+    app.dependency_overrides[get_db] = override
+    yield TestClient(app)
+    app.dependency_overrides.clear()

@@ -6,11 +6,13 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api import router
+from app.progress import router as progress_router
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 app = FastAPI(title="Heavenly Restriction")
 app.include_router(router)
+app.include_router(progress_router)
 
 
 @app.get("/api/health")

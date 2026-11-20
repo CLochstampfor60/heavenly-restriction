@@ -283,6 +283,8 @@ class WorkoutSession(Base):
         ForeignKey("program_day.id", ondelete="SET NULL")
     )
     gear: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Cardio Done / Skip ticks, keyed cardio1.. in the day's cardio_entry position order.
+    cardio: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     finished: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow

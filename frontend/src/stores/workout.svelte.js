@@ -89,10 +89,11 @@ function sessionRow() {
   });
 }
 
-// What the server keeps of the session-level state (cardio ticks stay on the phone for now).
+// What the server keeps of the session-level state.
 function serverState() {
   return {
     gear: { ...day.gear },
+    cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
     finished: day.finished,
     order: [...day.order],
     slots: Object.fromEntries(
@@ -207,7 +208,7 @@ function fromServer(s) {
   }));
   const order = s.order.filter((k) => day.slots[k]);
   for (const k of day.order) if (!order.includes(k)) order.push(k);
-  return { session: { order, gear: s.gear, finished: s.finished, slots }, sets, stops };
+  return { session: { order, gear: s.gear, finished: s.finished, slots, cardio: s.cardio ?? {} }, sets, stops };
 }
 
 // Call once before the first render.
@@ -224,7 +225,10 @@ export async function loadToday() {
     ]);
     if (session && session.program === day.programKey) {
       restore(session, sets, stops);
-    } else if (server && (server.sets.length || server.stops.length || server.finished)) {
+    } else if (
+      server &&
+      (server.sets.length || server.stops.length || server.finished || Object.keys(server.cardio ?? {}).length)
+    ) {
       const copy = fromServer(server);
       restore(copy.session, copy.sets, copy.stops);
       await db.sets.bulkPut(copy.sets);
