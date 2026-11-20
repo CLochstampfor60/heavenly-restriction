@@ -2,7 +2,7 @@
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
   import { setAccent, setTheme, settings } from '../settings.svelte.js';
-  import { setDemo } from '../mode.js';
+  import { DEMO_ONLY, setDemo } from '../mode.js';
   import { source } from '../stores/source.svelte.js';
   import { requestPersistence, storage } from '../stores/storage.svelte.js';
   import { resetToday } from '../stores/workout.svelte.js';
@@ -93,7 +93,8 @@
 
   <section class="stack" aria-labelledby="demo-label">
     <span id="demo-label" class="hr-eyebrow">Demo data</span>
-    <button class="hr-toggle" role="switch" aria-checked={source.demo} onclick={() => setDemo(!source.demo)}>
+    {#if DEMO_ONLY}<span class="meta">This copy runs in demo-only mode (shared on the network), so real data is off.</span>{/if}
+    <button class="hr-toggle" role="switch" aria-checked={source.demo} disabled={DEMO_ONLY} onclick={() => setDemo(!source.demo)}>
       <span class="option-text">
         <span>Use demo data</span>
         <span class="meta">Made-up program and history, for screenshots. Kept apart from your real sessions.</span>

@@ -48,15 +48,24 @@ Build the app and serve it, API and PWA from one origin, at http://127.0.0.1:800
 
 ```powershell
 npm --prefix frontend run build
-.\.venv\Scripts\python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+$env:PYTHONPATH = "backend"
+.\.venv\Scripts\python -m app
 ```
+
+The server answers on loopback only, so real data is never on the LAN: `python -m app` binds 127.0.0.1 and refuses any other address, and requests whose socket peer is not loopback get 403.
 
 To reach it from the phone, publish it to your tailnet over HTTPS with `tailscale serve --bg 8000` and open `https://app.example.ts.net`.
 
-Frontend with live reload while developing, at http://localhost:5173 (it proxies `/api` to the server above):
+Frontend with live reload while developing, at http://127.0.0.1:5173 (it proxies `/api` to the server above):
 
 ```powershell
 npm --prefix frontend run dev
+```
+
+`--host` is refused, because it would put the proxied real data on the LAN. To look at the UI from another device, use demo data with no API at all:
+
+```powershell
+npm --prefix frontend run dev:lan-demo
 ```
 
 ## Docker (not tested yet)

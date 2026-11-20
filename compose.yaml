@@ -24,6 +24,9 @@ services:
       DATABASE_URL: sqlite:////app/data/hr.db
       PROGRAM_XLSX_PATH: /program/program.xlsx
       IMPORT_OBSTACLES_PATH: /app/data/import-obstacles.md
+      # Requests reach the container from the bridge network; the host port below is the
+      # loopback-only boundary.
+      HR_ALLOW_REMOTE_CLIENTS: "1"
     volumes:
       - type: volume
         source: hr-data

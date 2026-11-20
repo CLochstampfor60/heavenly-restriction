@@ -62,5 +62,5 @@ def client(engine, db):
             s.close()
 
     app.dependency_overrides[get_db] = override
-    yield TestClient(app)
+    yield TestClient(app, client=("127.0.0.1", 50000))
     app.dependency_overrides.clear()

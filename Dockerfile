@@ -13,7 +13,7 @@ RUN npm run build
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/backend
+    PYTHONPATH=/app/backend     HR_IN_CONTAINER=1     HR_BIND_HOST=0.0.0.0
 WORKDIR /app
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
@@ -27,4 +27,4 @@ RUN useradd --system --uid 10001 --no-create-home hr \
     && chown 10001:10001 /app/data
 USER 10001
 EXPOSE 8000
-CMD ["sh", "-c", "alembic -c backend/alembic.ini upgrade head && exec python -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic -c backend/alembic.ini upgrade head && exec python -m app"]
