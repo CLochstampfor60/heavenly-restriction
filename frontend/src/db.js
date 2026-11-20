@@ -4,6 +4,7 @@
 //   stops:    one row per stop event: symptom, load, set and note.
 //   outbox:   writes waiting for the server, sent in order when online (real mode only).
 //   cache:    last API responses, so the program still opens with no signal.
+//   metrics:  bodyweight / waist entries not yet confirmed by the server (real mode).
 // Demo mode keeps its own database so made-up sessions never reach real data.
 import Dexie from 'dexie';
 import { isDemo } from './mode.js';
@@ -18,6 +19,9 @@ db.version(1).stores({
 db.version(2).stores({
   outbox: '++seq',
   cache: 'key',
+});
+db.version(3).stores({
+  metrics: 'date',
 });
 
 // Local calendar date, YYYY-MM-DD.

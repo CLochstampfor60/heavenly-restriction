@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import (
+    BodyMetric,
     CardioEntry,
     Exclusion,
     Exercise,
@@ -606,6 +607,71 @@ def delete_note(note_id: int, db: DB) -> Response:
             raise HTTPException(409, "Program notes change through the program, not here")
         db.delete(note)
         db.commit()
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------- body metrics
+
+# kind -> (API field, unit)
+METRICS = {"bodyweight": ("bodyweight_lb", "lb"), "waist": ("waist_in", "in")}
+
+
+def metrics_for(db: Session, on: Date) -> dict:
+    rows = db.scalars(select(BodyMetric).where(BodyMetric.date == on))
+    out = {"date": on.isoformat(), "bodyweight_lb": None, "waist_in": None}
+    for m in rows:
+        if m.kind in METRICS:
+            out[METRICS[m.kind][0]] = m.value
+    return out
+
+
+class MetricsIn(BaseModel):
+    # A field left out is unchanged; null removes that measurement for the day.
+    bodyweight_lb: float | None = Field(default=None, gt=0, lt=1000)
+    waist_in: float | None = Field(default=None, gt=0, lt=200)
+
+
+@router.get("/body-metrics")
+def list_metrics(db: DB, start: Date | None = None, end: Date | None = None) -> dict:
+    q = select(BodyMetric).order_by(BodyMetric.date)
+    if start is not None:
+        q = q.where(BodyMetric.date >= start)
+    if end is not None:
+        q = q.where(BodyMetric.date <= end)
+    by_date: dict[Date, dict] = {}
+    for m in db.scalars(q):
+        if m.kind not in METRICS:
+            continue
+        entry = by_date.setdefault(
+            m.date, {"date": m.date.isoformat(), "bodyweight_lb": None, "waist_in": None}
+        )
+        entry[METRICS[m.kind][0]] = m.value
+    return {"entries": list(by_date.values())}
+
+
+@router.put("/body-metrics/{date}")
+def put_metrics(date: Date, body: MetricsIn, db: DB) -> dict:
+    for kind, (field, unit) in METRICS.items():
+        if field not in body.model_fields_set:
+            continue
+        value = getattr(body, field)
+        row = db.scalar(select(BodyMetric).where(BodyMetric.date == date, BodyMetric.kind == kind))
+        if value is None:
+            if row is not None:
+                db.delete(row)
+        elif row is None:
+            db.add(BodyMetric(date=date, kind=kind, value=value, unit=unit))
+        else:
+            row.value = value
+    db.commit()
+    return metrics_for(db, date)
+
+
+@router.delete("/body-metrics/{date}", status_code=204)
+def delete_metrics(date: Date, db: DB) -> Response:
+    for row in db.scalars(select(BodyMetric).where(BodyMetric.date == date)):
+        db.delete(row)
+    db.commit()
     return Response(status_code=204)
 
 

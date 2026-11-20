@@ -18,9 +18,8 @@ from datetime import timedelta
 from fastapi import APIRouter
 from sqlalchemy import func, select
 
-from app.api import DAY_NAMES, DB, active_version
+from app.api import DAY_NAMES, DB, active_version, list_metrics
 from app.models import (
-    BodyMetric,
     Exercise,
     ProgramDay,
     ProgramVersion,
@@ -236,31 +235,9 @@ def progress(date: Date, db: DB) -> dict:
         }
     )
 
-    # ---- body metrics
-    body = {}
-    for kind in ("bodyweight", "waist"):
-        rows_m = db.scalars(
-            select(BodyMetric).where(BodyMetric.kind == kind).order_by(BodyMetric.date)
-        ).all()
-        month_pts = [
-            [f"{m.date.month}/{m.date.day}", m.value]
-            for m in rows_m
-            if (m.date.year, m.date.month) == (date.year, date.month)
-        ]
-        year_pts = []
-        for back in range(11, -1, -1):
-            m0 = month_start(date, back)
-            vals = [m.value for m in rows_m if (m.date.year, m.date.month) == (m0.year, m0.month)]
-            if vals:
-                year_pts.append(
-                    [
-                        m0.strftime("%b")[0],
-                        round(sum(vals) / len(vals), 2),
-                        None,
-                        m0.strftime("%b %Y"),
-                    ]
-                )
-        body[kind] = {"month": month_pts, "year": year_pts}
+    # ---- body metrics: raw entries for the last 12 months; the phone charts them, merged with
+    # any entries it has not synced yet.
+    body_entries = list_metrics(db, start=month_start(date, 11), end=date)["entries"]
 
     return {
         "date": date.isoformat(),
@@ -276,7 +253,7 @@ def progress(date: Date, db: DB) -> dict:
             "year": cardio_year,
         },
         "lift": lift,
-        "body": body,
+        "body_entries": body_entries,
         "muscle_sets": [[name, n] for name, n in muscle],
         "records": records,
     }

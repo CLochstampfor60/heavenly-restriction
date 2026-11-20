@@ -3,6 +3,8 @@
   import Icon from '../components/Icon.svelte';
   import LineChart, { fmt1 } from '../components/LineChart.svelte';
   import Nav from '../components/Nav.svelte';
+  import Sheet from '../components/Sheet.svelte';
+  import Stepper from '../components/Stepper.svelte';
   import { dateKey } from '../db.js';
   import { CATALOG } from '../fixtures/demo.js';
   import { HISTORY } from '../fixtures/history.js';
@@ -10,7 +12,8 @@
   import { longDate, sessionsFor, shortDate } from '../stores/history.js';
   import { source } from '../stores/source.svelte.js';
   import { cachedGet } from '../stores/sync.svelte.js';
-  import { dayStatus, setText } from '../stores/workout.svelte.js';
+  import { bodySeries, lastKnown, loadMetrics, metrics, removeMetrics, saveMetrics } from '../stores/metrics.svelte.js';
+  import { dayStatus, fmt, setText } from '../stores/workout.svelte.js';
 
   // Demo mode draws everything from the made-up fixtures; real mode from /api/progress.
   const sessionsOf = (id) => sessionsFor(id);
@@ -21,8 +24,12 @@
       .then(({ data }) => {
         api = data;
         apiStatus = 'ready';
+        loadMetrics(data.body_entries ?? []);
       })
-      .catch(() => (apiStatus = 'error'));
+      .catch(() => {
+        apiStatus = 'error';
+        loadMetrics([]); // still show what this phone saved
+      });
   }
   const real = $derived(!source.demo && api);
 
@@ -51,15 +58,18 @@
   const monthTitle = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   function realSeries(a) {
     const rng = (pts, title) => (pts?.length ? { title, pts, goal: false } : undefined);
-    const body = (base, data) => ({
-      ...base,
-      goal: null,
-      goalLabel: '',
-      ranges: { month: rng(data.month, monthTitle), year: rng(data.year, 'Last 12 months · monthly average') },
-    });
+    const body = (base, kind) => {
+      const data = bodySeries(kind, now);
+      return {
+        ...base,
+        goal: null,
+        goalLabel: '',
+        ranges: { month: rng(data.month, monthTitle), year: rng(data.year, 'Last 12 months · monthly average') },
+      };
+    };
     return {
-      body: body(SERIES.body, a.body.bodyweight),
-      waist: body(SERIES.waist, a.body.waist),
+      body: body(SERIES.body, 'bodyweight'),
+      waist: body(SERIES.waist, 'waist'),
       lift: {
         tab: 'Lift',
         icon: 'dumbbell',
@@ -237,6 +247,34 @@
   );
   const monthAttended = $derived(sessionDays.filter((d) => attended(d.status)).length);
 
+  // ---------- Log bodyweight and waist (real mode) ----------
+  let logOpen = $state(false);
+  let logDate = $state(todayKey);
+  let bw = $state(null);
+  let waist = $state(null);
+  const entry = $derived(metrics.byDate[logDate] ?? null);
+
+  function pickDate(d) {
+    logDate = d && d <= todayKey ? d : todayKey;
+    bw = metrics.byDate[logDate]?.bodyweight ?? null;
+    waist = metrics.byDate[logDate]?.waist ?? null;
+  }
+
+  function openLog() {
+    pickDate(todayKey);
+    logOpen = true;
+  }
+
+  function saveLog() {
+    saveMetrics(logDate, bw, waist);
+    logOpen = false;
+  }
+
+  function deleteLog() {
+    removeMetrics(logDate);
+    logOpen = false;
+  }
+
   const STATUS = {
     done: { icon: 'check', word: 'done' },
     partial: { icon: 'partial', word: 'partial' },
@@ -316,6 +354,9 @@
         <p class="body muted hint">
           {metric === 'body' || metric === 'waist' ? 'No measurements logged yet.' : 'Nothing logged in this period yet.'}
         </p>
+        {#if real && (metric === 'body' || metric === 'waist')}
+          <button class="hr-btn hr-btn--primary" onclick={openLog}><Icon name={m.icon} />Log weight and waist</button>
+        {/if}
       {:else}
       <div class="stack-tight">
         <span class="hr-eyebrow">{m.name}</span>
@@ -331,6 +372,9 @@
         <LineChart points={linePoints} selected={sel} onselect={(i) => (picked = i)} {goal} area aria={chartAria} />
       {/if}
       <span class="meta">{chartFoot}</span>
+      {#if real && (metric === 'body' || metric === 'waist')}
+        <button class="hr-btn hr-btn--secondary" onclick={openLog}><Icon name={m.icon} />Log weight and waist</button>
+      {/if}
       {/if}
     </div>
   </section>
@@ -418,3 +462,59 @@
   </section>
 </div>
 <Nav current="progress" />
+
+{#if logOpen}
+  <Sheet label="Log weight and waist" onclose={() => (logOpen = false)}>
+    <div class="stack-tight">
+      <span class="hr-eyebrow">Body measurements</span>
+      <h2 class="hr-sheet__title">{entry ? 'Edit' : 'Log'} weight and waist</h2>
+    </div>
+    <div class="stack-tight">
+      <label for="metric-date" class="hr-eyebrow">Date</label>
+      <input
+        id="metric-date"
+        class="text-field"
+        type="date"
+        max={todayKey}
+        value={logDate}
+        onchange={(e) => pickDate(e.currentTarget.value)}
+      >
+      <span class="meta">{entry ? 'Editing the entry for this day.' : 'No entry for this day yet.'}</span>
+    </div>
+    <div class="stepper-pair">
+      <Stepper
+        label="Bodyweight · lb"
+        value={bw}
+        placeholder={lastKnown('bodyweight', logDate)}
+        step={0.2}
+        inputmode="decimal"
+        ariaLabel="Bodyweight in pounds"
+        decLabel="Decrease bodyweight by 0.2 pounds"
+        incLabel="Increase bodyweight by 0.2 pounds"
+        onchange={(v) => (bw = v === null ? null : Math.round(v * 10) / 10)}
+      />
+      <Stepper
+        label="Waist · in"
+        value={waist}
+        placeholder={lastKnown('waist', logDate)}
+        step={0.5}
+        inputmode="decimal"
+        ariaLabel="Waist in inches, at the navel"
+        decLabel="Decrease waist by half an inch"
+        incLabel="Increase waist by half an inch"
+        onchange={(v) => (waist = v === null ? null : Math.round(v * 100) / 100)}
+      />
+    </div>
+    <span class="meta">Leave a field empty to skip it. Last value shown faded{bw === null && waist === null ? '' : `: saving ${[bw !== null && `${fmt(bw)} lb`, waist !== null && `${fmt(waist)} in`].filter(Boolean).join(' and ')}`}.</span>
+    <div class="stop-actions">
+      {#if entry}
+        <button class="hr-btn hr-btn--secondary" onclick={deleteLog}>Delete entry</button>
+      {:else}
+        <button class="hr-btn hr-btn--secondary" onclick={() => (logOpen = false)}>Cancel</button>
+      {/if}
+      <button class="hr-btn hr-btn--primary" disabled={bw === null && waist === null && !entry} onclick={saveLog}>
+        <Icon name="check" />Save
+      </button>
+    </div>
+  </Sheet>
+{/if}
