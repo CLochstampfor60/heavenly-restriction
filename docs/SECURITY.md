@@ -42,7 +42,9 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 
 ### Hostname
 - **Planned.** One stable service name, `hr.<tailnet>.ts.net`, that moves from the workstation to
-  the NAS unchanged. WebAuthn passkeys are bound to the relying-party ID (the hostname), so
+  the NAS unchanged. It is a Tailscale Service (`svc:hr`, client 1.86 or later): the name
+  belongs to the service, not to a machine, and the host is a tagged device approved for it, so
+  moving to the NAS means advertising `svc:hr` there and retiring the old host. WebAuthn passkeys are bound to the relying-party ID (the hostname), so
   changing it would strand every enrolled passkey.
 - Note: `tailscale serve` uses a public certificate, and certificates are logged in public
   Certificate Transparency logs. The hostname is therefore discoverable; the app is not reachable
@@ -61,9 +63,8 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   once and stored as hashes; a TOTP code works once (replay guard). Set up from Settings while
   signed in.
 - **Done.** Five failures of the same kind (sign-in, setup code, enrollment code) within 15
-  minutes lock that
-  action for 15 minutes (429). Pending sign-in challenges are single use, expire after five
-  minutes and are capped in number.
+  minutes lock that action for 15 minutes (429). Pending sign-in challenges are single use,
+  expire after five minutes and are capped in number.
 
 ### Sessions
 - **Done.** Server-side sessions; the server stores only a SHA-256 of the token. The cookie is
