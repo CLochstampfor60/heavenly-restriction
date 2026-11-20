@@ -19,6 +19,7 @@ Screenshots use the app's built-in demo data (a made-up program and history), ca
 - **Code:** written with Claude Code.
 - **Scope, decisions and review:** mine. I set the scope, made or reviewed the decisions, and checked the changes before they went in.
 - **Stack:** Python 3.12, FastAPI, SQLAlchemy 2 + Alembic on SQLite; a Svelte 5 PWA with Dexie (IndexedDB) so a set logs with no signal and syncs later. One origin, no third-party services.
+- **Security:** threat model and decisions, done and planned, in [docs/SECURITY.md](docs/SECURITY.md).
 - **Privacy:** the real program and logs never enter the repo. The program is imported from a spreadsheet kept outside it, demo data is made up, and a local pre-commit hook blocks any staged line that contains a string from a private, gitignored list.
 
 ## Run it (Windows, PowerShell)
