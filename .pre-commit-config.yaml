@@ -18,3 +18,13 @@ repos:
     hooks:
       - id: ruff-check
       - id: ruff-format
+  # Leak guard: blocks staged lines containing anything in internal_docs/private-strings.txt
+  # (gitignored, local only). Skipped with a note when that file does not exist.
+  - repo: local
+    hooks:
+      - id: private-strings
+        name: private strings (internal_docs/private-strings.txt)
+        entry: python scripts/check_private_strings.py
+        language: python
+        pass_filenames: false
+        always_run: true
