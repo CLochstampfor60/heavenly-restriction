@@ -62,3 +62,18 @@ def test_skips_without_list(tmp_path: Path) -> None:
     git(repo, "init", "-q")
     result = run(repo)
     assert result.returncode == 0 and "skipped" in result.stdout
+
+
+def test_history_finds_removed_string_and_messages(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path)
+    ident = ["-c", "user.name=t", "-c", "user.email=t@example.com"]
+    (repo / "notes.md").write_text("zebra-quartz-7731\n", encoding="utf-8")
+    git(repo, "add", "notes.md")
+    git(repo, *ident, "commit", "-qm", "first")
+    (repo / "notes.md").write_text("clean\n", encoding="utf-8")
+    git(repo, "add", "notes.md")
+    git(repo, *ident, "commit", "-qm", "mentions cap 999 lb in the message")
+    assert run(repo, "--all").returncode == 0  # gone from the files
+    result = run(repo, "--history")
+    assert result.returncode == 1
+    assert ":notes.md:1" in result.stdout and ":message:1" in result.stdout

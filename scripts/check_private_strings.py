@@ -6,6 +6,8 @@ one per line, matched case-insensitively as substrings, # starts a comment. With
 
     python scripts/check_private_strings.py          # staged added lines (the pre-commit hook)
     python scripts/check_private_strings.py --all    # every tracked file, for an audit
+    python scripts/check_private_strings.py --history  # every commit message and every line
+                                                       # ever added, on every ref
 
 Matches are reported by file and line with the string masked, so the output is safe to share.
 Binary files (images, .xlsx) are not text-scanned; check those by eye.
@@ -56,6 +58,31 @@ def staged_lines() -> list[tuple[str, int, str]]:
     return out
 
 
+def history_lines() -> list[tuple[str, int, str]]:
+    """(commit:file or commit:message, line, text) for every message line and added line."""
+    log = git("log", "--all", "-p", "--no-color", "--no-ext-diff", "--format=@@@COMMIT %H%n%B")
+    out, where, line_no = [], "", 0
+    for raw in log.splitlines():
+        if raw.startswith("@@@COMMIT "):
+            commit = raw.split()[1][:9]
+            where, line_no = f"{commit}:message", 0
+        elif raw.startswith("diff --git "):
+            where, line_no = "", 0
+        elif raw.startswith("+++ "):
+            where = f"{commit}:{raw[6:]}" if raw.startswith("+++ b/") else ""
+        elif raw.startswith("@@") and where and not where.endswith(":message"):
+            line_no = int(raw.split("+", 1)[1].split(" ", 1)[0].split(",")[0]) - 1
+        elif where.endswith(":message"):
+            line_no += 1
+            out.append((where, line_no, raw))
+        elif raw.startswith("+") and where:
+            line_no += 1
+            out.append((where, line_no, raw[1:]))
+        elif raw.startswith(" ") and where:
+            line_no += 1
+    return out
+
+
 def tracked_lines() -> list[tuple[str, int, str]]:
     out = []
     for path in git("ls-files", "-z").split("\0"):
@@ -73,12 +100,18 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--list", type=Path, default=DEFAULT_LIST)
     parser.add_argument("--all", action="store_true", help="scan every tracked file")
+    parser.add_argument("--history", action="store_true", help="scan all history, every ref")
     args = parser.parse_args(argv)
     if not args.list.is_file():
         print(f"private-strings: no {args.list}; skipped.")
         return 0
     needles = load(args.list)
-    lines = tracked_lines() if args.all else staged_lines()
+    if args.history:
+        lines = history_lines()
+    elif args.all:
+        lines = tracked_lines()
+    else:
+        lines = staged_lines()
     hits = [
         (path, n, needle) for path, n, text in lines for needle in needles if needle in text.lower()
     ]
