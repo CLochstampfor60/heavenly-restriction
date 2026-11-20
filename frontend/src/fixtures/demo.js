@@ -6,7 +6,7 @@
 // `media` links open outside the app; uploaded clips and photos come with media upload.
 const exercises = {
   pull: {
-    name: 'Assisted Pull-up', region: 'Back › Lats', equip: 'Machine', also: 'biceps', grade: 'Grade 3',
+    name: 'Assisted Pull-up', region: 'Back › Lats', equip: 'Machine', also: 'biceps', grade: 'Grade 3', assisted: true,
     last: [{ w: 50, r: 8 }], lastText: 'last −50 lb assist × 8',
   },
   lat: {

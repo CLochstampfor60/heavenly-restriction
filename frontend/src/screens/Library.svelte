@@ -1,10 +1,10 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
-  import { CATALOG, PROGRAM } from '../fixtures/demo.js';
+  import { loadLibrary } from '../stores/source.svelte.js';
   import { lastText } from '../stores/workout.svelte.js';
 
-  const REGIONS = ['Back', 'Core', 'Chest', 'Shoulders', 'Arms', 'Legs', 'Hips'];
+  const REGIONS = ['Back', 'Core', 'Chest', 'Shoulders', 'Arms', 'Legs', 'Hips', 'Other'];
   const FILTERS = [
     { id: 'all', label: 'All' },
     { id: 'program', label: 'In my program' },
@@ -12,22 +12,15 @@
     { id: 'excluded', label: 'Excluded' },
   ];
 
-  const inProgram = new Set(PROGRAM.slots.map((s) => s.exercise));
   // Substitutes: listed under a program exercise's swaps but not in the program themselves.
-  const substitutes = new Set(
-    [...inProgram].flatMap((id) => [...(CATALOG[id].subs ?? []), ...(CATALOG[id].same ?? [])]).filter((id) => !inProgram.has(id)),
-  );
-  const all = Object.values(CATALOG).map((ex) => {
-    const [region, muscle] = ex.region.split(' › ');
-    return {
-      ...ex,
-      regionName: region,
-      muscle,
-      programDay: inProgram.has(ex.id) ? PROGRAM.name : ex.day,
-      hasVideo: !!ex.media?.length,
-      sub: substitutes.has(ex.id),
-    };
-  });
+  let all = $state([]);
+  let status = $state('loading');
+  loadLibrary(lastText)
+    .then((rows) => {
+      all = rows;
+      status = 'ready';
+    })
+    .catch(() => (status = 'error'));
 
   let query = $state('');
   let filter = $state('all');
@@ -61,7 +54,7 @@
       };
     }).filter((rg) => (filtering ? rg.shown > 0 : rg.total > 0)),
   );
-  const exerciseCount = all.filter((ex) => !ex.excluded).length;
+  const exerciseCount = $derived(all.filter((ex) => !ex.excluded).length);
 
   function rowLabel(ex) {
     return [ex.name, ex.programDay && `in ${ex.programDay}`, ex.grade, ex.hasVideo && 'has video', ex.excluded && 'excluded']
@@ -110,7 +103,7 @@
                   <a class="lib-row" class:lib-row--excluded={ex.excluded} href="#/exercise/{ex.id}" aria-label={rowLabel(ex)}>
                     <span class="option-text">
                       <span class="option-name">{ex.name}</span>
-                      <span class="meta">{ex.equip} · {lastText(ex)}{ex.sub ? ' · substitute' : ''}</span>
+                      <span class="meta">{ex.excluded ? (ex.excluded.kind === 'goal' ? 'Goal call, can come back' : `${ex.excluded.label ?? 'Joint'} · permanent`) : `${ex.equip} · ${ex.lastText}${ex.sub ? ' · substitute' : ''}`}</span>
                     </span>
                     <span class="lib-row__marks">
                       <span class="lib-row__top">
@@ -128,7 +121,9 @@
         {/if}
       </div>
     {:else}
-      <p class="small muted empty-note">No exercises match. Try another name or clear the filter.</p>
+      <p class="small muted empty-note">
+        {status === 'loading' ? 'Loading…' : status === 'error' ? "Can't load the library without a connection." : 'No exercises match. Try another name or clear the filter.'}
+      </p>
     {/each}
   </div>
 </div>

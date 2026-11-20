@@ -10,5 +10,5 @@ import { loadToday } from './stores/workout.svelte.js';
 
 watchSystemTheme();
 
-// Resume today's session from this device before the first render.
+// Load today's program (API, or demo data) and resume the session before the first render.
 loadToday().then(() => mount(App, { target: document.getElementById('app') }));

@@ -201,6 +201,9 @@ def test_library_and_card(client) -> None:
     assert card["plan"] == [
         {"day": "Wed", "code": "1", "sets_text": "3", "target_text": "6-8", "optional": False}
     ]
+    assert set(card["related"]) == {str(sw["id"]) for sw in card["swaps"]} | {
+        str(i) for i in card["same"]
+    }
     assert client.get("/api/exercises/99999").status_code == 404
 
 

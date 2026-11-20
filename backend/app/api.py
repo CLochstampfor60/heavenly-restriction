@@ -709,9 +709,15 @@ def card(exercise_id: int, db: DB) -> dict:
                 "note": note.text if note else "",
             }
         )
+    related = {}
+    for other_id in [sw["id"] for sw in summary["swaps"]] + summary["same"]:
+        other = db.get(Exercise, other_id)
+        if other is not None:
+            related[other.id] = exercise_summary(db, other, version, Date.max, day_names)
     excl = ex.exclusion
     return {
         **summary,
+        "related": related,
         "plan": plan,
         "excluded": None
         if excl is None

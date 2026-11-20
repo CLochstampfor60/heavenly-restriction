@@ -2,6 +2,8 @@
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
   import { setAccent, setTheme, settings } from '../settings.svelte.js';
+  import { setDemo } from '../mode.js';
+  import { source } from '../stores/source.svelte.js';
   import { resetToday } from '../stores/workout.svelte.js';
 
   const THEMES = [
@@ -75,7 +77,14 @@
 
   <section class="stack" aria-labelledby="demo-label">
     <span id="demo-label" class="hr-eyebrow">Demo data</span>
-    <span class="meta">Clears today's session from this device and starts the demo again.</span>
+    <button class="hr-toggle" role="switch" aria-checked={source.demo} onclick={() => setDemo(!source.demo)}>
+      <span class="option-text">
+        <span>Use demo data</span>
+        <span class="meta">Made-up program and history, for screenshots. Kept apart from your real sessions.</span>
+      </span>
+      <span class="hr-toggle__switch"></span>
+    </button>
+    <span class="meta">Reset clears today's session from this device{source.demo ? ' and starts the demo again' : ''}.{source.demo ? '' : ' Anything already sent to the server stays there.'}</span>
     {#if confirmReset}
       <div class="stop-actions">
         <button class="hr-btn hr-btn--secondary" onclick={() => (confirmReset = false)}>Cancel</button>

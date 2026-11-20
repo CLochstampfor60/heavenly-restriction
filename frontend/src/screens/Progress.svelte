@@ -8,7 +8,11 @@
   import { HISTORY } from '../fixtures/history.js';
   import { calendarStatus, MUSCLE_SETS, SERIES, SETS_TARGET, YEAR_END } from '../fixtures/progress.js';
   import { longDate, sessionsFor, shortDate } from '../stores/history.js';
+  import { source } from '../stores/source.svelte.js';
   import { dayStatus } from '../stores/workout.svelte.js';
+
+  // Progress is not connected to real logs yet: in real mode it shows the made-up history.
+  const sessionsOf = (id) => (source.demo ? sessionsFor(id) : sessionsFor(id, HISTORY, CATALOG));
 
   const now = new Date();
   const todayKey = dateKey(now);
@@ -50,7 +54,7 @@
 
   const liftMonth = $derived.by(() => {
     const month = todayKey.slice(0, 7);
-    const pts = sessionsFor(SERIES.lift.exercise)
+    const pts = sessionsOf(SERIES.lift.exercise)
       .filter((s) => s.date.startsWith(month))
       .map((s) => [shortDate(s.date), s.stop ? s.stop.w : s.e1, s.stop ? 'stop' : null]);
     return { title: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), pts };
@@ -128,7 +132,7 @@
   // ---------- Records and calendar ----------
   const records = $derived(
     Object.keys(HISTORY)
-      .map((id) => ({ id, s: sessionsFor(id).findLast((x) => x.pr) }))
+      .map((id) => ({ id, s: sessionsOf(id).findLast((x) => x.pr) }))
       .filter((x) => x.s)
       .sort((a, b) => (a.s.date < b.s.date ? 1 : -1))
       .map(({ id, s }) => ({
@@ -140,7 +144,7 @@
       })),
   );
   const prDays = $derived(
-    new Set(Object.keys(HISTORY).flatMap((id) => sessionsFor(id).filter((s) => s.pr).map((s) => s.date))),
+    new Set(Object.keys(HISTORY).flatMap((id) => sessionsOf(id).filter((s) => s.pr).map((s) => s.date))),
   );
 
   const monthName = now.toLocaleDateString('en-US', { month: 'long' });
@@ -174,6 +178,9 @@
   <header class="stack-tight">
     <span class="hr-eyebrow">{longDate(todayKey)} · week of {shortDate(dateKey(monday))}</span>
     <h1 class="title screen-title">Progress</h1>
+    {#if !source.demo}
+      <p class="hr-exrow__note sample-note">Sample data: Progress is not connected to your logs yet.</p>
+    {/if}
   </header>
 
   <section class="week-cards" aria-label="This week">

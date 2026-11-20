@@ -1,24 +1,28 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import LineChart, { fmt1 } from '../components/LineChart.svelte';
-  import { CATALOG, PROGRAM } from '../fixtures/demo.js';
   import { go } from '../router.svelte.js';
-  import { longDate, sessionsFor, shortDate } from '../stores/history.js';
-  import { clock, lastText } from '../stores/workout.svelte.js';
+  import { chartRule, longDate, sessionsFor, shortDate } from '../stores/history.js';
+  import { CATALOG, PROGRAM } from '../stores/source.svelte.js';
+  import { clock, lastText, setText, targetText } from '../stores/workout.svelte.js';
 
   let { id } = $props();
 
   const ex = $derived(CATALOG[id]);
-  const slot = $derived(PROGRAM.slots.find((s) => s.exercise === id));
+  const slot = $derived(PROGRAM.slots.find((s) => String(s.exercise) === String(id)));
+  const rule = $derived(chartRule(ex));
+  // Assisted: less assistance is the improvement.
+  const better = (delta) => (ex.assisted ? delta < 0 : delta > 0);
   const sessions = $derived(sessionsFor(id));
   const live = $derived(sessions.filter((s) => !s.stop && s.top));
   const best = $derived(live.reduce((a, s) => (!a || s.e1 > a.e1 ? s : a), null));
   const latest = $derived(live.at(-1));
   const gain = $derived(live.length > 1 ? latest.e1 - live[0].e1 : 0);
+  const planned = $derived(ex.plan?.[0]);
   const pinned = $derived(ex.pinned ?? []);
   const lastNote = $derived(sessions.findLast((s) => s.note && !s.today));
 
-  let metric = $state('top');
+  let metric = $state('top'); // 'top' or 'e1'; e1 only for weighted reps
   let picked = $state(null);
   const sel = $derived(picked ?? sessions.length - 1);
   const cur = $derived(sessions[sel]);
@@ -26,17 +30,17 @@
   const points = $derived(
     sessions.map((s) => ({
       x: shortDate(s.date),
-      value: metric === 'top' ? (s.top?.w ?? 0) : s.e1,
+      value: rule.e1 && metric === 'top' && s.top?.w ? s.top.w : s.e1,
       pr: s.pr,
       stopped: !!s.stop,
     })),
   );
   const stopCount = $derived(sessions.filter((s) => s.stop).length);
-  const measure = $derived(metric === 'top' ? 'Top set' : 'Est. 1RM');
+  const measure = $derived(!rule.e1 ? rule.label : metric === 'top' ? 'Top set' : 'Est. 1RM');
   const chartAria = $derived(
     live.length
-      ? `${metric === 'top' ? 'Top set weight' : 'Estimated one-rep max'} over ${sessions.length} sessions, from ` +
-          `${fmt1(points.find((p) => !p.stopped).value)} to ${fmt1(points.findLast((p) => !p.stopped).value)} pounds` +
+      ? `${measure} over ${sessions.length} sessions, from ` +
+          `${fmt1(points.find((p) => !p.stopped).value)} to ${fmt1(points.findLast((p) => !p.stopped).value)} ${rule.unit === 's' ? 'seconds' : 'pounds'}` +
           (stopCount ? `, ${stopCount} stop event${stopCount > 1 ? 's' : ''}` : '')
       : '',
   );
@@ -45,10 +49,10 @@
   const subs = $derived([
     ...(ex.subs ?? []).map((sid, k) => ({ id: sid, rank: String(k + 1), kind: 'Your pick' })),
     ...(ex.same ?? []).map((sid) => ({ id: sid, rank: '—', kind: 'Same muscle' })),
-  ]);
+  ].filter((sub, k, all) => CATALOG[sub.id] && all.findIndex((x) => x.id === sub.id) === k));
 
   function setsText(s) {
-    return s.sets.map((x) => (x.stopped ? `${fmt1(x.w)}${x.r ? `×${x.r}` : ''} stopped` : `${fmt1(x.w)}×${x.r}`)).join(' · ');
+    return s.sets.map((x) => (x.stopped ? `${fmt1(x.w)} lb stopped` : setText(ex, x))).join(' · ');
   }
 
   function stopText(s) {
@@ -81,17 +85,17 @@
       <div class="hr-stat">
         <span class="hr-eyebrow">Best</span>
         {#if best}
-          <span class="hr-stat__value">{fmt1(best.top.w)} × {best.top.r}</span>
+          <span class="hr-stat__value">{setText(ex, best.top)}</span>
           <span class="hr-stat__sub" class:sub-flash={best.pr}>{best.pr ? 'PR · ' : ''}{shortDate(best.date)}</span>
         {:else}
           <span class="hr-stat__value">—</span><span class="hr-stat__sub">{lastText(ex)}</span>
         {/if}
       </div>
       <div class="hr-stat">
-        <span class="hr-eyebrow">Est. 1RM</span>
+        <span class="hr-eyebrow">{rule.e1 ? 'Est. 1RM' : rule.label}</span>
         {#if latest}
-          <span class="hr-stat__value">{Math.round(latest.e1)} <small>lb</small></span>
-          <span class="hr-stat__sub" class:sub-accent={gain > 0}>
+          <span class="hr-stat__value">{Math.round(latest.e1)} <small>{rule.e1 ? 'lb' : rule.unit}</small></span>
+          <span class="hr-stat__sub" class:sub-accent={better(gain)}>
             {gain > 0 ? `+${Math.round(gain)}` : Math.round(gain)} since {shortDate(live[0].date)}
           </span>
         {:else}
@@ -100,8 +104,11 @@
       </div>
       <div class="hr-stat">
         <span class="hr-eyebrow">Plan</span>
-        {#if slot}
-          <span class="hr-stat__value">{slot.sets} × {slot.reps}</span>
+        {#if planned}
+          <span class="hr-stat__value">{planned.sets_text} × {planned.target_text}</span>
+          <span class="hr-stat__sub">{ex.plan.map((p) => p.day).join(' · ')}</span>
+        {:else if slot}
+          <span class="hr-stat__value">{slot.setsText} × {targetText(slot)}</span>
           <span class="hr-stat__sub">Rest {clock(slot.rest)}</span>
         {:else}
           <span class="hr-stat__value">—</span>
@@ -126,9 +133,21 @@
     </section>
   {/if}
 
-  {#if pinned.length || lastNote}
+  {#if pinned.length || lastNote || ex.excluded?.reason}
     <section class="stack" aria-labelledby="notes-h">
       <h2 id="notes-h" class="heading screen-title">Notes</h2>
+      {#if ex.excluded?.reason}
+        <div class="hr-note">
+          <span class="hr-note__icon"><Icon name="stop" /></span>
+          <span>
+            <span class="hr-note__kind">
+              Excluded · {ex.excluded.kind === 'goal' ? 'goal call, can come back' : 'spine / joint, does not come back on a goal change'}
+            </span>
+            <span class="hr-note__body note-block">{ex.excluded.reason}</span>
+            {#if ex.excluded.revisit}<span class="meta">Revisit: {ex.excluded.revisit}</span>{/if}
+          </span>
+        </div>
+      {/if}
       {#each pinned as note (note.text)}
         <div class="hr-note">
           <span class="hr-note__icon"><Icon name="pin" /></span>
@@ -157,19 +176,22 @@
         {sessions.length ? `${measure}, last ${sessions.length} session${sessions.length > 1 ? 's' : ''}` : 'History'}
       </h2>
     </div>
-    {#if sessions.length}
+    {#if sessions.length && rule.e1}
       <div class="hr-seg" role="group" aria-label="Chart measure">
         <button class="hr-seg__btn" aria-pressed={metric === 'top'} onclick={() => (metric = 'top')}>Top set</button>
         <button class="hr-seg__btn" aria-pressed={metric === 'e1'} onclick={() => (metric = 'e1')}>Est. 1RM</button>
       </div>
+    {/if}
+    {#if sessions.length}
       <div class="readout">
         <span class="readout__value hr-num">
           {#if cur.stop}{fmt1(cur.stop.w)}{cur.stop.r ? ` × ${cur.stop.r}` : ' lb'}
-          {:else if metric === 'top'}{fmt1(cur.top.w)} × {cur.top.r}
+          {:else if !cur.top}—
+          {:else if metric === 'top' || !rule.e1}{setText(ex, cur.top)}
           {:else}{fmt1(cur.e1)} lb{/if}
         </span>
         <span class="small muted">
-          {longDate(cur.date)}{cur.today ? ' · today' : ''}{!cur.stop && metric === 'e1' ? ` · from ${fmt1(cur.top.w)} × ${cur.top.r}` : ''}
+          {longDate(cur.date)}{cur.today ? ' · today' : ''}{!cur.stop && rule.e1 && metric === 'e1' && cur.top ? ` · from ${setText(ex, cur.top)}` : ''}
         </span>
         {#if cur.pr}<span class="hr-pr hr-pr--quiet"><Icon name="bolt" />PR</span>{/if}
         {#if cur.stop}<span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>{/if}

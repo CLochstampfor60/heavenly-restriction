@@ -8,15 +8,20 @@
     clock,
     day,
     exerciseFor,
+    finishSlot,
     fmt,
     later,
+    loggedCount,
     logSet,
+    measureFor,
     nextTodo,
     openSwap,
+    planText,
     priorFor,
     rest,
     start,
     stopSlot,
+    targetText,
     ui,
     undoSet,
   } from '../stores/workout.svelte.js';
@@ -32,17 +37,32 @@
   const active = $derived(slot.sets.findIndex((s) => s.status === 'todo'));
   const working = $derived(slot.status === 'active' && active !== -1);
   const lastLogged = $derived(slot.sets.findLastIndex((s) => s.status === 'done' || s.status === 'pr'));
-  const prior = $derived(priorFor(ex, Math.max(active, 0)));
+  const prior = $derived(priorFor(ex, Math.max(active, 0), slot));
+  const m = $derived(measureFor(slot));
+  const timed = $derived(m.measure === 'seconds');
+  const side = $derived(m.perSide ? ' / side' : '');
+  const wUnit = $derived(m.assisted ? 'lb assist' : 'lb');
+  const nUnit = $derived(`${timed ? 's' : 'reps'}${side}`);
+  const logged = $derived(loggedCount(slot));
+  const canFinish = $derived(working && logged >= slot.plan.setsMin && logged > 0 && logged < slot.sets.length);
+  const isPlanned = $derived(ex.id === slot.exerciseId || ex.id === slot.plan.alt);
+  // The program's cue for this slot (and any load cap) when doing the planned exercise.
+  const pinned = $derived.by(() => {
+    const own = ex.pinned ?? [];
+    const notes = isPlanned && slot.plan.notes.length ? [...own.filter((p) => p.kind === 'cap'), ...slot.plan.notes] : own;
+    return notes.filter((x, k) => notes.findIndex((y) => y.text === x.text) === k);
+  });
   const banner = $derived(ui.banner?.slotId === slotId ? ui.banner : null);
   const next = $derived(nextTodo());
   const stopped = $derived(slot.sets.find((s) => s.status === 'stopped'));
 
   // Edited values for the active set; null means "use last time's value".
   let w = $state(null);
-  let r = $state(null);
+  let n = $state(null); // reps, or seconds for timed sets
   let rir = $state(null);
-  const curW = $derived(w ?? prior.w);
-  const curR = $derived(r ?? prior.r);
+  const priorN = $derived((timed ? prior.s : prior.r) ?? slot.plan.target.min ?? 0);
+  const curW = $derived(w ?? prior.w ?? 0);
+  const curN = $derived(n ?? priorN);
 
   let noteOpen = $state(false);
   let stopOpen = $state(false);
@@ -50,9 +70,9 @@
   let stopNote = $state('');
 
   function log() {
-    logSet(slotId, { w: curW, r: curR, rir });
+    logSet(slotId, timed ? { w: curW, s: curN, rir } : { w: curW, r: curN, rir });
     w = null;
-    r = null;
+    n = null;
     rir = null;
   }
 
@@ -93,7 +113,7 @@
     </div>
     <div class="exh-indent exh-meta-row">
       <span class="hr-tag">{ex.region}</span>
-      <span class="hr-exh__meta">{slot.plan.sets} sets · {slot.plan.reps} reps · rest {clock(slot.plan.rest)}</span>
+      <span class="hr-exh__meta">{planText(slot)} · rest {clock(slot.plan.rest)}</span>
     </div>
     {#if slot.status === 'active' || slot.status === 'todo'}
       <div class="hr-exh__actions exh-indent">
@@ -109,10 +129,10 @@
     {/if}
   </header>
 
-  {#if ex.pinned?.length}
+  {#if pinned.length}
     <button class="hr-note note-toggle" aria-expanded={noteOpen} onclick={() => (noteOpen = !noteOpen)}>
       <span class="hr-note__icon"><Icon name="pin" /></span>
-      <span class="note-text" class:note-text--clamped={!noteOpen}><b>Pinned ·</b>{' '}{ex.pinned.map((p) => p.text).join(' ')}</span>
+      <span class="note-text" class:note-text--clamped={!noteOpen}><b>Pinned ·</b>{' '}{pinned.map((p) => p.text).join(' ')}</span>
       <span class="meta-strong">{noteOpen ? 'Less' : 'More'}</span>
     </button>
   {/if}
@@ -123,7 +143,7 @@
       <span>
         <b>New personal record</b>
         <span class="hr-pr-banner__sub">
-          <span class="hr-flash-text">Black Flash</span> · {fmt(banner.w)} lb × {banner.r} · est. 1RM {banner.e1} lb
+          <span class="hr-flash-text">Black Flash</span> · {banner.text}{banner.e1 ? ` · est. 1RM ${banner.e1} lb` : ''}
         </span>
       </span>
     </div>
@@ -133,7 +153,8 @@
     {#each slot.sets as set, k (k)}
       {@const isActive = working && k === active}
       {@const todo = set.status === 'todo'}
-      {@const p = priorFor(ex, k)}
+      {@const p = priorFor(ex, k, slot)}
+      {@const pN = (timed ? p.s : p.r) ?? slot.plan.target.min}
       {@const logged = set.status === 'done' || set.status === 'pr'}
       <div
         role="listitem"
@@ -150,23 +171,23 @@
           {:else}{k + 1}{/if}
         </span>
         {#if todo}
-          <span class="hr-set__v hr-set__v--faded">{fmt(p.w)}<small>lb</small></span>
-          <span class="hr-set__v hr-set__v--faded">{p.r}<small>reps</small></span>
+          <span class="hr-set__v hr-set__v--faded">{fmt(p.w)}<small>{wUnit}</small></span>
+          <span class="hr-set__v hr-set__v--faded">{fmt(pN)}<small>{nUnit}</small></span>
         {:else if set.status === 'skipped'}
           <span class="hr-set__v">—</span>
           <span class="hr-set__v">Skipped</span>
         {:else if set.status === 'stopped'}
-          <span class="hr-set__v">{fmt(set.w)}<small>lb</small></span>
+          <span class="hr-set__v">{fmt(set.w)}<small>{wUnit}</small></span>
           <span class="hr-set__v set-v-stopped">Stopped</span>
         {:else}
-          <span class="hr-set__v">{fmt(set.w)}<small>lb</small></span>
-          <span class="hr-set__v">{set.r}<small>reps</small></span>
+          <span class="hr-set__v">{fmt(set.w)}<small>{wUnit}</small></span>
+          <span class="hr-set__v">{fmt(timed ? set.s : set.r)}<small>{nUnit}</small></span>
         {/if}
 
         {#if isActive}
           <button
             class="hr-set__check"
-            aria-label="Log set {k + 1} with {curW === p.w && curR === p.r ? 'last time’s values, ' : ''}{fmt(curW)} pounds for {curR} reps"
+            aria-label="Log set {k + 1} with {w === null && n === null ? 'last time’s values, ' : ''}{fmt(curW)} pounds{m.assisted ? ' of assistance' : ''} for {fmt(curN)} {timed ? 'seconds' : 'reps'}{side ? ' each side' : ''}"
             onclick={log}
           >
             <span class="hr-box"></span>
@@ -198,26 +219,26 @@
     {/if}
     <div class="stepper-pair">
       <Stepper
-        label="Weight · lb"
+        label={m.assisted ? 'Assist · lb · less is better' : 'Weight · lb'}
         value={w}
-        placeholder={prior.w}
+        placeholder={prior.w ?? 0}
         step={2.5}
         inputmode="decimal"
-        ariaLabel="Weight in pounds for set {active + 1}, last time {fmt(prior.w)}"
-        decLabel="Decrease weight by 2.5 pounds"
-        incLabel="Increase weight by 2.5 pounds"
+        ariaLabel="{m.assisted ? 'Assistance' : 'Weight'} in pounds for set {active + 1}, last time {fmt(prior.w)}"
+        decLabel="Decrease {m.assisted ? 'assistance' : 'weight'} by 2.5 pounds"
+        incLabel="Increase {m.assisted ? 'assistance' : 'weight'} by 2.5 pounds"
         onchange={(v) => (w = v)}
       />
       <Stepper
-        label="Reps · target {slot.plan.reps}"
-        value={r}
-        placeholder={prior.r}
-        step={1}
+        label="{timed ? 'Seconds' : 'Reps'} · target {isPlanned ? targetText(slot.plan) : 'any'}"
+        value={n}
+        placeholder={priorN}
+        step={timed ? 5 : 1}
         inputmode="numeric"
-        ariaLabel="Reps for set {active + 1}, last time {prior.r}"
-        decLabel="Decrease reps"
-        incLabel="Increase reps"
-        onchange={(v) => (r = v === null ? null : Math.round(v))}
+        ariaLabel="{timed ? 'Seconds' : 'Reps'}{side ? ' each side' : ''} for set {active + 1}, last time {fmt(priorN)}"
+        decLabel="Decrease {timed ? 'seconds by 5' : 'reps'}"
+        incLabel="Increase {timed ? 'seconds by 5' : 'reps'}"
+        onchange={(v) => (n = v === null ? null : Math.round(v))}
       />
     </div>
     <div class="rir-row" role="group" aria-label="Reps in reserve, optional">
@@ -239,6 +260,11 @@
     <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={log}>
       <Icon name="check" />Log set {active + 1}
     </button>
+    {#if canFinish}
+      <button class="hr-btn hr-btn--secondary" onclick={() => finishSlot(slotId)}>
+        Finish after {logged} sets
+      </button>
+    {/if}
   {:else if slot.status === 'todo'}
     <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={() => start(slotId)}>
       Start this exercise
@@ -247,10 +273,10 @@
     <div class="finish-line">
       {#if stopped}
         <span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>
-        <span class="small muted">{stopped.symptom} at {fmt(stopped.w)} lb, set {slot.sets.indexOf(stopped) + 1}</span>
+        <span class="small muted">{stopped.symptom} at {fmt(stopped.w)} {wUnit}, set {slot.sets.indexOf(stopped) + 1}</span>
       {:else}
         <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
-        <span class="small muted">All {slot.plan.sets} sets logged</span>
+        <span class="small muted">{logged} set{logged === 1 ? '' : 's'} logged</span>
       {/if}
     </div>
     {#if next}
@@ -278,7 +304,7 @@
     </div>
     <div class="stop-summary">
       <span class="hr-eyebrow">Saved with it</span>
-      <span class="heading hr-num">{ex.name} · set {active + 1} · {fmt(curW)} lb</span>
+      <span class="heading hr-num">{ex.name} · set {active + 1} · {fmt(curW)} {wUnit}</span>
       <span class="meta">Shows on this exercise's history and the calendar.</span>
     </div>
     <div class="stack-tight">

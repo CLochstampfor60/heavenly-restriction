@@ -1,6 +1,5 @@
 <script>
   import SwapSheet from './components/SwapSheet.svelte';
-  import { CATALOG } from './fixtures/demo.js';
   import { route } from './router.svelte.js';
   import ExerciseCard from './screens/ExerciseCard.svelte';
   import Library from './screens/Library.svelte';
@@ -8,17 +7,29 @@
   import SetLog from './screens/SetLog.svelte';
   import Settings from './screens/Settings.svelte';
   import Today from './screens/Today.svelte';
+  import { ensureExercise } from './stores/source.svelte.js';
   import { day } from './stores/workout.svelte.js';
 
-  const logId = $derived(route.path.match(/^\/log\/(\w+)$/)?.[1]);
+  const logId = $derived(route.path.match(/^\/log\/([^/]+)$/)?.[1]);
   const exerciseId = $derived(route.path.match(/^\/exercise\/(\w+)$/)?.[1]);
 </script>
 
 <div class="app">
-  {#if logId && day.slots[logId]}
+  {#if logId && day.slots[logId]?.plan.loggable}
     {#key logId}<SetLog slotId={logId} />{/key}
-  {:else if exerciseId && CATALOG[exerciseId]}
-    {#key exerciseId}<ExerciseCard id={exerciseId} />{/key}
+  {:else if exerciseId}
+    {#key exerciseId}
+      {#await ensureExercise(exerciseId)}
+        <div class="app__scroll"><p class="small muted empty-note">Loading…</p></div>
+      {:then ex}
+        {#if ex}<ExerciseCard id={exerciseId} />{:else}<Today />{/if}
+      {:catch}
+        <div class="app__scroll">
+          <p class="small muted empty-note">Can't load this exercise without a connection.</p>
+          <a class="hr-btn hr-btn--secondary" href="#/library">Back to the library</a>
+        </div>
+      {/await}
+    {/key}
   {:else if route.path === '/library'}
     <Library />
   {:else if route.path === '/settings'}
