@@ -83,8 +83,11 @@ class Exercise(Base):
     region: Mapped[str | None] = mapped_column(String(60))
     muscle: Mapped[str | None] = mapped_column(String(120))
     equipment: Mapped[str | None] = mapped_column(String(80))
-    # Lower assistance is progress; PR logic inverts for these.
+    # Lower assistance is progress; PR logic inverts for these. `assisted` is what the importer
+    # derives from the program's wording; `assisted_override` is yours (None = follow the
+    # program) and the importer never touches it. Read `is_assisted`.
     assisted: Mapped[bool] = mapped_column(Boolean, default=False)
+    assisted_override: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     measure: Mapped[str] = mapped_column(String(10), default=Measure.REPS.value)
     per_side: Mapped[bool] = mapped_column(Boolean, default=False)
     # A routine (warm-up / cool-down sequence) is done as a whole, never logged by set.
@@ -93,6 +96,12 @@ class Exercise(Base):
 
     exclusion: Mapped["Exclusion | None"] = relationship(back_populates="exercise")
     media: Mapped[list["Media"]] = relationship(back_populates="exercise")
+
+    @property
+    def is_assisted(self) -> bool:
+        if self.assisted_override is not None:
+            return self.assisted_override
+        return bool(self.assisted)
 
 
 class Exclusion(Base):

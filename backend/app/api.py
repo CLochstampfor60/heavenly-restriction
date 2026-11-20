@@ -202,7 +202,8 @@ def exercise_summary(db: Session, ex: Exercise, version, on: Date, day_names) ->
         "region": ex.region,
         "muscle": ex.muscle,
         "equipment": ex.equipment,
-        "assisted": ex.assisted,
+        "assisted": ex.is_assisted,
+        "assisted_override": ex.assisted_override,
         "measure": ex.measure,
         "per_side": ex.per_side,
         "routine": ex.routine,
@@ -449,7 +450,7 @@ def log_set(date: Date, body: SetIn, response: Response, db: DB) -> dict:
     pr = stopped is None and is_pr(
         new,
         prior,
-        assisted=ex.assisted,
+        assisted=ex.is_assisted,
         measure=ex.measure,
         rep_floor=program_slot.target_min if program_slot else None,
     )
@@ -636,7 +637,7 @@ def library(db: DB) -> dict:
                 "region": ex.region or "Other",
                 "muscle": ex.muscle or "Other",
                 "equipment": ex.equipment,
-                "assisted": ex.assisted,
+                "assisted": ex.is_assisted,
                 "measure": ex.measure,
                 "per_side": ex.per_side,
                 "days": days.get(ex.id, []),
@@ -656,6 +657,20 @@ def library(db: DB) -> dict:
             }
         )
     return {"version": version.label if version else None, "exercises": out}
+
+
+class ExercisePatch(BaseModel):
+    # True / False overrides the program's wording; None goes back to following it.
+    assisted: bool | None = None
+
+
+@router.patch("/exercises/{exercise_id}")
+def patch_exercise(exercise_id: int, body: ExercisePatch, db: DB) -> dict:
+    ex = exercise_or_404(db, exercise_id)
+    if "assisted" in body.model_fields_set:
+        ex.assisted_override = body.assisted
+    db.commit()
+    return {"id": ex.id, "assisted": ex.is_assisted, "assisted_override": ex.assisted_override}
 
 
 @router.get("/exercises/{exercise_id}")

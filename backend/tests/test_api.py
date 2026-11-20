@@ -218,3 +218,17 @@ def test_pr_rules_unit() -> None:
     assert not is_pr(SetValue(50, 7), assisted, assisted=True)
     assert is_pr(SetValue(45, 6), assisted, assisted=True, rep_floor=6)
     assert not is_pr(SetValue(45, 5), assisted, assisted=True, rep_floor=6)
+
+
+def test_dips_are_assisted_and_override_via_patch(client) -> None:
+    data = plan(client)
+    dips = ex_id(data, "Demo Dips")
+    assert data["exercises"][str(dips)]["assisted"] is True
+    assert log(client, MON, "OPT1", dips, 0, w=40, r=6).json()["is_pr"] is False
+    assert log(client, MON, "OPT1", dips, 1, w=30, r=6).json()["is_pr"] is True  # less help
+    r = client.patch(f"/api/exercises/{dips}", json={"assisted": False})
+    assert r.json() == {"id": dips, "assisted": False, "assisted_override": False}
+    assert plan(client)["exercises"][str(dips)]["assisted"] is False
+    r = client.patch(f"/api/exercises/{dips}", json={"assisted": None})
+    assert r.json()["assisted"] is True  # back to following the program
+    assert client.patch(f"/api/exercises/{dips}", json={}).json()["assisted_override"] is None

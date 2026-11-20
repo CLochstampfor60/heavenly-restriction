@@ -695,6 +695,19 @@ class Catalog:
         self.by_name = {e.name.lower(): e for e in db.scalars(select(Exercise))}
         self.aliases: dict[int, set[frozenset[str]]] = defaultdict(set)
         self.fuzzy: list[tuple[str, str, str]] = []
+        # Assisted = any wording of the exercise in this import says so, parentheticals
+        # included ("Parallel-Bar Dips (assisted to start)"). Settled in finish().
+        self.touched: set[Exercise] = set()
+        self.assisted: set[Exercise] = set()
+
+    def note_wording(self, ex: Exercise, *wordings: str) -> None:
+        self.touched.add(ex)
+        if any("assist" in w.lower() for w in wordings):
+            self.assisted.add(ex)
+
+    def finish(self) -> None:
+        for ex in self.touched:
+            ex.assisted = ex in self.assisted
 
     def get(self, name: str, **fields) -> Exercise:
         ex = self.by_name.get(name.lower())
@@ -705,11 +718,11 @@ class Catalog:
         for key, value in fields.items():
             if value is not None:
                 setattr(ex, key, value)
-        if ex.assisted is None or "assist" in name.lower():
-            ex.assisted = "assist" in name.lower()
+        self.note_wording(ex, name)
         return ex
 
     def alias(self, ex: Exercise, *names: str) -> None:
+        self.note_wording(ex, *names)
         self.db.flush()
         for n in names:
             self.aliases[ex.id].add(tokens(n))
@@ -792,6 +805,7 @@ def write(db: Session, parsed: Parsed, source_name: str) -> ProgramVersion:
 
     write_swaps(db, catalog, version, parsed)
     write_exclusions(db, catalog, version, parsed)
+    catalog.finish()
     for tab, where, name in catalog.fuzzy:
         parsed.flag(tab, where, f"Matched to '{name}'", "Name match by words, not exact; check it.")
     db.flush()

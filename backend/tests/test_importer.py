@@ -84,7 +84,9 @@ def test_slot_details(db, imported) -> None:
     assert either.exercise.name == "Seated Demo Press"
     assert either.alt_exercise.name == "Seated Machine Press"
     assert db.scalar(select(Exercise).where(Exercise.name == "Assisted Demo Pull-Up")).assisted
-    assert not db.scalar(select(Exercise).where(Exercise.name == "Demo Dips")).assisted
+    # "Demo Dips (assisted to start)": the parenthetical wording counts.
+    assert db.scalar(select(Exercise).where(Exercise.name == "Demo Dips")).is_assisted
+    assert not db.scalar(select(Exercise).where(Exercise.name == "Demo Row")).is_assisted
 
 
 def test_weekend(db, imported) -> None:
@@ -191,3 +193,13 @@ def test_forearm_on_wednesday_flagged(db, tmp_path: Path) -> None:
     wb.save(changed)
     parsed = importer.parse_workbook(changed)
     assert any("Wednesday" in o.what for o in parsed.obstacles)
+
+
+def test_assisted_override_survives_reimport(db, imported) -> None:
+    dips = db.scalar(select(Exercise).where(Exercise.name == "Demo Dips"))
+    dips.assisted_override = False
+    db.commit()
+    importer.run(db, DEMO, None)
+    db.refresh(dips)
+    assert dips.assisted is True  # still what the program says
+    assert dips.assisted_override is False and dips.is_assisted is False
