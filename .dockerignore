@@ -1,0 +1,20 @@
+# Keep secrets, personal data and local tooling out of the build context.
+.env
+.env.*
+!.env.example
+**/*.xlsx
+**/*.db
+**/*.sqlite*
+data/
+media/
+backups/
+internal_docs/
+purgatory/
+.git/
+.venv/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+frontend/node_modules/
+frontend/dist/
+backend/tests/

@@ -1,0 +1,44 @@
+# Heavenly Restriction on the workstation now, the Linux NAS later (same file).
+# Required in .env (repo root, gitignored): PROGRAM_XLSX_HOST_PATH, the spreadsheet's path on
+# the host. It is mounted read-only; nothing from it is copied into the image.
+#
+#   docker compose up -d --build
+#   docker compose exec app python -m app.importer
+#
+# The app listens on 127.0.0.1:8000 only; `tailscale serve` on the host publishes it over HTTPS.
+services:
+  app:
+    build: .
+    image: heavenly-restriction:local
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      APP_ENV: production
+      DATABASE_URL: sqlite:////app/data/hr.db
+      PROGRAM_XLSX_PATH: /program/program.xlsx
+      IMPORT_OBSTACLES_PATH: /app/data/import-obstacles.md
+    volumes:
+      - type: volume
+        source: hr-data
+        target: /app/data
+      - type: bind
+        source: ${PROGRAM_XLSX_HOST_PATH:?Set PROGRAM_XLSX_HOST_PATH in .env}
+        target: /program/program.xlsx
+        read_only: true
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - hr
+
+networks:
+  hr: {}
+
+volumes:
+  hr-data: {}

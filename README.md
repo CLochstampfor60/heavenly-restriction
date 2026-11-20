@@ -38,7 +38,17 @@ Database and program import (required once, and again whenever the spreadsheet c
 
 Run the importer from `backend\` (or set `$env:PYTHONPATH = "backend"`). Re-running updates the same program version. Anything it cannot map cleanly is listed in `internal_docs\import-obstacles.md` (local only) instead of being guessed.
 
-Checks before committing:
+## Run it in Docker (PowerShell)
+Requires Docker with Compose v2. The container runs as an unprivileged user on its own network, with a read-only filesystem except the `hr-data` volume (the SQLite database). The spreadsheet is mounted read-only from outside the repo; set `PROGRAM_XLSX_HOST_PATH` in `.env` first (see `.env.example`).
+
+```powershell
+docker compose up -d --build
+docker compose exec app python -m app.importer
+```
+
+The app listens on `127.0.0.1:8000` only. Publish it to your tailnet over HTTPS with `tailscale serve --bg 8000`, then open `https://app.example.ts.net` on the phone. The importer's obstacles report is written to the volume at `/app/data/import-obstacles.md`; read it with `docker compose exec app cat /app/data/import-obstacles.md`.
+
+## Checks before committing
 
 ```powershell
 .\.venv\Scripts\pre-commit run --all-files
