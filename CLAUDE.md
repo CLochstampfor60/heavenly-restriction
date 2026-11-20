@@ -27,7 +27,7 @@ Full scope: "Heavenly Restriction — Scope v0.1" (Claude doc). This file is the
 Program edits create a new program_version; old logs stay tied to the version they used.
 
 ## Parking lot — do NOT build unless asked
-Warmup Routine module, injury guardrails as enforced rules (they are pinned notes for now), scale/Fitbit import, Escanor theme.
+Warmup Routine module, injury guardrails as enforced rules (they are pinned notes for now), scale/Fitbit import, Escanor theme, a read-only Reference section in the Library for the program's guide tabs (Shonen, Calisthenics Translation, Hip Halo, Rehab & Activation, Core Menu).
 
 ## UI rules
 - Before any UI work, read `docs/DESIGN.md` and `design-system/README.md`. Build only from `design-system/` tokens and `hr-` classes; Dark and Light themes both ship.
