@@ -4,6 +4,7 @@
   import { setAccent, setTheme, settings } from '../settings.svelte.js';
   import { setDemo } from '../mode.js';
   import { source } from '../stores/source.svelte.js';
+  import { requestPersistence, storage } from '../stores/storage.svelte.js';
   import { resetToday } from '../stores/workout.svelte.js';
 
   const THEMES = [
@@ -73,6 +74,21 @@
       <span class="small muted">Built with help from Claude by Anthropic.</span>
       <span class="meta">Heavenly Restriction 0.1.0 · MIT License</span>
     </div>
+  </section>
+
+  <section class="stack" aria-labelledby="storage-label">
+    <span id="storage-label" class="hr-eyebrow">Storage on this phone</span>
+    {#if !storage.supported}
+      <span class="body">This browser can't keep storage persistent.</span>
+      <span class="meta">Sets not yet sent to the server could be cleared if the phone runs low on space.</span>
+    {:else if storage.persisted}
+      <span class="body"><Icon name="check" /> Persistent storage granted</span>
+      <span class="meta">The browser won't clear this app's data to free up space.</span>
+    {:else}
+      <span class="body">Persistent storage not granted</span>
+      <span class="meta">The browser may clear unsynced sets if space runs low. Installing the app usually lets it grant this.</span>
+      <button class="hr-btn hr-btn--secondary" onclick={requestPersistence}>Ask again</button>
+    {/if}
   </section>
 
   <section class="stack" aria-labelledby="demo-label">

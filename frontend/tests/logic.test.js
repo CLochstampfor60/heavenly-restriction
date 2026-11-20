@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { placeholderFor, readyToLog } from '../src/logic.js';
+import { canWipe, finishMessage, placeholderFor, queueCounts, readyToLog, saveStatus } from '../src/logic.js';
 
 test('first log of an exercise: no weight placeholder, reps from the plan', () => {
   const p = placeholderFor([], 0, null, 6);
@@ -30,4 +30,34 @@ test('last session wins, by set number, last row repeated', () => {
   const last = [{ w: 100, r: 10 }, { w: 105, r: 9 }];
   assert.deepEqual(placeholderFor(last, 1, { w: 1, r: 1 }, 6), { w: 105, r: 9 });
   assert.deepEqual(placeholderFor(last, 3, null, 6), { w: 105, r: 9 });
+});
+
+test('queue counts split logged sets from other changes', () => {
+  const entries = [{ kind: 'set' }, { kind: 'set' }, { kind: 'state' }, { kind: 'stop' }, { kind: 'set' }];
+  assert.deepEqual(queueCounts(entries), { total: 5, sets: 3 });
+  assert.deepEqual(queueCounts([]), { total: 0, sets: 0 });
+});
+
+test('save indicator: saved, waiting, offline', () => {
+  assert.deepEqual(saveStatus({ total: 0, offline: true }), { state: 'saved', text: 'Saved' });
+  assert.deepEqual(saveStatus({ total: 3, offline: false }), { state: 'waiting', text: '3 waiting to save' });
+  assert.equal(saveStatus({ total: 1, offline: true }).text, 'Offline · 1 waiting to save');
+});
+
+test('finish message after a forced sync', () => {
+  assert.equal(finishMessage({ total: 0, sets: 0, offline: false }), 'All sets saved to server');
+  assert.equal(
+    finishMessage({ total: 4, sets: 3, offline: true }),
+    "Offline: 3 sets and 1 other change waiting to save. They send automatically when you're back online.",
+  );
+  assert.equal(
+    finishMessage({ total: 1, sets: 1, offline: true }),
+    "Offline: 1 set waiting to save. It sends automatically when you're back online.",
+  );
+  assert.match(finishMessage({ total: 2, sets: 0, offline: false }), /^2 changes waiting/);
+});
+
+test('logout wipes only an empty queue', () => {
+  assert.equal(canWipe(0), true);
+  assert.equal(canWipe(1), false);
 });

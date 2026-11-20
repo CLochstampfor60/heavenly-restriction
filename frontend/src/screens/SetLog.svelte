@@ -1,6 +1,7 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import RestTimer from '../components/RestTimer.svelte';
+  import SaveStatus from '../components/SaveStatus.svelte';
   import Sheet from '../components/Sheet.svelte';
   import Stepper from '../components/Stepper.svelte';
   import { readyToLog } from '../logic.js';
@@ -119,6 +120,7 @@
       <span class="hr-tag">{ex.region}</span>
       <span class="hr-exh__meta">{planText(slot)} · rest {clock(slot.plan.rest)}</span>
     </div>
+    <div class="exh-indent"><SaveStatus /></div>
     {#if slot.status === 'active' || slot.status === 'todo'}
       <div class="hr-exh__actions exh-indent">
         <button class="hr-btn hr-btn--ghost hr-btn--compact exh-action" onclick={doLater}>

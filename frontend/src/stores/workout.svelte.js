@@ -1,12 +1,13 @@
 // Today's session. The program comes from stores/source (API or demo fixtures); what happens
 // in the session (sets, stops, swaps, order, gear, checklist and cardio ticks) is kept in
 // IndexedDB so a reload resumes where it left off, and in real mode is queued to the server.
+import { tick } from 'svelte';
 import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
 import { placeholderFor } from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
 import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
-import { enqueue, onResult, startSync } from './sync.svelte.js';
+import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
 
 export { e1rm };
 
@@ -454,6 +455,13 @@ export function start(slotId) {
 
 export function finish() {
   day.finished = true;
+}
+
+// Finish, then push everything to the server now and report what is still waiting.
+export async function finishAndSync() {
+  finish();
+  await tick(); // run the effect that queues the session-state change
+  return syncNow();
 }
 
 // Checklist items (warm-up, cool-down, unparsed doses): done, skipped, or back to todo.

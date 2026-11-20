@@ -226,3 +226,8 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
   border: 0; background: none; color: inherit; font: inherit; cursor: pointer;
 }
 .sample-note { margin: 0; }
+
+/* Save status: what has reached the server */
+.save-status { display: inline-flex; align-items: center; gap: var(--space-1); }
+.save-status .hr-icon { width: 16px; height: 16px; }
+.save-status--waiting { color: var(--text); }

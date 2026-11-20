@@ -1,16 +1,17 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
+  import SaveStatus from '../components/SaveStatus.svelte';
+  import { finishMessage } from '../logic.js';
   import { setDemo } from '../mode.js';
   import { go } from '../router.svelte.js';
   import { source } from '../stores/source.svelte.js';
-  import { sync } from '../stores/sync.svelte.js';
   import {
     activeSlotId,
     blockLabel,
     day,
     exerciseFor,
-    finish,
+    finishAndSync,
     lastText,
     later,
     loggedCount,
@@ -65,12 +66,8 @@
     return { icon: 'check', label: 'Finish workout', slot: null };
   });
 
-  const syncText = $derived.by(() => {
-    if (source.demo) return '';
-    if (sync.offline) return `Offline · ${sync.pending ? `${sync.pending} change${sync.pending > 1 ? 's' : ''} saved on this phone` : 'showing the saved program'}`;
-    if (sync.pending) return `${sync.pending} change${sync.pending > 1 ? 's' : ''} waiting to sync`;
-    return source.cached ? 'Showing the saved program' : '';
-  });
+  // Set when Finish workout has forced a sync: what reached the server.
+  let finishText = $state('');
 
   function cardioMeta(c) {
     const parts = [`${c.minutes} min`];
@@ -80,9 +77,15 @@
     return parts.join(' · ');
   }
 
+  async function finishWorkout() {
+    finishText = 'Saving…';
+    const result = await finishAndSync();
+    finishText = source.demo ? 'Demo data: nothing is sent to the server.' : finishMessage(result);
+  }
+
   function heroAction() {
     const id = hero.slot; // `hero` re-derives as soon as start() runs
-    if (!id) return finish();
+    if (!id) return finishWorkout();
     start(id);
     go(`/log/${id}`);
   }
@@ -111,7 +114,8 @@
         <span class="small muted hr-num">{doneCount} of {total} done</span>
       </div>
     {/if}
-    {#if syncText}<span class="meta" role="status">{syncText}</span>{/if}
+    <SaveStatus />
+    {#if source.cached}<span class="meta">Showing the program saved on this phone</span>{/if}
   </header>
 
   {#if source.status === 'error'}
@@ -256,7 +260,7 @@
   {:else if day.finished}
     <div class="finish-line">
       <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
-      <span class="small muted">Workout finished</span>
+      <span class="small muted" role="status">{finishText || 'Workout finished'}</span>
     </div>
   {/if}
 </div>

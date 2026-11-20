@@ -6,9 +6,11 @@ import './app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import { watchSystemTheme } from './settings.svelte.js';
+import { checkPersistence } from './stores/storage.svelte.js';
 import { loadToday } from './stores/workout.svelte.js';
 
 watchSystemTheme();
+checkPersistence();
 
 // Load today's program (API, or demo data) and resume the session before the first render.
 loadToday().then(() => mount(App, { target: document.getElementById('app') }));

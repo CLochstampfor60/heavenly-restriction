@@ -1,9 +1,21 @@
 // Server sync. Every write lands in IndexedDB first; the outbox then sends it to the API in
 // order. With no signal the outbox waits and retries when the phone is back online.
 import { db } from '../db.js';
+import { queueCounts } from '../logic.js';
 import { isDemo } from '../mode.js';
 
-export const sync = $state({ pending: 0, offline: false });
+// pending: changes waiting for the server; pendingSets: how many of them are logged sets.
+export const sync = $state({ pending: 0, pendingSets: 0, offline: false });
+
+async function recount() {
+  try {
+    const counts = queueCounts(await db.outbox.toArray());
+    sync.pending = counts.total;
+    sync.pendingSets = counts.sets;
+  } catch {
+    // IndexedDB unavailable: leave the last counts
+  }
+}
 
 const handlers = {};
 
@@ -46,23 +58,46 @@ export function onResult(kind, fn) {
   handlers[kind] = fn;
 }
 
+// Writes to the outbox, in call order; syncNow() waits for them.
+let queued = Promise.resolve();
+
 // `coalesce`: a later entry with the same key replaces an unsent earlier one.
-export async function enqueue(entry) {
-  if (isDemo()) return;
+export function enqueue(entry) {
+  if (isDemo()) return Promise.resolve();
+  queued = queued.then(() => write(entry));
+  return queued;
+}
+
+async function write(entry) {
   try {
     if (entry.coalesce) await db.outbox.filter((e) => e.coalesce === entry.coalesce).delete();
     await db.outbox.add(entry);
   } catch (error) {
     console.warn('Could not queue a change for the server.', error);
   }
+  await recount();
   flush();
 }
 
-let flushing = false;
+let running = null;
 
-export async function flush() {
-  if (isDemo() || flushing) return;
-  flushing = true;
+// Sends queued changes in order. Calls made while a run is in progress share that run.
+export function flush() {
+  if (isDemo()) return Promise.resolve();
+  running ??= drain().finally(() => (running = null));
+  return running;
+}
+
+// Forces a sync now (Finish workout) and reports what is still waiting.
+export async function syncNow() {
+  if (isDemo()) return { total: 0, sets: 0, offline: false };
+  await queued;
+  await flush();
+  await flush(); // anything queued while the first run was finishing
+  return { total: sync.pending, sets: sync.pendingSets, offline: sync.offline };
+}
+
+async function drain() {
   try {
     for (;;) {
       const entry = await db.outbox.orderBy('seq').first();
@@ -81,8 +116,7 @@ export async function flush() {
       await db.outbox.delete(entry.seq);
     }
   } finally {
-    flushing = false;
-    sync.pending = await db.outbox.count().catch(() => 0);
+    await recount();
   }
 }
 
@@ -90,5 +124,5 @@ export function startSync() {
   if (isDemo()) return;
   window.addEventListener('online', flush);
   setInterval(() => sync.pending && flush(), 30000);
-  flush();
+  recount().then(flush);
 }
