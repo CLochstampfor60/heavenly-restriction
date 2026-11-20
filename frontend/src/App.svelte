@@ -3,6 +3,7 @@
   import { route } from './router.svelte.js';
   import ExerciseCard from './screens/ExerciseCard.svelte';
   import Library from './screens/Library.svelte';
+  import Login from './screens/Login.svelte';
   import Progress from './screens/Progress.svelte';
   import SetLog from './screens/SetLog.svelte';
   import Settings from './screens/Settings.svelte';
@@ -15,7 +16,9 @@
 </script>
 
 <div class="app">
-  {#if logId && day.slots[logId]?.plan.loggable}
+  {#if route.path === '/login'}
+    <Login />
+  {:else if logId && day.slots[logId]?.plan.loggable}
     {#key logId}<SetLog slotId={logId} />{/key}
   {:else if exerciseId}
     {#key exerciseId}

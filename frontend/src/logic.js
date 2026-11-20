@@ -43,3 +43,13 @@ export function finishMessage({ total, sets, offline }) {
 export function canWipe(total) {
   return total === 0;
 }
+
+// What the outbox does with a failed send. 401: keep everything and pause until sign-in
+// (sync waits for login). Network errors, 5xx, 403, 408, 429: keep and retry later. Other
+// 4xx: the server will never accept it, so drop it.
+export function outboxDisposition(status) {
+  if (status == null) return 'retry';
+  if (status === 401) return 'auth';
+  if (status >= 500 || status === 403 || status === 408 || status === 429) return 'retry';
+  return 'drop';
+}

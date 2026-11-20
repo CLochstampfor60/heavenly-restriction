@@ -49,24 +49,37 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   from outside the tailnet.
 
 ### Authentication
-- **Planned.** A passkey (WebAuthn, unlocked by fingerprint) is the only everyday login.
+- **Done.** A passkey (WebAuthn, unlocked by fingerprint; user verification required) is the
+  only way to get a session. The relying-party ID comes from `WEBAUTHN_RP_ID` (localhost in
+  development, the stable hostname in production).
+- **Done.** The first passkey is created with a one-time setup code printed in the server
+  console. It works only while no passkey exists and only once. Creating a passkey never signs
+  you in; you then sign in with it.
+- **Done.** Every API route except health and the sign-in endpoints requires a session (401).
 - **Planned.** TOTP plus one-time recovery codes are used only to enroll a new passkey (new or
   replaced phone), never as a daily login.
-- **Planned.** Lockout and rate limiting on failed attempts, for both passkey and TOTP.
+- **Done.** Five failures of the same kind (sign-in, setup code) within 15 minutes lock that
+  action for 15 minutes (429). Pending sign-in challenges are single use, expire after five
+  minutes and are capped in number.
 
 ### Sessions
-- **Planned.** Server-side sessions. The cookie is `HttpOnly`, `Secure` and `SameSite=Strict`;
-  the session ID rotates on login; idle timeout plus an absolute lifetime of about 30 days.
-- **Planned.** An Origin check on every state-changing request (POST, PUT, PATCH, DELETE).
-- **Planned.** No tokens in localStorage or IndexedDB.
+- **Done.** Server-side sessions; the server stores only a SHA-256 of the token. The cookie is
+  `__Host-` prefixed, `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, no `Domain`.
+- **Done.** Every sign-in issues a new session and revokes the one the browser had.
+- **Done.** Idle timeout (7 days by default, `SESSION_IDLE_HOURS`) and an absolute lifetime
+  (30 days, `SESSION_DAYS`).
+- **Done.** An Origin check on every state-changing API request (POST, PUT, PATCH, DELETE),
+  sign-in included: missing or unknown Origin gets 403.
+- **Done.** No tokens in localStorage or IndexedDB; the session cookie is not readable by
+  scripts.
 
 ### Offline data on the phone
 - **Done.** Logged sets live in IndexedDB first and sync later; the app asks the browser for
   persistent storage so it is not cleared under storage pressure.
-- **Done (stub).** Logout wipes IndexedDB, but only after a sync confirms nothing is waiting.
-  It is not wired up until login exists.
-- **Planned.** Queued changes sync only with a valid session; an expired session holds them until
-  the next login.
+- **Done.** Sign-out sends everything first and refuses while changes are waiting (unless you
+  explicitly choose to discard them), then ends the server session and deletes IndexedDB.
+- **Done.** Queued changes sync only with a valid session: a 401 pauses the queue, keeps every
+  change, and shows "Sign in to save"; signing in resumes it.
 - **Accepted.** Data at rest on the phone relies on the device lock (fingerprint / PIN) and the
   phone's own storage encryption.
 
@@ -99,8 +112,9 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Planned.** Files stored outside the web root and served only through the API.
 
 ### Logging
-- **Planned.** Log authentication events only (sign-in, failure, lockout, passkey enrolled,
-  session revoked). Never log health data, notes, sets or request bodies.
+- **Done.** Authentication events only (sign-in, failure, passkey added, sign-out) go to an
+  `auth_event` table: kind, success, and a short non-sensitive detail. Never health data,
+  notes, sets or request bodies.
 - **Planned.** Alert on a sign-in from a new device.
 
 ### This repository

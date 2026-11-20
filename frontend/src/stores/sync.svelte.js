@@ -1,11 +1,12 @@
 // Server sync. Every write lands in IndexedDB first; the outbox then sends it to the API in
 // order. With no signal the outbox waits and retries when the phone is back online.
 import { db } from '../db.js';
-import { queueCounts } from '../logic.js';
+import { outboxDisposition, queueCounts } from '../logic.js';
 import { isDemo } from '../mode.js';
 
 // pending: changes waiting for the server; pendingSets: how many of them are logged sets.
-export const sync = $state({ pending: 0, pendingSets: 0, offline: false });
+// authRequired: the server answered 401, so the queue is paused until you sign in.
+export const sync = $state({ pending: 0, pendingSets: 0, offline: false, authRequired: false });
 
 async function recount() {
   try {
@@ -20,9 +21,10 @@ async function recount() {
 const handlers = {};
 
 export class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, detail = '') {
     super(message);
     this.status = status;
+    this.detail = detail; // the server's explanation, safe to show
   }
 }
 
@@ -33,7 +35,13 @@ export async function api(method, path, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(8000),
   });
-  if (!res.ok) throw new HttpError(res.status, `${method} ${path}: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.json().then(
+      (b) => (typeof b.detail === 'string' ? b.detail : ''),
+      () => '',
+    );
+    throw new HttpError(res.status, `${method} ${path}: ${res.status}`, detail);
+  }
   return res.status === 204 ? null : res.json();
 }
 
@@ -105,12 +113,14 @@ async function drain() {
       try {
         const reply = await api(entry.method, entry.path, entry.body);
         sync.offline = false;
+        sync.authRequired = false;
         handlers[entry.kind]?.(reply, entry);
       } catch (error) {
-        if (!(error instanceof HttpError) || error.status >= 500) {
-          sync.offline = !(error instanceof HttpError);
-          break; // keep it; try again later
-        }
+        const status = error instanceof HttpError ? error.status : null;
+        const what = outboxDisposition(status);
+        sync.offline = status === null;
+        if (what === 'auth') sync.authRequired = true;
+        if (what !== 'drop') break; // keep it; send again after sign-in or when back online
         console.warn('The server refused a change; dropping it.', entry, error);
       }
       await db.outbox.delete(entry.seq);
@@ -123,6 +133,6 @@ async function drain() {
 export function startSync() {
   if (isDemo()) return;
   window.addEventListener('online', flush);
-  setInterval(() => sync.pending && flush(), 30000);
+  setInterval(() => sync.pending && !sync.authRequired && flush(), 30000);
   recount().then(flush);
 }

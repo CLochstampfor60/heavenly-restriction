@@ -55,6 +55,8 @@ $env:PYTHONPATH = "backend"
 
 The server answers on loopback only, so real data is never on the LAN: `python -m app` binds 127.0.0.1 and refuses any other address, and requests whose socket peer is not loopback get 403.
 
+Open **http://localhost:8000** (not 127.0.0.1: passkeys are tied to the hostname). Everything except sign-in needs a session. On the first start the server console prints a one-time setup code; enter it on the sign-in screen to create your first passkey, then sign in with it.
+
 To reach it from the phone, publish it to your tailnet over HTTPS with `tailscale serve --bg 8000` and open `https://app.example.ts.net`.
 
 Frontend with live reload while developing, at http://127.0.0.1:5173 (it proxies `/api` to the server above):

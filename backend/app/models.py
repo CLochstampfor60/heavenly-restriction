@@ -20,6 +20,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -363,3 +364,69 @@ class BodyMetric(Base):
     kind: Mapped[str] = mapped_column(String(20))  # bodyweight | waist
     value: Mapped[float] = mapped_column(Float)
     unit: Mapped[str] = mapped_column(String(10))  # lb | in
+
+
+# ---------------------------------------------------------------- login
+
+
+class AuthConfig(Base):
+    """One row: the owner's WebAuthn user handle and the TOTP secret (enrollment only)."""
+
+    __tablename__ = "auth_config"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_handle: Mapped[bytes] = mapped_column(LargeBinary)
+    totp_secret: Mapped[str | None] = mapped_column(String(64))  # base32, active
+    totp_pending: Mapped[str | None] = mapped_column(String(64))  # base32, awaiting confirm
+    totp_last_step: Mapped[int | None] = mapped_column(Integer)  # replay guard
+
+
+class Passkey(Base):
+    __tablename__ = "passkey"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    credential_id: Mapped[bytes] = mapped_column(LargeBinary, unique=True)
+    public_key: Mapped[bytes] = mapped_column(LargeBinary)
+    sign_count: Mapped[int] = mapped_column(Integer, default=0)
+    transports: Mapped[list] = mapped_column(JSON, default=list)
+    name: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AuthSession(Base):
+    """Server-side session. Only the SHA-256 of the cookie token is stored."""
+
+    __tablename__ = "auth_session"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    passkey_id: Mapped[int | None] = mapped_column(ForeignKey("passkey.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    user_agent: Mapped[str | None] = mapped_column(String(160))
+
+
+class RecoveryCode(Base):
+    """One-time codes that can authorize enrolling a new passkey. Only hashes are stored."""
+
+    __tablename__ = "recovery_code"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AuthEvent(Base):
+    """Authentication events only: never health data, notes or request bodies."""
+
+    __tablename__ = "auth_event"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    ok: Mapped[bool] = mapped_column(Boolean)
+    detail: Mapped[str | None] = mapped_column(String(200))

@@ -1,22 +1,45 @@
 """Heavenly Restriction API. Serves the built PWA from the same origin."""
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api import router
+from app.auth import SETUP, OriginCheck, require_session
+from app.auth import router as auth_router
 from app.headers import SecurityHeaders
 from app.net import LoopbackOnly
 from app.progress import router as progress_router
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
-app = FastAPI(title="Heavenly Restriction")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Prints the first-run setup code in the console while no passkey exists.
+    from app.db import SessionLocal
+
+    try:
+        with SessionLocal() as db:
+            SETUP.ensure(db)
+    except Exception as error:  # e.g. migrations not run yet; status/login will report it
+        print(f"Could not check for passkeys at startup: {error}")
+    yield
+
+
+app = FastAPI(title="Heavenly Restriction", lifespan=lifespan)
+# Middleware added later runs first: headers wrap everything, then loopback, then Origin.
+app.add_middleware(OriginCheck)
 app.add_middleware(LoopbackOnly)
-app.add_middleware(SecurityHeaders)  # outermost: the 403 above gets them too
-app.include_router(router)
-app.include_router(progress_router)
+app.add_middleware(SecurityHeaders)  # outermost: refusals carry the headers too
+
+# Public: health and the sign-in endpoints. Everything else needs a session.
+app.include_router(auth_router)
+signed_in = [Depends(require_session)]
+app.include_router(router, dependencies=signed_in)
+app.include_router(progress_router, dependencies=signed_in)
 
 
 @app.get("/api/health")
@@ -24,6 +47,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# Mounted last so /api routes win. Absent until `npm run build` has run.
+# Mounted last so /api routes win. Absent until `npm run build` has run. The PWA shell holds
+# no data; everything it shows comes from the session-protected API.
 if FRONTEND_DIST.is_dir():
     app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")

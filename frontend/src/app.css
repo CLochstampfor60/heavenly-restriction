@@ -231,3 +231,5 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .save-status { display: inline-flex; align-items: center; gap: var(--space-1); }
 .save-status .hr-icon { width: 16px; height: 16px; }
 .save-status--waiting { color: var(--text); }
+a.save-status { text-decoration: none; }
+.recovery-codes { display: grid; gap: var(--space-1); margin-top: var(--space-2); }

@@ -8,7 +8,11 @@
   const status = $derived(saveStatus({ total: sync.pending, offline: sync.offline }));
 </script>
 
-{#if !source.demo}
+{#if !source.demo && sync.authRequired}
+  <a class="meta save-status save-status--waiting" href="#/login" role="status">
+    <Icon name="timer" />Sign in to save{sync.pending ? ` · ${sync.pending} waiting` : ''}
+  </a>
+{:else if !source.demo}
   <span class="meta save-status" class:save-status--waiting={status.state !== 'saved'} role="status">
     <Icon name={status.state === 'saved' ? 'check' : 'timer'} />{status.text}
   </span>

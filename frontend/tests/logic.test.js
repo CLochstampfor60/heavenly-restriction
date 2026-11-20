@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { canWipe, finishMessage, placeholderFor, queueCounts, readyToLog, saveStatus } from '../src/logic.js';
+import {
+  canWipe,
+  finishMessage,
+  outboxDisposition,
+  placeholderFor,
+  queueCounts,
+  readyToLog,
+  saveStatus,
+} from '../src/logic.js';
 
 test('first log of an exercise: no weight placeholder, reps from the plan', () => {
   const p = placeholderFor([], 0, null, 6);
@@ -60,4 +68,13 @@ test('finish message after a forced sync', () => {
 test('logout wipes only an empty queue', () => {
   assert.equal(canWipe(0), true);
   assert.equal(canWipe(1), false);
+});
+
+test('outbox: 401 pauses for sign-in and keeps the change', () => {
+  assert.equal(outboxDisposition(401), 'auth');
+});
+
+test('outbox: network errors and server trouble retry, bad requests drop', () => {
+  for (const s of [null, undefined, 500, 503, 403, 408, 429]) assert.equal(outboxDisposition(s), 'retry', String(s));
+  for (const s of [400, 404, 409, 422]) assert.equal(outboxDisposition(s), 'drop', String(s));
 });

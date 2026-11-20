@@ -5,6 +5,40 @@
   import { DEMO_ONLY, setDemo } from '../mode.js';
   import { source } from '../stores/source.svelte.js';
   import { requestPersistence, storage } from '../stores/storage.svelte.js';
+  import { auth, checkAuth, createPasskeyWith, explain, signOut } from '../stores/auth.svelte.js';
+  import { api } from '../stores/sync.svelte.js';
+
+  // ---------- Security (real mode) ----------
+  let secBusy = $state(false);
+  let secError = $state('');
+  let secNote = $state('');
+  let waiting = $state(0); // set when sign-out found unsent changes
+
+  async function secRun(step) {
+    secBusy = true;
+    secError = '';
+    secNote = '';
+    try {
+      await step();
+    } catch (e) {
+      secError = explain(e);
+    } finally {
+      secBusy = false;
+    }
+  }
+
+  const addPasskey = () => secRun(async () => {
+    await createPasskeyWith({}, 'Passkey');
+    await checkAuth();
+    secNote = 'Passkey added.';
+  });
+  const doSignOut = (discardUnsynced = false) => secRun(async () => {
+    const r = await signOut({ discardUnsynced });
+    if (!r.signedOut) {
+      waiting = r.waiting;
+      if (r.error) secError = r.error;
+    }
+  });
   import { resetToday } from '../stores/workout.svelte.js';
 
   const THEMES = [
@@ -75,6 +109,32 @@
       <span class="meta">Heavenly Restriction 0.1.0 · MIT License</span>
     </div>
   </section>
+
+  {#if !source.demo && auth.authenticated}
+    <section class="stack" aria-labelledby="security-label">
+      <span id="security-label" class="hr-eyebrow">Sign-in and security</span>
+      <span class="body">
+        Signed in with a passkey · {auth.info?.passkeys ?? 1} passkey{(auth.info?.passkeys ?? 1) === 1 ? '' : 's'}
+      </span>
+      <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={addPasskey}>Add another passkey</button>
+
+      {#if waiting}
+        <span class="body" role="alert">
+          {waiting} change{waiting === 1 ? ' has' : 's have'} not reached the server, so this phone was not wiped.
+          Connect and try again, or sign out anyway and lose {waiting === 1 ? 'it' : 'them'}.
+        </span>
+        <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={() => doSignOut(true)}>
+          Sign out anyway
+        </button>
+      {:else}
+        <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={() => doSignOut(false)}>
+          Sign out and clear this phone
+        </button>
+      {/if}
+      {#if secNote}<span class="meta" role="status">{secNote}</span>{/if}
+      {#if secError}<span class="body" role="alert">{secError}</span>{/if}
+    </section>
+  {/if}
 
   <section class="stack" aria-labelledby="storage-label">
     <span id="storage-label" class="hr-eyebrow">Storage on this phone</span>
