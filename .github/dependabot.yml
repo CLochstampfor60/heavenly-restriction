@@ -1,0 +1,16 @@
+# Weekly update PRs. Actions stay pinned to commit SHAs; Dependabot updates the SHA and the
+# version comment together. Review each PR before merging; nothing auto-merges.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
