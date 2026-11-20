@@ -56,9 +56,12 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   console. It works only while no passkey exists and only once. Creating a passkey never signs
   you in; you then sign in with it.
 - **Done.** Every API route except health and the sign-in endpoints requires a session (401).
-- **Planned.** TOTP plus one-time recovery codes are used only to enroll a new passkey (new or
-  replaced phone), never as a daily login.
-- **Done.** Five failures of the same kind (sign-in, setup code) within 15 minutes lock that
+- **Done.** An authenticator app (TOTP, RFC 6238) and 10 one-time recovery codes can only
+  authorize enrolling a new passkey (new or replaced phone), never a session. Codes are shown
+  once and stored as hashes; a TOTP code works once (replay guard). Set up from Settings while
+  signed in.
+- **Done.** Five failures of the same kind (sign-in, setup code, enrollment code) within 15
+  minutes lock that
   action for 15 minutes (429). Pending sign-in challenges are single use, expire after five
   minutes and are capped in number.
 

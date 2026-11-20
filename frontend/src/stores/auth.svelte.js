@@ -10,7 +10,7 @@ export const auth = $state({
   authenticated: false,
   setupRequired: false,
   offline: false,
-  info: null, // passkeys (when signed in)
+  info: null, // passkeys, totp, recovery_codes_left (when signed in)
 });
 
 export async function checkAuth() {
@@ -55,11 +55,15 @@ export async function signIn() {
   await post('/api/auth/login/verify', { ceremony, credential });
 }
 
-// reason: { setup_code } on first run, or {} when signed in.
+// reason: { setup_code } on first run, { enroll_token } from a code, or {} when signed in.
 export async function createPasskeyWith(reason, name = 'Phone') {
   const { ceremony, options } = await post('/api/auth/register/options', reason);
   const credential = await createPasskey(options);
   await post('/api/auth/register/verify', { ceremony, credential, name });
+}
+
+export async function enrollToken(code) {
+  return (await post('/api/auth/enroll/start', { code })).enroll_token;
 }
 
 // Sign out: send everything first and refuse while changes are waiting, unless told to discard

@@ -3,7 +3,8 @@
 Rules
 - A passkey is the only way to get a session.
 - Creating a passkey needs one of: the one-time setup code printed in the server console (only
-  while no passkey exists), or an active session (adding another passkey). Neither logs you in.
+  while no passkey exists), an active session (adding another passkey), or an enroll grant from
+  a TOTP code or a one-time recovery code (lost phone). None of those log you in.
 - Session cookie: random token, HttpOnly, Secure, SameSite=Strict, `__Host-` prefix when Secure.
   The server stores only its SHA-256. New session on every login (the old cookie's session is
   revoked); idle timeout plus an absolute lifetime.
@@ -16,14 +17,16 @@ import hashlib
 import hmac
 import json
 import secrets
+import struct
 import sys
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -43,7 +46,7 @@ from webauthn.helpers.structs import (
 
 from app import config
 from app.db import get_db
-from app.models import AuthConfig, AuthEvent, AuthSession, Passkey
+from app.models import AuthConfig, AuthEvent, AuthSession, Passkey, RecoveryCode
 
 router = APIRouter(prefix="/api/auth")
 DB = Annotated[Session, Depends(get_db)]
@@ -123,7 +126,7 @@ class Ceremonies:
 
 
 CEREMONIES = Ceremonies()
-ENROLL_GRANTS = Ceremonies()  # for enrollment codes (added later)
+ENROLL_GRANTS = Ceremonies()
 
 
 class SetupCode:
@@ -160,6 +163,45 @@ SETUP = SetupCode()
 
 def normalize_code(value: str) -> str:
     return "".join(ch for ch in value.upper() if ch.isalnum())
+
+
+# ---------------------------------------------------------------- TOTP (RFC 6238) and recovery
+
+
+def totp_at(secret_b32: str, step: int, digits: int = 6) -> str:
+    key = base64.b32decode(secret_b32 + "=" * (-len(secret_b32) % 8), casefold=True)
+    digest = hmac.new(key, struct.pack(">Q", step), hashlib.sha1).digest()
+    offset = digest[-1] & 0x0F
+    value = struct.unpack(">I", digest[offset : offset + 4])[0] & 0x7FFFFFFF
+    return str(value % 10**digits).zfill(digits)
+
+
+def totp_verify(secret_b32: str, code: str, last_step: int | None, at: float | None = None):
+    """Returns the matched time step (±1 step of drift), or None. Steps at or before
+    `last_step` are refused, so a code works once."""
+    code = "".join(ch for ch in code if ch.isdigit())
+    if len(code) != 6:
+        return None
+    step = int((at if at is not None else time.time()) // 30)
+    for s in (step - 1, step, step + 1):
+        if (last_step is None or s > last_step) and hmac.compare_digest(
+            totp_at(secret_b32, s), code
+        ):
+            return s
+    return None
+
+
+def new_recovery_codes(db: Session) -> list[str]:
+    """Replaces all recovery codes with 10 new ones. Returns them; they are never shown again."""
+    db.execute(delete(RecoveryCode))
+    codes = []
+    for _ in range(10):
+        raw = "".join(secrets.choice(SetupCode.ALPHABET) for _ in range(12))
+        code = f"{raw[:4]}-{raw[4:8]}-{raw[8:]}"
+        codes.append(code)
+        db.add(RecoveryCode(code_hash=sha256(normalize_code(code))))
+    db.commit()
+    return codes
 
 
 # ---------------------------------------------------------------- sessions
@@ -267,7 +309,14 @@ def status(request: Request, db: DB) -> dict:
     passkeys = db.scalar(select(func.count(Passkey.id)))
     out = {"authenticated": s is not None, "setup_required": passkeys == 0}
     if s is not None:
-        out.update(passkeys=passkeys)
+        cfg = auth_config(db)
+        out.update(
+            passkeys=passkeys,
+            totp=cfg.totp_secret is not None,
+            recovery_codes_left=db.scalar(
+                select(func.count(RecoveryCode.id)).where(RecoveryCode.used_at.is_(None))
+            ),
+        )
     return out
 
 
@@ -276,6 +325,7 @@ def status(request: Request, db: DB) -> dict:
 
 class RegisterOptionsIn(BaseModel):
     setup_code: str | None = None
+    enroll_token: str | None = None
 
 
 class RegisterVerifyIn(BaseModel):
@@ -291,6 +341,8 @@ def register_options(body: RegisterOptionsIn, request: Request, db: DB) -> dict:
     how = None
     if session_for(db, request.cookies.get(cookie_name())) is not None:
         how = "session"
+    elif body.enroll_token and ENROLL_GRANTS.take(body.enroll_token):
+        how = "enroll"
     elif body.setup_code is not None and not has_passkey:
         check_lock(db, "setup")
         if not SETUP.check(body.setup_code):
@@ -298,7 +350,7 @@ def register_options(body: RegisterOptionsIn, request: Request, db: DB) -> dict:
             raise HTTPException(403, "That setup code is not right.")
         how = "setup"
     if how is None:
-        raise HTTPException(401, "Sign in, or use the setup code.")
+        raise HTTPException(401, "Sign in, or use a setup, authenticator or recovery code.")
     cfg = auth_config(db)
     existing = db.scalars(select(Passkey)).all()
     options = generate_registration_options(
@@ -426,3 +478,75 @@ def logout(request: Request, response: Response, db: DB) -> dict:
             record(db, "logout", True)
     clear_cookie(response)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- TOTP and recovery codes
+
+
+class CodeIn(BaseModel):
+    code: str = Field(min_length=1, max_length=40)
+
+
+@router.post("/enroll/start")
+def enroll_start(body: CodeIn, db: DB) -> dict:
+    """A TOTP or recovery code buys one passkey enrollment (5 minutes). Never a session."""
+    check_lock(db, "enroll")
+    cfg = auth_config(db)
+    via = None
+    if cfg.totp_secret:
+        step = totp_verify(cfg.totp_secret, body.code, cfg.totp_last_step)
+        if step is not None:
+            cfg.totp_last_step = step
+            via = "totp"
+    if via is None:
+        row = db.scalar(
+            select(RecoveryCode).where(
+                RecoveryCode.code_hash == sha256(normalize_code(body.code)),
+                RecoveryCode.used_at.is_(None),
+            )
+        )
+        if row is not None:
+            row.used_at = now()
+            via = "recovery code"
+    db.commit()
+    if via is None:
+        record(db, "enroll", False)
+        raise HTTPException(403, "That code is not right, or it was already used.")
+    record(db, "enroll", True, via)
+    return {"enroll_token": ENROLL_GRANTS.put({"via": via})}
+
+
+@router.post("/totp/setup")
+def totp_setup(_: SessionDep, db: DB) -> dict:
+    """Starts (or replaces) the authenticator app. Active after /totp/confirm."""
+    cfg = auth_config(db)
+    secret = base64.b32encode(secrets.token_bytes(20)).decode().rstrip("=")
+    cfg.totp_pending = secret
+    db.commit()
+    label = quote(f"{config.rp_name()}:owner")
+    issuer = quote(config.rp_name())
+    uri = f"otpauth://totp/{label}?secret={secret}&issuer={issuer}&digits=6&period=30"
+    return {"secret": secret, "otpauth_uri": uri}
+
+
+@router.post("/totp/confirm")
+def totp_confirm(body: CodeIn, _: SessionDep, db: DB) -> dict:
+    """Activates the pending secret and issues 10 recovery codes, shown this once."""
+    cfg = auth_config(db)
+    if not cfg.totp_pending:
+        raise HTTPException(409, "Start authenticator setup first.")
+    step = totp_verify(cfg.totp_pending, body.code, None)
+    if step is None:
+        raise HTTPException(400, "That code does not match. Check the phone's clock and retry.")
+    cfg.totp_secret, cfg.totp_pending, cfg.totp_last_step = cfg.totp_pending, None, step
+    db.commit()
+    codes = new_recovery_codes(db)
+    record(db, "totp_enabled", True)
+    return {"recovery_codes": codes}
+
+
+@router.post("/recovery/regenerate")
+def recovery_regenerate(_: SessionDep, db: DB) -> dict:
+    codes = new_recovery_codes(db)
+    record(db, "recovery_regenerated", True)
+    return {"recovery_codes": codes}

@@ -1,8 +1,9 @@
 <script>
   // Sign in with a passkey. First run: the setup code from the server console creates the first
-  // passkey. Creating a passkey never signs you in by itself; you then sign in with it.
+  // passkey. New phone: an authenticator or recovery code creates a passkey here. Creating a
+  // passkey never signs you in by itself; you then sign in with it.
   import Icon from '../components/Icon.svelte';
-  import { auth, createPasskeyWith, explain, signIn } from '../stores/auth.svelte.js';
+  import { auth, createPasskeyWith, enrollToken, explain, signIn } from '../stores/auth.svelte.js';
   import { sync } from '../stores/sync.svelte.js';
   import { supported } from '../webauthn.js';
 
@@ -10,6 +11,8 @@
   let error = $state('');
   let note = $state('');
   let setupCode = $state('');
+  let recoveryOpen = $state(false);
+  let code = $state('');
 
   async function run(step) {
     busy = true;
@@ -39,6 +42,13 @@
     note = 'Passkey saved. Now sign in with it.';
   });
 
+  const doRecover = () => run(async () => {
+    const token = await enrollToken(code.trim());
+    await createPasskeyWith({ enroll_token: token });
+    recoveryOpen = false;
+    code = '';
+    note = 'Passkey saved on this phone. Now sign in with it.';
+  });
 </script>
 
 <div class="app__scroll">
@@ -75,6 +85,27 @@
       <button class="hr-btn hr-btn--primary hr-btn--hero" disabled={busy} onclick={doSignIn}>
         <Icon name="check" />Sign in with passkey
       </button>
+    </section>
+
+    <section class="stack">
+      <button class="gear-head" aria-expanded={recoveryOpen} onclick={() => (recoveryOpen = !recoveryOpen)}>
+        <span class="option-text">
+          <span class="body-strong">New or replaced phone?</span>
+          <span class="meta">Use an authenticator code or a recovery code to add a passkey here.</span>
+        </span>
+        <span class="meta-strong">{recoveryOpen ? 'Close' : 'Open'}</span>
+      </button>
+      {#if recoveryOpen}
+        <div class="stack-tight">
+          <label for="enroll-code" class="hr-eyebrow">Authenticator or recovery code</label>
+          <input id="enroll-code" class="text-field" autocomplete="one-time-code" spellcheck="false"
+            placeholder="123456 or XXXX-XXXX-XXXX" bind:value={code}>
+          <span class="meta">A recovery code works once. This does not sign you in; the new passkey does.</span>
+        </div>
+        <button class="hr-btn hr-btn--secondary" disabled={busy || code.trim().length < 6} onclick={doRecover}>
+          Create a passkey on this phone
+        </button>
+      {/if}
     </section>
   {/if}
 

@@ -12,6 +12,9 @@
   let secBusy = $state(false);
   let secError = $state('');
   let secNote = $state('');
+  let totp = $state(null); // { secret, otpauth_uri } while setting up
+  let totpCode = $state('');
+  let codes = $state(null); // recovery codes, shown once
   let waiting = $state(0); // set when sign-out found unsent changes
 
   async function secRun(step) {
@@ -32,6 +35,19 @@
     await checkAuth();
     secNote = 'Passkey added.';
   });
+  const startTotp = () => secRun(async () => {
+    totp = await api('POST', '/api/auth/totp/setup', {});
+  });
+  const confirmTotp = () => secRun(async () => {
+    codes = (await api('POST', '/api/auth/totp/confirm', { code: totpCode.trim() })).recovery_codes;
+    totp = null;
+    totpCode = '';
+    await checkAuth();
+  });
+  const newCodes = () => secRun(async () => {
+    codes = (await api('POST', '/api/auth/recovery/regenerate', {})).recovery_codes;
+    await checkAuth();
+  });
   const doSignOut = (discardUnsynced = false) => secRun(async () => {
     const r = await signOut({ discardUnsynced });
     if (!r.signedOut) {
@@ -39,6 +55,7 @@
       if (r.error) secError = r.error;
     }
   });
+  const grouped = (secret) => secret.match(/.{1,4}/g).join(' ');
   import { resetToday } from '../stores/workout.svelte.js';
 
   const THEMES = [
@@ -117,6 +134,43 @@
         Signed in with a passkey · {auth.info?.passkeys ?? 1} passkey{(auth.info?.passkeys ?? 1) === 1 ? '' : 's'}
       </span>
       <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={addPasskey}>Add another passkey</button>
+
+      {#if codes}
+        <div class="hr-note">
+          <span class="hr-note__icon"><Icon name="pin" /></span>
+          <span>
+            <span class="hr-note__kind">Recovery codes: shown only now</span>
+            <span class="hr-note__body note-block">
+              Save these somewhere safe, off this phone. Each one works once, and only to add a
+              passkey on a new phone.
+            </span>
+            <span class="recovery-codes">
+              {#each codes as c (c)}<span class="body hr-num">{c}</span>{/each}
+            </span>
+          </span>
+        </div>
+        <button class="hr-btn hr-btn--primary" onclick={() => (codes = null)}>I've saved them</button>
+      {:else if totp}
+        <span class="body">
+          Add this key to your authenticator app (or open the link on this phone), then enter the
+          6-digit code it shows.
+        </span>
+        <span class="body hr-num">{grouped(totp.secret)}</span>
+        <a class="meta" href={totp.otpauth_uri}>Open in authenticator app</a>
+        <input class="text-field" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" bind:value={totpCode}>
+        <button class="hr-btn hr-btn--primary" disabled={secBusy || totpCode.trim().length !== 6} onclick={confirmTotp}>Confirm</button>
+      {:else if auth.info?.totp}
+        <span class="meta">
+          Authenticator app set up · {auth.info.recovery_codes_left} recovery code{auth.info.recovery_codes_left === 1 ? '' : 's'} left.
+          These only add a passkey on a new phone; they never sign you in.
+        </span>
+        <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={newCodes}>New recovery codes</button>
+      {:else}
+        <span class="meta">
+          Set up an authenticator app and recovery codes, so a new or replaced phone can get a passkey.
+        </span>
+        <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={startTotp}>Set up authenticator app</button>
+      {/if}
 
       {#if waiting}
         <span class="body" role="alert">
