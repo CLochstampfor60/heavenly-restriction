@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api import router
+from app.headers import SecurityHeaders
 from app.net import LoopbackOnly
 from app.progress import router as progress_router
 
@@ -13,6 +14,7 @@ FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 app = FastAPI(title="Heavenly Restriction")
 app.add_middleware(LoopbackOnly)
+app.add_middleware(SecurityHeaders)  # outermost: the 403 above gets them too
 app.include_router(router)
 app.include_router(progress_router)
 

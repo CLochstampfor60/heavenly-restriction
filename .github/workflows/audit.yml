@@ -1,0 +1,42 @@
+name: dependency-audit
+
+# Known-vulnerability check for Python and npm dependencies. Read-only; no secrets used.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays: new advisories surface even without commits
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pip-audit
+        run: python -m pip install pip-audit==2.10.1
+      - name: Audit backend requirements
+        run: |
+          pip-audit -r backend/requirements.txt
+          pip-audit -r backend/requirements-dev.txt
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+      - name: Audit
+        run: npm audit --audit-level=moderate
