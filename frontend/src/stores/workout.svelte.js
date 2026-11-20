@@ -3,6 +3,7 @@
 // IndexedDB so a reload resumes where it left off, and in real mode is queued to the server.
 import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
+import { placeholderFor } from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
 import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
 import { enqueue, onResult, startSync } from './sync.svelte.js';
@@ -332,15 +333,10 @@ export function lastText(ex) {
   return `last ${setText(ex, ex.last[0])}`;
 }
 
-// Last session's values for the same exercise and set number. First time: the set logged just
-// before this one today, else no load and the plan's low end.
+// Placeholder values for set k: see logic.js (no weight is offered on the very first log).
 export function priorFor(ex, k, slot) {
-  const last = ex.last ?? [];
-  if (last.length) return last[Math.min(k, last.length - 1)];
   const earlier = slot?.sets.slice(0, k).findLast((s) => s.status === 'done' || s.status === 'pr');
-  if (earlier) return { w: earlier.w, r: earlier.r, s: earlier.s };
-  const min = slot?.plan.target.min ?? 0;
-  return { w: 0, r: min, s: min };
+  return placeholderFor(ex.last, k, earlier, slot?.plan.target.min);
 }
 
 export function loggedCount(slot) {

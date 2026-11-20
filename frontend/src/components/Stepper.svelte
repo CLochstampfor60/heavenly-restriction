@@ -4,7 +4,8 @@
 
   // value is null until edited; the placeholder (last time's value) is what gets logged then.
   let { label, value, placeholder, step, inputmode, ariaLabel, decLabel, incLabel, onchange } = $props();
-  const current = $derived(value ?? placeholder);
+  // With nothing entered and nothing to offer (first log), the buttons start from 0.
+  const current = $derived(value ?? placeholder ?? 0);
 
   function typed(event) {
     const v = Number.parseFloat(event.currentTarget.value);
@@ -20,7 +21,7 @@
     </button>
     <input
       {inputmode}
-      placeholder={fmt(placeholder)}
+      placeholder={placeholder == null ? 'Enter' : fmt(placeholder)}
       value={value === null ? '' : fmt(value)}
       onchange={typed}
       aria-label={ariaLabel}

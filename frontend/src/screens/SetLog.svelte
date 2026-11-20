@@ -3,6 +3,7 @@
   import RestTimer from '../components/RestTimer.svelte';
   import Sheet from '../components/Sheet.svelte';
   import Stepper from '../components/Stepper.svelte';
+  import { readyToLog } from '../logic.js';
   import { go } from '../router.svelte.js';
   import {
     clock,
@@ -60,9 +61,11 @@
   let w = $state(null);
   let n = $state(null); // reps, or seconds for timed sets
   let rir = $state(null);
-  const priorN = $derived((timed ? prior.s : prior.r) ?? slot.plan.target.min ?? 0);
-  const curW = $derived(w ?? prior.w ?? 0);
+  const priorN = $derived((timed ? prior.s : prior.r) ?? slot.plan.target.min ?? null);
+  const curW = $derived(w ?? prior.w);
   const curN = $derived(n ?? priorN);
+  // First time on an exercise there is no weight to offer: it has to be entered.
+  const ready = $derived(readyToLog(curW, curN));
 
   let noteOpen = $state(false);
   let stopOpen = $state(false);
@@ -70,6 +73,7 @@
   let stopNote = $state('');
 
   function log() {
+    if (!ready) return;
     logSet(slotId, timed ? { w: curW, s: curN, rir } : { w: curW, r: curN, rir });
     w = null;
     n = null;
@@ -187,7 +191,10 @@
         {#if isActive}
           <button
             class="hr-set__check"
-            aria-label="Log set {k + 1} with {w === null && n === null ? 'last time’s values, ' : ''}{fmt(curW)} pounds{m.assisted ? ' of assistance' : ''} for {fmt(curN)} {timed ? 'seconds' : 'reps'}{side ? ' each side' : ''}"
+            aria-label={ready
+              ? `Log set ${k + 1} with ${w === null && n === null ? 'last time’s values, ' : ''}${fmt(curW)} pounds${m.assisted ? ' of assistance' : ''} for ${fmt(curN)} ${timed ? 'seconds' : 'reps'}${side ? ' each side' : ''}`
+              : `Set ${k + 1}: enter the ${curW == null ? 'weight' : timed ? 'seconds' : 'reps'} first`}
+            disabled={!ready}
             onclick={log}
           >
             <span class="hr-box"></span>
@@ -221,7 +228,7 @@
       <Stepper
         label={m.assisted ? 'Assist · lb · less is better' : 'Weight · lb'}
         value={w}
-        placeholder={prior.w ?? 0}
+        placeholder={prior.w}
         step={2.5}
         inputmode="decimal"
         ariaLabel="{m.assisted ? 'Assistance' : 'Weight'} in pounds for set {active + 1}, last time {fmt(prior.w)}"
@@ -257,8 +264,9 @@
         {/each}
       </div>
     </div>
-    <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={log}>
-      <Icon name="check" />Log set {active + 1}
+    <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={log} disabled={!ready}>
+      {#if ready}<Icon name="check" />Log set {active + 1}
+      {:else}Enter {curW == null ? (m.assisted ? 'assistance' : 'weight') : timed ? 'seconds' : 'reps'} for set {active + 1}{/if}
     </button>
     {#if canFinish}
       <button class="hr-btn hr-btn--secondary" onclick={() => finishSlot(slotId)}>
