@@ -18,7 +18,7 @@ Heavenly Restriction is a single-user workout tracker used mid-set, on a Galaxy 
 - **The app talks to its one user, briefly.** "Last time 140", not "Your previous session's weight was 140 lb."
 - **Numbers before words.** "145 lb × 9", "1:30", "est. 1RM 187". Units in American notation: lb, s, min.
 - **No emoji, no exclamation marks.** A personal record is announced by the Black Flash banner, not by "Amazing!!".
-- **No character art or official imagery.** The theme lives in names and color only; the app icon will be an original chain or weapon motif.
+- **No character art or official imagery.** The theme lives in names and color only; the app icon is an original chain-and-blade motif (see App icon).
 
 ## Color
 
@@ -103,12 +103,21 @@ Progress charts follow the bundled chart method: one job per chart, color last, 
 
 - **SVG icons only, never emoji or icon fonts.** 24 × 24 grid, 2 px stroke, round caps and joins, no fills except dots. They are original simple glyphs drawn for this system, in the Icons asset group.
 - In the app, inline the SVG with `class="hr-icon"` so it inherits `currentColor` through `bundle.css`. The asset files are drawn in `text` (`#e9edea`) for previews only.
-- Icon meanings are fixed: `check` done, `partial` partly done, `bolt` personal record, `stop` stop event, `swap` swap, `later` move to the bottom, `skip` skipped, `pin` pinned note, `note` session note, `timer` rest, `play` form video, `pulse` cardio, `moon` recovery day, `scale` bodyweight, `tape` waist, `dumbbell` a lift, `calendar` / `library` / `progress` the three nav destinations, `search`, `photo`, `external` opens in Brave, `chevron-down` / `chevron-right`. `chain` is a placeholder motif until the app icon is designed.
+- Icon meanings are fixed: `check` done, `partial` partly done, `bolt` personal record, `stop` stop event, `swap` swap, `later` move to the bottom, `skip` skipped, `pin` pinned note, `note` session note, `timer` rest, `play` form video, `pulse` cardio, `moon` recovery day, `scale` bodyweight, `tape` waist, `dumbbell` a lift, `calendar` / `library` / `progress` the three nav destinations, `search`, `photo`, `external` opens in Brave, `chevron-down` / `chevron-right`. `chain` is a small chain glyph for in-app use; it is not the app icon.
 - Decorative icons get `aria-hidden="true"`; an icon-only button gets an `aria-label`.
+
+## App icon
+
+- **The icon:** a short straight blade, point up, with a chain wrapped around the handle and trailing off to the right, and a four-pointed spark beside the tip. Blade and chain in `accent` green (#7fa889), the spark in `flash` red (#f55c70), on the dark `bg` (#0b0d0c). It is in the Brand asset group (`app-icon.svg`).
+- **Fixed colors.** The icon stays green and red whatever accent preset is chosen in Settings, and in both themes; app icons don't follow in-app themes.
+- **Full-bleed and maskable.** The SVG is 1024 × 1024 with the dark background filling the square; the artwork stays inside the central 80% circle (it reaches 76%), so Android's round and shaped launcher masks never cut it. Don't add rounded corners to the file; the launcher applies its own shape.
+- **Sizes** are generated from the one SVG: 192 and 512 (any and maskable), a 180 apple-touch-icon, and 32 and 16 favicons.
+- **Origin.** Generated with an AI image tool from an original-design prompt, then redrawn by hand: exact token colors, centered for the safe zone, thickened strokes and a larger spark for small sizes. It is a generic blade and chain, not a copy of any anime weapon or character.
+- **Social preview.** The GitHub social preview card (1280 × 640) pairs the icon and name with two demo-data screenshots on the dark `bg`.
 
 ## Building with it
 
-The frontend framework (Preact or Svelte) isn't chosen yet, so components are plain CSS classes, not a JS bundle. Load `tokens.css` then `components/bundle.css`, put `class="hr-root"` and `data-theme` on the app shell, and use the markup in each component's preview. Every class name starts with `hr-`.
+The app is built with Svelte 5, but the components stay plain CSS classes, not a JS bundle, so any markup can use them. Load `tokens.css` then `components/bundle.css`, put `class="hr-root"` and `data-theme` on the app shell, and use the markup in each component's preview. Every class name starts with `hr-`.
 
 The five screen designs (Today's workout, set logging, exercise card, progress, library) live in the "Heavenly Restriction — App Screens" design canvas and are built only from these tokens and classes. Where a screen and this README disagree, this README wins.
 

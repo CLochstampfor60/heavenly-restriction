@@ -1,7 +1,7 @@
-// App icon PNGs from the one source, public/icons/icon.svg (1024 x 1024, full-bleed background,
-// artwork inside the maskable safe zone).
+// App icon PNGs from the one source, design-system/assets/Brand/app-icon.svg (1024 x 1024,
+// full-bleed background, artwork inside the maskable safe zone).
 //
-//   npm run icons        (writes public/icons/*.png)
+//   npm run icons        (writes public/icons/*.png; the SVG itself is not copied)
 //
 // Renders with an installed Edge or Chrome through playwright-core; no browser download needed.
 // The same full-bleed artwork serves "any" and "maskable": the background fills the square, and
@@ -11,7 +11,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const DIR = fileURLToPath(new URL('../public/icons/', import.meta.url));
-const svg = readFileSync(`${DIR}icon.svg`, 'utf8');
+const SOURCE = fileURLToPath(new URL('../../design-system/assets/Brand/app-icon.svg', import.meta.url));
+const svg = readFileSync(SOURCE, 'utf8');
 
 const OUTPUTS = [
   ['icon-192.png', 192],

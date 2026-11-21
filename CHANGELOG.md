@@ -16,6 +16,8 @@ change how things work.
   your data, which stays in the phone's database and syncs as before). When a new version is
   deployed, a small "Update available · Reload" bar appears instead of switching on its own.
   Signing out also deletes the cached copy.
+- The design system documents the app icon (a new App icon section and a Brand asset group holding
+  the icon's source file) and the compact bottom-bar buttons on Today.
 
 ## [0.4.1] - 2026-11-20
 
