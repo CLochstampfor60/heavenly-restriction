@@ -228,7 +228,7 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 /* Today: block headings, tappable status chips (44 px target around a 28 px chip), notices */
 .block-head { padding-top: var(--space-2); }
 .chip-btn {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
   min-width: var(--tap-min); min-height: var(--tap-min); padding: 0;
   border: 0; background: none; color: inherit; font: inherit; cursor: pointer;
 }
