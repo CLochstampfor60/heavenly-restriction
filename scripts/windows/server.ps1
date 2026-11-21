@@ -1,83 +1,136 @@
-# Keeps the app server running on this Windows machine without a terminal open.
+# Keeps the app server running on this Windows machine with no window to close.
 #
-#   .\scripts\windows\server.ps1 install    register the logon task and start it now
-#   .\scripts\windows\server.ps1 status     task state, the 127.0.0.1:8000 listener, health, log tail
-#   .\scripts\windows\server.ps1 stop       stop the task and the server it started
-#   .\scripts\windows\server.ps1 start      start it again (it also starts at every logon)
+#   .\scripts\windows\server.ps1 install    register the task and start it now
+#   .\scripts\windows\server.ps1 status     task, supervisor, server, health, last exit in words, log tail
+#   .\scripts\windows\server.ps1 stop       stop it and keep it stopped (also across logons)
+#   .\scripts\windows\server.ps1 start      start it again (re-enables the task)
 #   .\scripts\windows\server.ps1 uninstall  stop it and remove the task
 #
-# The task runs as the current user at logon (no stored password, no admin), runs
-# scripts\windows\run-server.ps1 hidden, never times out, and restarts every minute if the
-# runner itself fails. The runner starts the server again whenever it exits.
-# The server binds 127.0.0.1 only; tailscale serve publishes it to the tailnet.
+# The task runs as the current user (no stored password, no admin): at logon, and again every
+# 5 minutes as a backstop (a no-op while it is running). It never times out, and restarts every
+# minute if it fails. It runs scripts\windows\supervise.py under pythonw.exe, which has no
+# console; the supervisor starts the server (127.0.0.1:8000 only) with no window and starts it
+# again after every exit, logging the reason.
+#
+# Log and state (outside the repo): %LOCALAPPDATA%\HeavenlyRestriction\
 
-param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall')][string]$Action = 'status')
+param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall')][string]$Command = 'status')
 
 $ErrorActionPreference = 'Stop'
 $TaskName = 'HeavenlyRestriction Server'
-$runner = Join-Path $PSScriptRoot 'run-server.ps1'
-$log = Join-Path $env:LOCALAPPDATA 'HeavenlyRestriction\logs\server.log'
+$repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$pythonw = Join-Path $repo '.venv\Scripts\pythonw.exe'
+$supervisor = Join-Path $PSScriptRoot 'supervise.py'
+$home_ = Join-Path $env:LOCALAPPDATA 'HeavenlyRestriction'
+$log = Join-Path $home_ 'logs\server.log'
+$state = Join-Path $home_ 'state.json'
 
 function Get-ServerTask {
     Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 }
 
-function Stop-Server {
-    if (Get-ServerTask) { Stop-ScheduledTask -TaskName $TaskName }
-    # Stopping the task ends the runner but can leave the server it started; end that too.
-    $runners = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
-        Where-Object { $_.CommandLine -like '*run-server.ps1*' }
-    foreach ($r in $runners) { & taskkill.exe /PID $r.ProcessId /T /F | Out-Null }
-    $listen = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
-    foreach ($c in $listen) { & taskkill.exe /PID $c.OwningProcess /T /F | Out-Null }
+function Get-SupervisorProcess {
+    Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe' OR Name = 'python.exe'" |
+        Where-Object { $_.CommandLine -like '*supervise.py*' }
 }
 
-switch ($Action) {
+function Format-ExitCode([long]$code) {
+    $code = $code -band 0xFFFFFFFF
+    $words = switch ($code) {
+        0 { 'finished normally' }
+        1 { 'stopped with an error, or was ended by taskkill /F' }
+        267008 { 'ready, has not run yet' }
+        267009 { 'running now' }
+        267011 { 'has not run yet' }
+        267014 { 'was stopped by a user or by Task Scheduler' }
+        2147750687 { 'was already running, so this start was skipped' }
+        3221225786 { 'closed by Ctrl+C or by its console window closing' }
+        1073807364 { 'ended by sign-out or shutdown' }
+        4294967295 { 'ended by Task Manager or Stop-Process' }
+        default { 'exited unexpectedly' }
+    }
+    '{0} (code {1}, 0x{2:X8})' -f $words, $code, $code
+}
+
+function Stop-Server {
+    # taskkill reports "not found" for a process its tree kill already ended; that is fine.
+    $ErrorActionPreference = 'Continue'
+    if (Get-ServerTask) {
+        Stop-ScheduledTask -TaskName $TaskName
+        Disable-ScheduledTask -TaskName $TaskName | Out-Null
+    }
+    foreach ($p in Get-SupervisorProcess) { & taskkill.exe /PID $p.ProcessId /T /F 2>$null | Out-Null }
+    $listen = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
+    foreach ($c in $listen) { & taskkill.exe /PID $c.OwningProcess /T /F 2>$null | Out-Null }
+    $global:LASTEXITCODE = 0
+}
+
+switch ($Command) {
     'install' {
-        $taskAction = New-ScheduledTaskAction -Execute 'powershell.exe' `
-            -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$runner`""
-        $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+        if (-not (Test-Path $pythonw)) { throw "Missing $pythonw. Create the .venv first (see README)." }
+        Stop-Server
+        $taskAction = New-ScheduledTaskAction -Execute $pythonw -Argument "`"$supervisor`"" -WorkingDirectory $repo
+        $atLogon = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+        # Backstop: try to start it every 5 minutes; ignored while it is already running.
+        $every5 = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 5)
         $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) `
             -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable `
-            -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew
+            -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -MultipleInstances IgnoreNew
         $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
-        Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings `
-            -Principal $principal -Description 'Heavenly Restriction app server (127.0.0.1:8000).' -Force | Out-Null
+        Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger @($atLogon, $every5) `
+            -Settings $settings -Principal $principal `
+            -Description 'Heavenly Restriction app server (127.0.0.1:8000), no console window.' -Force | Out-Null
         Start-ScheduledTask -TaskName $TaskName
         Write-Output "Installed and started '$TaskName'. Log: $log"
     }
     'start' {
+        Enable-ScheduledTask -TaskName $TaskName | Out-Null
         Start-ScheduledTask -TaskName $TaskName
         Write-Output "Started '$TaskName'."
     }
     'stop' {
         Stop-Server
-        Write-Output "Stopped '$TaskName'. It starts again at the next logon, or with: server.ps1 start"
+        Write-Output "Stopped '$TaskName'. It stays stopped, also across logons, until: server.ps1 start"
     }
     'uninstall' {
         Stop-Server
         if (Get-ServerTask) { Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false }
-        Write-Output "Removed '$TaskName'. The log stays in $log"
+        Write-Output "Removed '$TaskName'. Log and state stay in $home_"
     }
     'status' {
         $task = Get-ServerTask
         if (-not $task) { Write-Output "Task '$TaskName' is not installed."; return }
         $info = $task | Get-ScheduledTaskInfo
-        Write-Output ("Task:     {0} (last run {1}, result {2})" -f $task.State, $info.LastRunTime, $info.LastTaskResult)
+        Write-Output ("Task:        {0}, last run {1}: {2}" -f $task.State, $info.LastRunTime, (Format-ExitCode $info.LastTaskResult))
+        $sup = @(Get-SupervisorProcess)
+        if ($sup.Count) {
+            Write-Output ("Supervisor:  running (pid {0})" -f (($sup | ForEach-Object { $_.ProcessId }) -join ', '))
+        } else {
+            Write-Output 'Supervisor:  not running'
+        }
         $listen = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
         if ($listen) {
-            Write-Output ("Listener: {0}:8000, process {1}" -f $listen[0].LocalAddress, $listen[0].OwningProcess)
+            Write-Output ("Server:      listening on {0}:8000 (pid {1})" -f $listen[0].LocalAddress, $listen[0].OwningProcess)
         } else {
-            Write-Output 'Listener: nothing on port 8000'
+            Write-Output 'Server:      nothing listening on port 8000'
         }
         try {
             $health = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 http://127.0.0.1:8000/api/health).Content
-            Write-Output "Health:   $health"
+            Write-Output "Health:      $health"
         } catch {
-            Write-Output "Health:   no answer ($($_.Exception.Message))"
+            Write-Output "Health:      no answer ($($_.Exception.Message))"
+        }
+        if (Test-Path $state) {
+            $s = Get-Content -Raw -Path $state | ConvertFrom-Json
+            if ($null -ne $s.last_exit_code) {
+                Write-Output ("Last exit:   server {0} at {1}" -f $s.last_exit_reason, $s.last_exit_at)
+                Write-Output ("Restarts:    {0} since the supervisor started at {1}" -f $s.restarts, $s.supervisor_started_at)
+            } else {
+                Write-Output ("Last exit:   none since the supervisor started at {0}" -f $s.supervisor_started_at)
+            }
         }
         if (Test-Path $log) {
-            Write-Output "Log:      $log (last 5 lines)"
+            Write-Output "Log:         $log (last 5 lines)"
             Get-Content -Path $log -Tail 5
         }
     }
