@@ -61,6 +61,7 @@
     { id: 'green', label: 'Green', jjk: 'Cursed Energy' },
     { id: 'plum', label: 'Plum', jjk: 'Toji' },
     { id: 'blue', label: 'Blue', jjk: 'Six Eyes' },
+    { id: 'gold', label: 'Gold', jjk: 'Super Saiyan' },
   ];
 
   // Two taps, so a stray touch can't wipe the session.

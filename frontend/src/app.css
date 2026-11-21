@@ -17,6 +17,13 @@ a.hr-btn { text-decoration: none; }
   --accent-strong: var(--preset-blue-strong);
   --accent-soft: var(--preset-blue-soft);
 }
+[data-accent="gold"] {
+  --accent: var(--preset-gold);
+  --accent-strong: var(--preset-gold-strong);
+  --accent-soft: var(--preset-gold-soft);
+  --grade: var(--preset-gold-grade);
+  --grade-soft: var(--preset-gold-grade-soft);
+}
 
 /* ---------- Screen frame: scrolling content over a sticky bottom bar ---------- */
 .app {

@@ -39,15 +39,16 @@ Dark is the default theme; Light has the same tokens with its own values (see Th
 
 ### Changing the accent from Settings
 
-The Settings accent picker overrides exactly four tokens on `:root`: `accent`, `accent-strong`, `accent-soft`, `on-accent`. Nothing else in the app may hard-code the accent; reference `var(--accent)` and its siblings. The presets are stored as `preset-…` tokens so the picker reads them instead of hard-coding hex values. Label each with the plain name first and the JJK name second.
+The Settings accent picker overrides exactly four tokens on `:root`: `accent`, `accent-strong`, `accent-soft`, `on-accent` (plus the preset's own swaps noted below the table). Nothing else in the app may hard-code the accent; reference `var(--accent)` and its siblings. The presets are stored as `preset-…` tokens so the picker reads them instead of hard-coding hex values. Label each with the plain name first and the JJK name second.
 
 | Preset | JJK name | `accent` | `accent-strong` | `accent-soft` | `on-accent` |
 | --- | --- | --- | --- | --- | --- |
 | Green (default) | Cursed Energy | `accent` #7fa889 | `accent-strong` #9cc3a5 | `accent-soft` #1e2b22 | `on-accent` |
 | Plum | Toji | `preset-plum` #b48aab | `preset-plum-strong` #c9a6c1 | `preset-plum-soft` #2b1f29 | `on-accent` |
 | Blue | Six Eyes | `preset-blue` #45b0d2 | `preset-blue-strong` #72c4df | `preset-blue-soft` #13272f | `on-accent` |
+| Gold | Super Saiyan | `preset-gold` #f5d04a | `preset-gold-strong` #f9e08a | `preset-gold-soft` #2c2610 | `on-accent` |
 
-With Plum, `cursed` also switches to `preset-plum-cursed` (Toji's tan, #eed0bb) and `cursed-soft` to `preset-plum-cursed-soft`, so the Toji theme is built only from Toji's palette: plum, tan and the slate cards. Blue (Six Eyes) keeps the violet. All three keep accent text at 4.5:1 or better on every surface, card and soft tint in both themes. In Dark, `on-accent` is near-black; in Light it is white, because the Light accents are deeper. Any new preset needs a value for each theme, must meet the same floors, and must not be a red or amber (those belong to `flash` and `stop`). Plum sits nearest to `flash` in hue; that is safe only because personal records always carry the bolt icon and "PR".
+With Plum, `cursed` also switches to `preset-plum-cursed` (Toji's tan, #eed0bb) and `cursed-soft` to `preset-plum-cursed-soft`, so the Toji theme is built only from Toji's palette: plum, tan and the slate cards. Blue (Six Eyes) keeps the violet. With Gold, `grade` switches to `preset-gold-grade` (platinum, #d3d8df) and `grade-soft` to `preset-gold-grade-soft`, because grade badges and goal lines are gold and would blend into a gold accent. All four keep accent text at 4.5:1 or better on every surface, card and soft tint in both themes; Gold's Light value is a deep gold (#7d6000, 4.56:1 on `surface-3`, the floor) because bright yellow fails on light grounds. In Dark, `on-accent` is near-black; in Light it is white, because the Light accents are deeper. Any new preset needs a value for each theme, must meet the same floors, and must not be a red or amber (those belong to `flash` and `stop`). Plum sits nearest to `flash` in hue, and Gold nearest to `stop` (in Light they have almost the same lightness); both are safe only because personal records always carry the bolt icon and "PR", and Stop always carries the octagon and the word.
 
 ## Themes
 

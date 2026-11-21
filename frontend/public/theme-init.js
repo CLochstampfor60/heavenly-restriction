@@ -1,5 +1,5 @@
 // Applies the stored theme and accent to the app shell (<html>) before first paint.
-// Settings are per device: "hr-theme" (system | dark | light), "hr-accent" (green | plum | blue).
+// Settings are per device: "hr-theme" (system | dark | light), "hr-accent" (green | plum | blue | gold).
 // The Settings screen writes them and calls window.hrApplySettings() again.
 (function () {
   function read(key, allowed, fallback) {
@@ -14,7 +14,7 @@
   window.hrReadSettings = function () {
     return {
       theme: read('hr-theme', ['system', 'dark', 'light'], 'system'),
-      accent: read('hr-accent', ['green', 'plum', 'blue'], 'green'),
+      accent: read('hr-accent', ['green', 'plum', 'blue', 'gold'], 'green'),
     };
   };
 
