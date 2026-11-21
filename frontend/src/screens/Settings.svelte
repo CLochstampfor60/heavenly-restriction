@@ -118,7 +118,7 @@
         CLochstampfor60 on GitHub<Icon name="external" />
       </a>
       <span class="small muted">Built with help from Claude by Anthropic.</span>
-      <span class="meta">Heavenly Restriction 0.1.0 · MIT License</span>
+      <span class="meta">Heavenly Restriction 0.4.1 · MIT License</span>
     </div>
   </section>
 
