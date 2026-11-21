@@ -19,6 +19,10 @@ change how things work.
 - The design system documents the app icon (a new App icon section and a Brand asset group holding
   the icon's source file) and the compact bottom-bar buttons on Today.
 
+### Removed
+- The planned Escanor theme is dropped from the parking lot: its colors overlap the Gold accent
+  and the Stop amber.
+
 ## [0.4.1] - 2026-11-20
 
 ### Added
