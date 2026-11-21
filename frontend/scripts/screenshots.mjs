@@ -1,4 +1,4 @@
-// README screenshots at 360 x 780, in DEMO-DATA MODE ONLY (made-up program and history).
+// Demo-data screenshots at 360 x 780, scale 3 (1080 px wide), in DEMO-DATA MODE ONLY (made-up program and history).
 //
 //   npm run screenshots        (builds first, then writes docs/screenshots/*.png)
 //
@@ -26,7 +26,7 @@ async function launch() {
 
 // A fresh context per shot: empty IndexedDB, demo mode on, chosen theme.
 async function shot(browser, name, path, { theme = 'dark', act } = {}) {
-  const context = await browser.newContext({ viewport: { width: 360, height: 780 }, deviceScaleFactor: 2 });
+  const context = await browser.newContext({ viewport: { width: 360, height: 780 }, deviceScaleFactor: 3 });
   await context.addInitScript((t) => {
     localStorage.setItem('hr-demo', '1');
     localStorage.setItem('hr-theme', t);

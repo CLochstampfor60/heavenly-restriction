@@ -3,16 +3,25 @@ A self-hosted workout tracker for training hard within injury limits. FastAPI + 
 
 **Status:** early build. Program import, today's session, set logging, the library, exercise cards and progress work on real data; login, program editing and media upload are not built yet.
 
-<p>
-  <img src="docs/screenshots/today.png" width="150" alt="Today's workout: exercises in program order, one done, one in progress">
-  <img src="docs/screenshots/set-logging.png" width="150" alt="Set logging with a new personal record banner">
-  <img src="docs/screenshots/exercise-card.png" width="150" alt="Exercise card: best set, estimated 1RM, plan and pinned notes">
-  <img src="docs/screenshots/progress.png" width="150" alt="Progress: sessions this week, cardio minutes and a bodyweight chart">
-  <img src="docs/screenshots/library.png" width="150" alt="Exercise library grouped by body region and muscle">
-  <img src="docs/screenshots/today-light.png" width="150" alt="Today's workout in the Light theme">
-</p>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/today-plum-dark.webp" width="240" alt="Today's workout in the Dark theme with the Plum accent: one exercise done, one in progress, Continue and Finish workout buttons"><br><b>Today's workout</b><br><sub>Dark theme, Plum (Toji) accent</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/today-swaps.webp" width="240" alt="Today's list with a swapped exercise, Band Face Pull, Hammer Curl and a gear-based alternative"><br><b>Swaps and gear</b><br><sub>Swapped exercises and the next ones</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/swap-sheet.webp" width="240" alt="Swap sheet for Seated Cable Row listing substitutions and same-muscle options with last weights"><br><b>Swap an exercise</b><br><sub>Your substitutions, then same muscle</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/today-blue-light.webp" width="240" alt="Today's workout in the Light theme with the Blue accent"><br><b>Light theme</b><br><sub>Blue (Six Eyes) accent</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/today-alternatives.webp" width="240" alt="Today's list in the Light theme: a swap note and an alternative shown because the Hip Halo wasn't brought"><br><b>Alternatives</b><br><sub>Shown when gear wasn't brought</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/library.webp" width="240" alt="Exercise library with search, filters and the Back region expanded to Lats, with grade badges"><br><b>Exercise library</b><br><sub>By body region and muscle</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/progress.webp" width="240" alt="Progress: 4 of 5 sessions, 150 of 345 cardio minutes, and the bodyweight tab"><br><b>Progress</b><br><sub>Sessions, cardio and bodyweight</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/progress-chart.webp" width="240" alt="Bodyweight chart for October with a dashed goal line at 185, and sets per muscle group this week"><br><b>Bodyweight and sets</b><br><sub>Goal line, sets per muscle group</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/progress-calendar.webp" width="240" alt="November calendar with done, cardio and recovery days, the legend, and a recent personal record"><br><b>Calendar and records</b><br><sub>Done, cardio, recovery and PRs</sub></td>
+  </tr>
+</table>
 
-Screenshots use the app's built-in demo data (a made-up program and history), captured at 360 × 780 with `npm --prefix frontend run screenshots`.
+Screenshots are from the phone (Galaxy S23, Brave) in the app's demo mode: a made-up program and history, never real data. They are cropped to the app, with the browser bar removed. `npm --prefix frontend run screenshots` makes a matching set from the demo data in headless Edge.
 
 ## How it's built
 - **Design:** the screens and the design system (`design-system/`, `docs/DESIGN.md`) were designed in claude.ai.
