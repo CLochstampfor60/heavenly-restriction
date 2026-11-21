@@ -26,6 +26,7 @@ Screenshots are from the phone (Galaxy S23, Brave) in the app's demo mode: a mad
 ## How it's built
 - **Design:** the screens and the design system (`design-system/`, `docs/DESIGN.md`) were designed in claude.ai.
 - **Code:** written with Claude Code.
+- **App icon:** generated with an AI image tool and refined by hand.
 - **Scope, decisions and review:** mine. I set the scope, made or reviewed the decisions, and checked the changes before they went in.
 - **Stack:** Python 3.12, FastAPI, SQLAlchemy 2 + Alembic on SQLite; a Svelte 5 PWA with Dexie (IndexedDB) so a set logs with no signal and syncs later. One origin, no third-party services.
 - **Security:** threat model and decisions, done and planned, in [docs/SECURITY.md](docs/SECURITY.md).
