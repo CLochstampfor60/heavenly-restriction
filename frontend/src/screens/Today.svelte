@@ -269,7 +269,7 @@
 
 <div class="app__bar">
   {#if hero}
-    <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={heroAction}>
+    <button class="hr-btn hr-btn--primary hr-btn--compact" onclick={heroAction}>
       {#if hero.icon}<Icon name={hero.icon} />{/if}{hero.label}
     </button>
     {#if hero.slot && begun}
