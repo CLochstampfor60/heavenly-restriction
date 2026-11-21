@@ -50,3 +50,4 @@ Warmup Routine module, injury guardrails as enforced rules (they are pinned note
 - Commands and code must work the first time; test before saying something works.
 - Mark clearly what is required vs optional. No padded caveats.
 - Small, focused commits. Run `pre-commit run --all-files` and `pytest` before committing.
+- CHANGELOG.md (Keep a Changelog, semantic versions): every feature or fix commit adds a plain-words line under `## [Unreleased]`, in the same commit. Never name the real program, exercises, caps, injuries, symptoms, machine names, the tailnet or IPs there.
