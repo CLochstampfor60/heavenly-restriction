@@ -92,5 +92,6 @@ def anon(engine, db):
     auth.CEREMONIES.items.clear()
     auth.ENROLL_GRANTS.items.clear()
     auth.SETUP.code = None
+    auth.DEVICE_CODE.item = None
     yield make_client(engine, signed_in=False)
     app.dependency_overrides.clear()

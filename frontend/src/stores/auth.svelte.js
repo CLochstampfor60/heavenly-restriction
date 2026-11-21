@@ -1,5 +1,5 @@
 // Sign-in state and actions. Real mode only; demo mode never talks to the server.
-import { canWipe } from '../logic.js';
+import { canWipe, deviceName } from '../logic.js';
 import { isDemo } from '../mode.js';
 import { createPasskey, usePasskey } from '../webauthn.js';
 import { wipeLocalData } from './logout.js';
@@ -56,7 +56,8 @@ export async function signIn() {
 }
 
 // reason: { setup_code } on first run, { enroll_token } from a code, or {} when signed in.
-export async function createPasskeyWith(reason, name = 'Phone') {
+// The name starts as the kind of device (renamable in Settings).
+export async function createPasskeyWith(reason, name = deviceName(navigator.userAgent)) {
   const { ceremony, options } = await post('/api/auth/register/options', reason);
   const credential = await createPasskey(options);
   await post('/api/auth/register/verify', { ceremony, credential, name });

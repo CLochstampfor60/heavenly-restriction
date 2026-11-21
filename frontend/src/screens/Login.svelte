@@ -47,7 +47,7 @@
     await createPasskeyWith({ enroll_token: token });
     recoveryOpen = false;
     code = '';
-    note = 'Passkey saved on this phone. Now sign in with it.';
+    note = 'Passkey saved on this device. Now sign in with it.';
   });
 </script>
 
@@ -90,20 +90,20 @@
     <section class="stack">
       <button class="gear-head" aria-expanded={recoveryOpen} onclick={() => (recoveryOpen = !recoveryOpen)}>
         <span class="option-text">
-          <span class="body-strong">New or replaced phone?</span>
-          <span class="meta">Use an authenticator code or a recovery code to add a passkey here.</span>
+          <span class="body-strong">New device or replaced phone?</span>
+          <span class="meta">Use a device code from Settings on a signed-in device, an authenticator code or a recovery code to add a passkey here.</span>
         </span>
         <span class="meta-strong">{recoveryOpen ? 'Close' : 'Open'}</span>
       </button>
       {#if recoveryOpen}
         <div class="stack-tight">
-          <label for="enroll-code" class="hr-eyebrow">Authenticator or recovery code</label>
+          <label for="enroll-code" class="hr-eyebrow">Device, authenticator or recovery code</label>
           <input id="enroll-code" class="text-field" autocomplete="one-time-code" spellcheck="false"
             placeholder="123456 or XXXX-XXXX-XXXX" bind:value={code}>
-          <span class="meta">A recovery code works once. This does not sign you in; the new passkey does.</span>
+          <span class="meta">Device and recovery codes work once. This does not sign you in; the new passkey does.</span>
         </div>
         <button class="hr-btn hr-btn--secondary" disabled={busy || code.trim().length < 6} onclick={doRecover}>
-          Create a passkey on this phone
+          Create a passkey on this device
         </button>
       {/if}
     </section>

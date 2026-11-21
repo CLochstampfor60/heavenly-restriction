@@ -1,17 +1,17 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
+  import Passkeys from '../components/Passkeys.svelte';
   import { setAccent, setTheme, settings } from '../settings.svelte.js';
   import { DEMO_ONLY, setDemo } from '../mode.js';
   import { source } from '../stores/source.svelte.js';
   import { requestPersistence, storage } from '../stores/storage.svelte.js';
-  import { auth, checkAuth, createPasskeyWith, explain, signOut } from '../stores/auth.svelte.js';
+  import { auth, checkAuth, explain, signOut } from '../stores/auth.svelte.js';
   import { api } from '../stores/sync.svelte.js';
 
   // ---------- Security (real mode) ----------
   let secBusy = $state(false);
   let secError = $state('');
-  let secNote = $state('');
   let totp = $state(null); // { secret, otpauth_uri } while setting up
   let totpCode = $state('');
   let codes = $state(null); // recovery codes, shown once
@@ -20,7 +20,6 @@
   async function secRun(step) {
     secBusy = true;
     secError = '';
-    secNote = '';
     try {
       await step();
     } catch (e) {
@@ -30,11 +29,6 @@
     }
   }
 
-  const addPasskey = () => secRun(async () => {
-    await createPasskeyWith({}, 'Passkey');
-    await checkAuth();
-    secNote = 'Passkey added.';
-  });
   const startTotp = () => secRun(async () => {
     totp = await api('POST', '/api/auth/totp/setup', {});
   });
@@ -130,10 +124,7 @@
   {#if !source.demo && auth.authenticated}
     <section class="stack" aria-labelledby="security-label">
       <span id="security-label" class="hr-eyebrow">Sign-in and security</span>
-      <span class="body">
-        Signed in with a passkey · {auth.info?.passkeys ?? 1} passkey{(auth.info?.passkeys ?? 1) === 1 ? '' : 's'}
-      </span>
-      <button class="hr-btn hr-btn--secondary" disabled={secBusy} onclick={addPasskey}>Add another passkey</button>
+      <Passkeys />
 
       {#if codes}
         <div class="hr-note">
@@ -185,7 +176,6 @@
           Sign out and clear this phone
         </button>
       {/if}
-      {#if secNote}<span class="meta" role="status">{secNote}</span>{/if}
       {#if secError}<span class="body" role="alert">{secError}</span>{/if}
     </section>
   {/if}

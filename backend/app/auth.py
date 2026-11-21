@@ -4,7 +4,10 @@ Rules
 - A passkey is the only way to get a session.
 - Creating a passkey needs one of: the one-time setup code printed in the server console (only
   while no passkey exists), an active session (adding another passkey), or an enroll grant from
-  a TOTP code or a one-time recovery code (lost phone). None of those log you in.
+  a TOTP code, a one-time recovery code (lost phone) or a device code shown in Settings on a
+  signed-in device (adding the workstation). None of those log you in.
+- Removing a passkey ends the sessions it signed in. The last passkey can be removed only with a
+  recovery code.
 - Session cookie: random token, HttpOnly, Secure, SameSite=Strict, `__Host-` prefix when Secure.
   The server stores only its SHA-256. New session on every login (the old cookie's session is
   revoked); idle timeout plus an absolute lifetime.
@@ -161,6 +164,32 @@ class SetupCode:
 SETUP = SetupCode()
 
 
+class DeviceCode:
+    """A one-time code shown in Settings on a signed-in device, so another device (the
+    workstation) can create its own passkey. Five minutes, single use; a new code replaces the
+    old one. Only its hash is kept, in memory."""
+
+    def __init__(self) -> None:
+        self.item: tuple[float, str] | None = None
+
+    def new(self) -> str:
+        raw = "".join(secrets.choice(SetupCode.ALPHABET) for _ in range(12))
+        self.item = (time.monotonic() + CEREMONY_TTL, sha256(raw))
+        return f"{raw[:4]}-{raw[4:8]}-{raw[8:]}"
+
+    def take(self, value: str) -> bool:
+        if self.item is None or time.monotonic() > self.item[0]:
+            self.item = None
+            return False
+        if not hmac.compare_digest(sha256(normalize_code(value)), self.item[1]):
+            return False
+        self.item = None
+        return True
+
+
+DEVICE_CODE = DeviceCode()
+
+
 def normalize_code(value: str) -> str:
     return "".join(ch for ch in value.upper() if ch.isalnum())
 
@@ -189,6 +218,20 @@ def totp_verify(secret_b32: str, code: str, last_step: int | None, at: float | N
         ):
             return s
     return None
+
+
+def take_recovery_code(db: Session, code: str) -> bool:
+    """Marks an unused recovery code used. The caller commits."""
+    row = db.scalar(
+        select(RecoveryCode).where(
+            RecoveryCode.code_hash == sha256(normalize_code(code)),
+            RecoveryCode.used_at.is_(None),
+        )
+    )
+    if row is None:
+        return False
+    row.used_at = now()
+    return True
 
 
 def new_recovery_codes(db: Session) -> list[str]:
@@ -489,25 +532,18 @@ class CodeIn(BaseModel):
 
 @router.post("/enroll/start")
 def enroll_start(body: CodeIn, db: DB) -> dict:
-    """A TOTP or recovery code buys one passkey enrollment (5 minutes). Never a session."""
+    """A TOTP, recovery or device code buys one passkey enrollment (5 minutes). Never a
+    session."""
     check_lock(db, "enroll")
     cfg = auth_config(db)
-    via = None
-    if cfg.totp_secret:
+    via = "device code" if DEVICE_CODE.take(body.code) else None
+    if via is None and cfg.totp_secret:
         step = totp_verify(cfg.totp_secret, body.code, cfg.totp_last_step)
         if step is not None:
             cfg.totp_last_step = step
             via = "totp"
-    if via is None:
-        row = db.scalar(
-            select(RecoveryCode).where(
-                RecoveryCode.code_hash == sha256(normalize_code(body.code)),
-                RecoveryCode.used_at.is_(None),
-            )
-        )
-        if row is not None:
-            row.used_at = now()
-            via = "recovery code"
+    if via is None and take_recovery_code(db, body.code):
+        via = "recovery code"
     db.commit()
     if via is None:
         record(db, "enroll", False)
@@ -550,3 +586,90 @@ def recovery_regenerate(_: SessionDep, db: DB) -> dict:
     codes = new_recovery_codes(db)
     record(db, "recovery_regenerated", True)
     return {"recovery_codes": codes}
+
+
+# ---------------------------------------------------------------- managing passkeys
+
+
+def iso(dt: datetime | None) -> str | None:
+    return aware(dt).isoformat() if dt else None
+
+
+@router.get("/passkeys")
+def list_passkeys(s: SessionDep, db: DB) -> list[dict]:
+    """Every passkey, oldest first. `current` marks the one this session signed in with."""
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "created_at": iso(p.created_at),
+            "last_used_at": iso(p.last_used_at),
+            "current": p.id == s.passkey_id,
+        }
+        for p in db.scalars(select(Passkey).order_by(Passkey.id))
+    ]
+
+
+def passkey_or_404(db: Session, passkey_id: int) -> Passkey:
+    p = db.get(Passkey, passkey_id)
+    if p is None:
+        raise HTTPException(404, "No such passkey.")
+    return p
+
+
+class RenameIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+@router.patch("/passkeys/{passkey_id}")
+def rename_passkey(passkey_id: int, body: RenameIn, _: SessionDep, db: DB) -> dict:
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(422, "Give the passkey a name.")
+    passkey_or_404(db, passkey_id).name = name
+    db.commit()
+    return {"ok": True}
+
+
+class RemoveIn(BaseModel):
+    recovery_code: str | None = Field(default=None, max_length=40)
+
+
+@router.post("/passkeys/{passkey_id}/remove")
+def remove_passkey(passkey_id: int, body: RemoveIn, s: SessionDep, db: DB) -> dict:
+    """Removes a passkey and ends every session it signed in. The last passkey needs a
+    recovery code (used up here); without any passkey, only the console setup code can create
+    one again."""
+    passkey = passkey_or_404(db, passkey_id)
+    last = db.scalar(select(func.count(Passkey.id))) == 1
+    if last:
+        check_lock(db, "remove")
+        if not body.recovery_code:
+            raise HTTPException(
+                409, "This is the only passkey. Enter a recovery code to remove it."
+            )
+        if not take_recovery_code(db, body.recovery_code):
+            record(db, "remove", False, "recovery code")
+            raise HTTPException(403, "That recovery code is not right, or it was already used.")
+    t = now()
+    for session in db.scalars(
+        select(AuthSession).where(
+            AuthSession.passkey_id == passkey.id, AuthSession.revoked_at.is_(None)
+        )
+    ):
+        session.revoked_at = t
+    signed_out = s.passkey_id == passkey.id or last
+    if last:  # nothing can sign in any more: end every session
+        for session in db.scalars(select(AuthSession).where(AuthSession.revoked_at.is_(None))):
+            session.revoked_at = t
+    db.delete(passkey)
+    db.commit()
+    record(db, "passkey_removed", True, "last, with recovery code" if last else None)
+    return {"ok": True, "signed_out": signed_out}
+
+
+@router.post("/device-code")
+def device_code(_: SessionDep, db: DB) -> dict:
+    """A one-time code for adding a passkey on another device. Five minutes, single use."""
+    record(db, "device_code", True)
+    return {"code": DEVICE_CODE.new(), "expires_in": CEREMONY_TTL}

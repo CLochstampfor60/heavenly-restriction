@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   canWipe,
+  deviceName,
   finishMessage,
   finishPrompt,
+  lastUsedText,
   openAtFinish,
   outboxDisposition,
   placeholderFor,
@@ -122,4 +124,23 @@ test('finish prompt wording', () => {
   assert.equal(mixed.title, '2 exercises not done');
   assert.equal(mixed.keeps, 'Lat Pulldown keeps its logged sets; the rest of its sets are skipped.');
   assert.equal(finishPrompt({ skip: [], end: ['b'] }, ['Lat Pulldown']).question, 'Finish now?');
+});
+
+// ---------- Passkeys ----------
+
+test('device names from the user agent', () => {
+  const s23 = 'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+  const win = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0';
+  assert.equal(deviceName(s23), 'Android phone');
+  assert.equal(deviceName(win), 'Windows (Windows Hello)');
+  assert.equal(deviceName(''), 'Passkey');
+});
+
+test('last used wording', () => {
+  const now = new Date(2026, 10, 20, 18, 0);
+  assert.equal(lastUsedText(null, now), 'Not used to sign in yet');
+  assert.equal(lastUsedText(new Date(2026, 10, 20, 7, 5).toISOString(), now), 'Last used today');
+  assert.equal(lastUsedText(new Date(2026, 10, 19, 23, 0).toISOString(), now), 'Last used yesterday');
+  assert.equal(lastUsedText(new Date(2026, 10, 3, 9, 0).toISOString(), now), 'Last used Nov 3');
+  assert.equal(lastUsedText(new Date(2025, 11, 30, 9, 0).toISOString(), now), 'Last used Dec 30, 2025');
 });

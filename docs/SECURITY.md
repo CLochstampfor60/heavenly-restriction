@@ -62,8 +62,16 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   authorize enrolling a new passkey (new or replaced phone), never a session. Codes are shown
   once and stored as hashes; a TOTP code works once (replay guard). Set up from Settings while
   signed in.
-- **Done.** Five failures of the same kind (sign-in, setup code, enrollment code) within 15
-  minutes lock that action for 15 minutes (429). Pending sign-in challenges are single use,
+- **Done.** Settings lists every passkey (name, last used, which one this device signed in
+  with); each can be renamed or removed. Removing a passkey ends every session it signed in.
+  The last passkey can be removed only with a recovery code (used up); with none left, only
+  the console setup code can create a passkey again.
+- **Done.** A second device (the workstation, with Windows Hello) gets its own passkey through a
+  one-time device code shown in Settings on a signed-in device: five minutes, single use, a new
+  code replaces the old, only its hash is kept (in memory). Like the other codes, it authorizes
+  one enrollment and never a session.
+- **Done.** Five failures of the same kind (sign-in, setup code, enrollment code, removing the
+  last passkey) within 15 minutes lock that action for 15 minutes (429). Pending sign-in challenges are single use,
   expire after five minutes and are capped in number.
 
 ### Sessions
@@ -116,7 +124,8 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Planned.** Files stored outside the web root and served only through the API.
 
 ### Logging
-- **Done.** Authentication events only (sign-in, failure, passkey added, sign-out) go to an
+- **Done.** Authentication events only (sign-in, failure, passkey added or removed, device code
+  issued, sign-out) go to an
   `auth_event` table: kind, success, and a short non-sensitive detail. Never health data,
   notes, sets or request bodies.
 - **Planned.** Alert on a sign-in from a new device.

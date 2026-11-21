@@ -90,3 +90,29 @@ export function outboxDisposition(status) {
   if (status >= 500 || status === 403 || status === 408 || status === 429) return 'retry';
   return 'drop';
 }
+
+// ---------- Passkeys ----------
+
+// A starting name for a new passkey, from the browser's user agent. Renamable in Settings.
+export function deviceName(ua = '') {
+  if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? 'Android phone' : 'Android tablet';
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Windows/i.test(ua)) return 'Windows (Windows Hello)';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'Mac';
+  if (/Linux/i.test(ua)) return 'Linux computer';
+  return 'Passkey';
+}
+
+// "Last used" on a passkey row. Dates are compared in local time.
+export function lastUsedText(iso, now = new Date()) {
+  if (!iso) return 'Not used to sign in yet';
+  const d = new Date(iso);
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((day(now) - day(d)) / 86400000);
+  if (days <= 0) return 'Last used today';
+  if (days === 1) return 'Last used yesterday';
+  const opts = { month: 'short', day: 'numeric' };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return `Last used ${d.toLocaleDateString('en-US', opts)}`;
+}
