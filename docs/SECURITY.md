@@ -3,7 +3,8 @@
 Heavenly Restriction is a single-user, self-hosted workout tracker. Its data includes injury and
 health history, so the design assumes that data must never be readable by anyone but its owner.
 This page is the threat model and the decisions that follow from it. Each item is marked
-**Done** (in the code today) or **Planned** (phase 4: remote access and login).
+**Done** (in the code or the tailnet today) or **Planned**. Setup steps for the tailnet are in
+[TAILSCALE.md](TAILSCALE.md).
 
 Names here are placeholders: `hr.<tailnet>.ts.net` stands for the app's hostname, `192.168.x.x`
 for the home network.
@@ -35,17 +36,22 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Done.** In Docker, the port is published on 127.0.0.1 only.
 
 ### Access
-- **Planned.** Tailscale is the only way in: `tailscale serve` on the host, never Tailscale Funnel.
-- **Planned.** Tailscale ACLs allow only the owner's phone and workstation to reach the app port.
-- **Planned.** MFA on the identity account behind the tailnet.
-- **Planned.** Tailnet Lock on, so a new node needs a signature from a trusted device.
+- **Done.** Tailscale is the only way in: `tailscale serve` on the host, never Tailscale Funnel
+  (Funnel is off for the tailnet).
+- **Done.** The tailnet policy grants only the owner's phone and workstation access to the app,
+  and only on `tcp:443` to `svc:hr`. A placeholder copy of the policy is in
+  [TAILSCALE.md](TAILSCALE.md).
+- **Done.** MFA on the identity account behind the tailnet.
+- **Planned.** Tailnet Lock on, so a new node needs a signature from a trusted device. The owner
+  turns it on last.
 
 ### Hostname
-- **Planned.** One stable service name, `hr.<tailnet>.ts.net`, that moves from the workstation to
+- **Done.** One stable service name, `hr.<tailnet>.ts.net`, that moves from the workstation to
   the NAS unchanged. It is a Tailscale Service (`svc:hr`, client 1.86 or later): the name
   belongs to the service, not to a machine, and the host is a tagged device approved for it, so
-  moving to the NAS means advertising `svc:hr` there and retiring the old host. WebAuthn passkeys are bound to the relying-party ID (the hostname), so
-  changing it would strand every enrolled passkey.
+  moving to the NAS means advertising `svc:hr` there and retiring the old host. WebAuthn
+  passkeys are bound to the relying-party ID (the hostname), so changing it would strand every
+  enrolled passkey. Today the workstation is the tagged host (`tag:hr-host`) serving `svc:hr`.
 - Note: `tailscale serve` uses a public certificate, and certificates are logged in public
   Certificate Transparency logs. The hostname is therefore discoverable; the app is not reachable
   from outside the tailnet.
