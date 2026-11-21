@@ -10,12 +10,19 @@
   import Today from './screens/Today.svelte';
   import { ensureExercise } from './stores/source.svelte.js';
   import { day } from './stores/workout.svelte.js';
+  import { applyUpdate, updates } from './stores/updates.svelte.js';
 
   const logId = $derived(route.path.match(/^\/log\/([^/]+)$/)?.[1]);
   const exerciseId = $derived(route.path.match(/^\/exercise\/(\w+)$/)?.[1]);
 </script>
 
 <div class="app">
+  {#if updates.available}
+    <div class="update-bar" role="status">
+      <span class="small">Update available</span>
+      <button class="hr-btn hr-btn--secondary hr-btn--compact" onclick={applyUpdate}>Reload</button>
+    </div>
+  {/if}
   {#if route.path === '/login'}
     <Login />
   {:else if logId && day.slots[logId]?.plan.loggable}

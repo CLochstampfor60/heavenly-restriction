@@ -25,6 +25,13 @@ a.hr-btn { text-decoration: none; }
   --grade-soft: var(--preset-gold-grade-soft);
 }
 
+/* ---------- Update prompt (a new version of the app is waiting) ---------- */
+.update-bar {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-2) var(--space-4); padding-top: max(var(--space-2), env(safe-area-inset-top));
+  background: var(--surface-2); border-bottom: 1px solid var(--border-strong); color: var(--text);
+}
+
 /* ---------- Screen frame: scrolling content over a sticky bottom bar ---------- */
 .app {
   position: relative; display: flex; flex-direction: column;

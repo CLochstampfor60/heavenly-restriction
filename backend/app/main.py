@@ -1,5 +1,6 @@
 """Heavenly Restriction API. Serves the built PWA from the same origin."""
 
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,7 +14,10 @@ from app.headers import SecurityHeaders
 from app.net import LoopbackOnly
 from app.progress import router as progress_router
 
-FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+# HR_FRONTEND_DIST lets a test server serve a different build (e.g. to check the update prompt).
+FRONTEND_DIST = Path(
+    os.environ.get("HR_FRONTEND_DIST") or Path(__file__).resolve().parents[2] / "frontend" / "dist"
+)
 
 
 @asynccontextmanager

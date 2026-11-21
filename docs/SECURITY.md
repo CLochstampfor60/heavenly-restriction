@@ -98,6 +98,15 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   explicitly choose to discard them), then ends the server session and deletes IndexedDB.
 - **Done.** Queued changes sync only with a valid session: a 401 pauses the queue, keeps every
   change, and shows "Sign in to save"; signing in resumes it.
+- **Done.** A service worker caches the app shell only (the page, scripts, styles, fonts, icons
+  and manifest), so the installed app opens with no signal. API responses are never cached:
+  `/api/*` always goes to the network, and offline data stays in IndexedDB. Same-origin GET
+  requests only; no new origins, and the CSP is unchanged (`worker-src 'self'`). It registers only
+  in a secure context (HTTPS or localhost), so the demo-only LAN dev server never gets one.
+- **Done.** Each build gets its own cache; a new version waits and the app shows "Update
+  available · Reload" instead of switching on its own. Old caches are deleted when the new
+  version takes over. Sign-out deletes every cache and unregisters the service worker, along
+  with IndexedDB.
 - **Accepted.** Data at rest on the phone relies on the device lock (fingerprint / PIN) and the
   phone's own storage encryption.
 

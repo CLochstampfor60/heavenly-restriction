@@ -8,10 +8,12 @@ import App from './App.svelte';
 import { checkAuth, needsSignIn } from './stores/auth.svelte.js';
 import { watchSystemTheme } from './settings.svelte.js';
 import { checkPersistence } from './stores/storage.svelte.js';
+import { registerServiceWorker } from './stores/updates.svelte.js';
 import { loadToday } from './stores/workout.svelte.js';
 
 watchSystemTheme();
 checkPersistence();
+registerServiceWorker();
 
 // Sign in first when online without a session (nothing loads before that). Offline, the app
 // opens from this phone's copy and changes queue until sign-in. Then load today's program (API,

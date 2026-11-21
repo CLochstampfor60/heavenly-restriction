@@ -12,6 +12,10 @@ change how things work.
   icon and browser tab favicons. `npm run icons` makes them all from one source file.
 - The app can be installed from the browser ("Install app" or "Add to Home screen") and opens full
   screen with its own icon.
+- The installed app opens with no signal: a service worker keeps a copy of the app itself (never
+  your data, which stays in the phone's database and syncs as before). When a new version is
+  deployed, a small "Update available · Reload" bar appears instead of switching on its own.
+  Signing out also deletes the cached copy.
 
 ## [0.4.1] - 2026-11-20
 
