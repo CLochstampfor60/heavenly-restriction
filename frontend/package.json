@@ -18,6 +18,6 @@
     "vite": "8.3.5"
   },
   "dependencies": {
-    "dexie": "4.4.6"
+    "dexie": "4.4.7"
   }
 }
