@@ -59,6 +59,18 @@ Open **http://localhost:8000** (not 127.0.0.1: passkeys are tied to the hostname
 
 To reach it from the phone, publish it to your tailnet over HTTPS as the Tailscale Service `svc:hr` and open `https://hr.<tailnet>.ts.net`; the policy, commands and checks are in [docs/TAILSCALE.md](docs/TAILSCALE.md).
 
+To keep it running without a terminal (Windows), install it as a Task Scheduler task that starts at logon, starts the server again whenever it exits, and logs to `%LOCALAPPDATA%\HeavenlyRestriction\logs\server.log`:
+
+```powershell
+.\scripts\windows\server.ps1 install    # register the logon task and start it now
+.\scripts\windows\server.ps1 status     # task state, listener, health, last log lines
+.\scripts\windows\server.ps1 stop       # stop it (it starts again at the next logon)
+.\scripts\windows\server.ps1 start
+.\scripts\windows\server.ps1 uninstall
+```
+
+The `tailscale serve` config for `svc:hr` is saved by the Tailscale service itself and survives restarts; check it with `tailscale serve status`.
+
 Frontend with live reload while developing, at http://127.0.0.1:5173 (it proxies `/api` to the server above):
 
 ```powershell
