@@ -273,7 +273,7 @@
       {#if hero.icon}<Icon name={hero.icon} />{/if}{hero.label}
     </button>
     {#if hero.slot && begun}
-      <button class="hr-btn hr-btn--secondary" onclick={askFinish}><Icon name="check" />Finish workout</button>
+      <button class="hr-btn hr-btn--secondary hr-btn--compact" onclick={askFinish}><Icon name="check" />Finish workout</button>
     {/if}
   {:else if day.finished}
     <div class="finish-line">
