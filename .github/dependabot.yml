@@ -1,5 +1,6 @@
 # Weekly update PRs. Actions stay pinned to commit SHAs; Dependabot updates the SHA and the
-# version comment together. Review each PR before merging; nothing auto-merges.
+# version comment together. Review each PR before merging; nothing auto-merges. Merge only
+# when the `tests` workflow (pytest and the node tests) passes on the PR, not just the audits.
 version: 2
 updates:
   - package-ecosystem: github-actions
