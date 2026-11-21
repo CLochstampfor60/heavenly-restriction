@@ -7,6 +7,12 @@ change how things work.
 
 ## [Unreleased]
 
+### Added
+- An app icon, with versions for Android's round and shaped launcher masks, an iPhone home-screen
+  icon and browser tab favicons. `npm run icons` makes them all from one source file.
+- The app can be installed from the browser ("Install app" or "Add to Home screen") and opens full
+  screen with its own icon.
+
 ## [0.4.1] - 2026-11-20
 
 ### Added
