@@ -24,6 +24,7 @@
     requiredIds,
     slotNote,
     toggleGear,
+    undoStop,
   } from '../stores/workout.svelte.js';
 
   const date = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -215,7 +216,7 @@
               {:else if isDone}
                 <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
               {:else if slot.status === 'stopped'}
-                <span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>
+                <button class="hr-btn hr-btn--secondary hr-btn--compact exrow-undo" onclick={() => undoStop(id)}>Undo stop</button>
               {:else}
                 <span class="hr-exrow__actions">
                   {#if !slot.plan.optional && !slot.later}

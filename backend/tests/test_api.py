@@ -207,3 +207,84 @@ def test_dips_are_assisted_and_override_via_patch(client) -> None:
     r = client.patch(f"/api/exercises/{dips}", json={"assisted": None})
     assert r.json()["assisted"] is True  # back to following the program
     assert client.patch(f"/api/exercises/{dips}", json={}).json()["assisted_override"] is None
+
+
+# ---------------------------------------------------------------- never linear: no state locks
+
+
+def stop_body(exercise, k, cid="2026-11-16/1", slot="1", symptom="Pinch"):
+    return {"client_id": cid, "slot_key": slot, "exercise_id": exercise, "set_index": k,
+            "weight_lb": 100, "symptom": symptom, "note": None}  # fmt: skip
+
+
+def slot_status(client, key="1"):
+    return plan(client)["session"]["slots"][key]["status"]
+
+
+def test_any_state_can_log_and_logging_reopens(client) -> None:
+    pulldown = ex_id(plan(client), "Demo Pulldown — wide grip")
+    # Untouched -> in progress.
+    assert log(client, MON, "1", pulldown, 0, w=100, r=10).status_code == 201
+    assert slot_status(client) == "active"
+    # Skipped (as Finish workout leaves it) -> logging reopens it.
+    state = {"slots": {"1": {"status": "skipped", "done_as": pulldown}}}
+    client.put(f"/api/sessions/{MON}", json=state)
+    assert log(client, MON, "1", pulldown, 1, w=100, r=10).status_code == 201
+    assert slot_status(client) == "active"
+    # Stopped -> logging reopens it; the stop stays on record until undone.
+    assert client.post(f"/api/sessions/{MON}/stops", json=stop_body(pulldown, 2)).status_code == 201
+    assert slot_status(client) == "stopped"
+    assert log(client, MON, "1", pulldown, 3, w=100, r=9).status_code == 201
+    assert slot_status(client) == "active"
+    assert len(plan(client)["session"]["stops"]) == 1
+    # Done -> an extra set is accepted and the exercise stays Done.
+    client.put(
+        f"/api/sessions/{MON}", json={"slots": {"1": {"status": "done", "done_as": pulldown}}}
+    )
+    assert log(client, MON, "1", pulldown, 4, w=100, r=8).status_code == 201
+    assert slot_status(client) == "done"
+
+
+def test_undo_stop_removes_it_everywhere(client) -> None:
+    from tests.test_progress import progress
+
+    pulldown = ex_id(plan(client), "Demo Pulldown — wide grip")
+    log(client, MON, "1", pulldown, 0, w=100, r=10)
+    client.post(f"/api/sessions/{MON}/stops", json=stop_body(pulldown, 1))
+    card = client.get(f"/api/exercises/{pulldown}").json()
+    assert card["sessions"][-1]["stop"]["symptom"] == "Pinch"
+    assert progress(client, WED)["calendar"]["2026-11-16"] == "stop"
+
+    r = client.delete(f"/api/sessions/{MON}/stops/2026-11-16/1")
+    assert r.status_code == 204
+    session = plan(client)["session"]
+    assert session["stops"] == [] and session["slots"]["1"]["status"] == "active"
+    assert client.get(f"/api/exercises/{pulldown}").json()["sessions"][-1]["stop"] is None
+    assert progress(client, WED)["calendar"]["2026-11-16"] == "partial"
+    # A retry after it is gone is fine.
+    assert client.delete(f"/api/sessions/{MON}/stops/2026-11-16/1").status_code == 204
+    # Sets logged after the undo can be personal records again.
+    assert log(client, MON, "1", pulldown, 1, w=120, r=10).json()["is_pr"] is True
+
+
+def test_undo_stop_with_nothing_logged_goes_back_to_untouched(client) -> None:
+    # Today's false stop: stopped on the first set, nothing logged.
+    pulldown = ex_id(plan(client), "Demo Pulldown — wide grip")
+    client.post(f"/api/sessions/{MON}/stops", json=stop_body(pulldown, 0, symptom="Other"))
+    client.delete(f"/api/sessions/{MON}/stops/2026-11-16/1")
+    slot = plan(client)["session"]["slots"]["1"]
+    assert slot["status"] == "todo" and slot["done_as"] is None
+    from tests.test_progress import progress
+
+    assert progress(client, WED)["calendar"]["2026-11-16"] != "stop"
+
+
+def test_stopping_again_replaces_the_stop(client) -> None:
+    pulldown = ex_id(plan(client), "Demo Pulldown — wide grip")
+    client.post(f"/api/sessions/{MON}/stops", json=stop_body(pulldown, 0))
+    log(client, MON, "1", pulldown, 1, w=100, r=10)  # reopened
+    r = client.post(f"/api/sessions/{MON}/stops", json=stop_body(pulldown, 2, symptom="Dull ache"))
+    assert r.status_code == 200
+    stops = plan(client)["session"]["stops"]
+    assert len(stops) == 1 and stops[0]["set_index"] == 2 and stops[0]["symptom"] == "Dull ache"
+    assert slot_status(client) == "stopped"

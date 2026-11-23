@@ -24,6 +24,7 @@
     targetText,
     ui,
     undoSet,
+    undoStop,
   } from '../stores/workout.svelte.js';
 
   let { slotId, current } = $props();
@@ -41,13 +42,13 @@
       .map((w) => w[0].toUpperCase())
       .join(''),
   );
-  // The set the next Log set fills: the first planned set to do, else an extra one at the end.
+  // The set the next Log set fills: the first planned set to do (a skipped one counts, since
+  // logging reopens the exercise), else an extra one at the end.
   const active = $derived.by(() => {
-    const k = slot.sets.findIndex((s) => s.status === 'todo');
+    const k = slot.sets.findIndex((s) => s.status === 'todo' || s.status === 'skipped');
     return k === -1 ? slot.sets.length : k;
   });
   const extra = $derived(active >= slot.plan.sets);
-  const ended = $derived(slot.status === 'stopped' || slot.status === 'skipped');
   const lastLogged = $derived(slot.sets.findLastIndex((s) => s.status === 'done' || s.status === 'pr'));
   const prior = $derived(priorFor(ex, active, slot));
   const m = $derived(measureFor(slot));
@@ -114,7 +115,7 @@
         <span class="hr-eyebrow">{blockLabel(slot.plan.block)}{slot.plan.optional ? ' · optional' : ''}</span>
         <h1 class="hr-exh__name"><a class="name-link" href="#/exercise/{ex.id}">{ex.name}</a></h1>
       </div>
-      {#if !ended}
+      {#if slot.status !== 'stopped'}
         <button class="hr-stop" onclick={openStop}><Icon name="stop" />Stop</button>
       {/if}
     </div>
@@ -139,7 +140,10 @@
       {/if}
     </div>
     {#if stopped}
-      <span class="small muted">{stopped.symptom} at {fmt(stopped.w)} {wUnit}, set {slot.sets.indexOf(stopped) + 1}</span>
+      <div class="exh-meta-row">
+        <span class="small muted stop-line">Stopped: {stopped.symptom} at {fmt(stopped.w)} {wUnit}, set {slot.sets.indexOf(stopped) + 1}</span>
+        <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" onclick={() => undoStop(slotId)}>Undo stop</button>
+      </div>
     {/if}
   </header>
 
@@ -165,8 +169,8 @@
 
   <div class="stack" role="list" aria-label="Sets">
     {#each slot.sets as set, k (k)}
-      {@const isActive = !ended && k === active}
-      {@const todo = set.status === 'todo'}
+      {@const isActive = k === active}
+      {@const todo = set.status === 'todo' || isActive}
       {@const p = priorFor(ex, k, slot)}
       {@const pN = (timed ? p.s : p.r) ?? slot.plan.target.min}
       {@const isLog = set.status === 'done' || set.status === 'pr'}
@@ -233,67 +237,63 @@
   {#if current && rest.running}
     <RestTimer />
   {/if}
-  {#if ended}
-    <p class="small muted hint">This exercise has ended.</p>
-  {:else}
-    <div class="stepper-pair">
-      <Stepper
-        label={m.assisted ? 'Assist · lb · less is better' : 'Weight · lb'}
-        value={w}
-        placeholder={prior.w}
-        step={2.5}
-        inputmode="decimal"
-        ariaLabel="{m.assisted ? 'Assistance' : 'Weight'} in pounds for set {active + 1}, last time {fmt(prior.w)}"
-        decLabel="Decrease {m.assisted ? 'assistance' : 'weight'} by 2.5 pounds"
-        incLabel="Increase {m.assisted ? 'assistance' : 'weight'} by 2.5 pounds"
-        onchange={(v) => (w = v)}
-      />
-      <Stepper
-        label="{timed ? 'Seconds' : 'Reps'} · target {isPlanned ? targetText(slot.plan) : 'any'}"
-        value={n}
-        placeholder={priorN}
-        step={timed ? 5 : 1}
-        inputmode="numeric"
-        ariaLabel="{timed ? 'Seconds' : 'Reps'}{side ? ' each side' : ''} for set {active + 1}, last time {fmt(priorN)}"
-        decLabel="Decrease {timed ? 'seconds by 5' : 'reps'}"
-        incLabel="Increase {timed ? 'seconds by 5' : 'reps'}"
-        onchange={(v) => (n = v === null ? null : Math.round(v))}
-      />
-    </div>
-    {#if rirOpen}
-      <div class="rir-row hr-rir" role="group" aria-label="Reps in reserve, optional">
-        <span class="option-text">
-          <span class="hr-eyebrow rir-label">RIR</span>
-          <span class="meta">optional</span>
-        </span>
-        <div class="hr-rir__cells">
-          {#each RIR as label, k (label)}
-            <button
-              class="hr-rir__cell"
-              aria-pressed={rir === k}
-              aria-label="{label} reps in reserve"
-              onclick={() => (rir = rir === k ? null : k)}>{label}</button
-            >
-          {/each}
-        </div>
+  <div class="stepper-pair">
+    <Stepper
+      label={m.assisted ? 'Assist · lb · less is better' : 'Weight · lb'}
+      value={w}
+      placeholder={prior.w}
+      step={2.5}
+      inputmode="decimal"
+      ariaLabel="{m.assisted ? 'Assistance' : 'Weight'} in pounds for set {active + 1}, last time {fmt(prior.w)}"
+      decLabel="Decrease {m.assisted ? 'assistance' : 'weight'} by 2.5 pounds"
+      incLabel="Increase {m.assisted ? 'assistance' : 'weight'} by 2.5 pounds"
+      onchange={(v) => (w = v)}
+    />
+    <Stepper
+      label="{timed ? 'Seconds' : 'Reps'} · target {isPlanned ? targetText(slot.plan) : 'any'}"
+      value={n}
+      placeholder={priorN}
+      step={timed ? 5 : 1}
+      inputmode="numeric"
+      ariaLabel="{timed ? 'Seconds' : 'Reps'}{side ? ' each side' : ''} for set {active + 1}, last time {fmt(priorN)}"
+      decLabel="Decrease {timed ? 'seconds by 5' : 'reps'}"
+      incLabel="Increase {timed ? 'seconds by 5' : 'reps'}"
+      onchange={(v) => (n = v === null ? null : Math.round(v))}
+    />
+  </div>
+  {#if rirOpen}
+    <div class="rir-row hr-rir" role="group" aria-label="Reps in reserve, optional">
+      <span class="option-text">
+        <span class="hr-eyebrow rir-label">RIR</span>
+        <span class="meta">optional</span>
+      </span>
+      <div class="hr-rir__cells">
+        {#each RIR as label, k (label)}
+          <button
+            class="hr-rir__cell"
+            aria-pressed={rir === k}
+            aria-label="{label} reps in reserve"
+            onclick={() => (rir = rir === k ? null : k)}>{label}</button
+          >
+        {/each}
       </div>
-    {/if}
-    <div class="log-row">
-      {#if !rirOpen}
-        <button class="hr-btn hr-btn--ghost hr-btn--compact rir-open" aria-expanded="false" onclick={() => (rirOpen = true)}>
-          RIR{rir != null ? ` ${RIR[rir]}` : ''}
-        </button>
-      {/if}
-      <button class="hr-btn hr-btn--primary hr-btn--hero log-btn" onclick={log} disabled={!ready}>
-        {#if ready}<Icon name="check" />Log {extra ? 'extra ' : ''}set {active + 1}
-        {:else}Enter {curW == null ? (m.assisted ? 'assistance' : 'weight') : timed ? 'seconds' : 'reps'} for set {active + 1}{/if}
-      </button>
     </div>
-    {#if canFinish}
-      <button class="hr-btn hr-btn--secondary hr-btn--compact" onclick={() => finishSlot(slotId)}>
-        Finish after {logged} sets
+  {/if}
+  <div class="log-row">
+    {#if !rirOpen}
+      <button class="hr-btn hr-btn--ghost hr-btn--compact rir-open" aria-expanded="false" onclick={() => (rirOpen = true)}>
+        RIR{rir != null ? ` ${RIR[rir]}` : ''}
       </button>
     {/if}
+    <button class="hr-btn hr-btn--primary hr-btn--hero log-btn" onclick={log} disabled={!ready}>
+      {#if ready}<Icon name="check" />Log {extra ? 'extra ' : ''}set {active + 1}
+      {:else}Enter {curW == null ? (m.assisted ? 'assistance' : 'weight') : timed ? 'seconds' : 'reps'} for set {active + 1}{/if}
+    </button>
+  </div>
+  {#if canFinish}
+    <button class="hr-btn hr-btn--secondary hr-btn--compact" onclick={() => finishSlot(slotId)}>
+      Finish after {logged} sets
+    </button>
   {/if}
 </div>
 

@@ -28,6 +28,25 @@ export function nextSetIndex(sets) {
   return k === -1 ? sets.length : k;
 }
 
+// Workouts are never linear: logging works whatever state an exercise is in. Logging into an
+// ended exercise reopens it, so sets that Stop, Finish or "Finish after N sets" skipped are to
+// do again. A stopped set stays where it was.
+export function reopenSets(sets) {
+  return sets.map((s) => (s.status === 'skipped' ? { status: 'todo' } : s));
+}
+
+// Undo stop: the stopped set is to do again (an extra one is dropped), and so are the skipped
+// sets after it.
+export function unstopSets(sets, planned) {
+  const out = [];
+  sets.forEach((s, k) => {
+    if (s.status === 'stopped') {
+      if (k < planned) out.push({ status: 'todo' });
+    } else out.push(s.status === 'skipped' ? { status: 'todo' } : s);
+  });
+  return out;
+}
+
 // An exercise is Done once no planned set is left to do; extra sets after that keep it Done.
 export function statusAfterLog(sets) {
   return sets.some((s) => s.status === 'todo') ? 'active' : 'done';

@@ -16,10 +16,12 @@ import {
   placeholderFor,
   queueCounts,
   readyToLog,
+  reopenSets,
   saveStatus,
   statusAfterLog,
   swipeMayStart,
   swipeTarget,
+  unstopSets,
 } from '../src/logic.js';
 
 test('first log of an exercise: no weight placeholder, reps from the plan', () => {
@@ -216,4 +218,25 @@ test('a quarter of the width or a flick turns the page, never past the ends', ()
   assert.equal(swipeTarget(3, 10, -60, 360, -0.8), 4); // short and quick: a flick
   assert.equal(swipeTarget(0, 10, 200, 360), 0);
   assert.equal(swipeTarget(9, 10, -200, 360), 9);
+});
+
+// ---------- No state locks logging ----------
+
+test('logging into a stopped or skipped exercise reopens its skipped sets; the stop stays', () => {
+  const sets = [{ status: 'done' }, { status: 'stopped', symptom: 'Pinch' }, { status: 'skipped' }, { status: 'skipped' }];
+  const open = reopenSets(sets);
+  assert.deepEqual(open.map((s) => s.status), ['done', 'stopped', 'todo', 'todo']);
+  assert.equal(nextSetIndex(open), 2);
+  // "Finish after 2 sets" then one more: it fills the planned third set.
+  assert.equal(nextSetIndex(reopenSets(S('done', 'done', 'skipped'))), 2);
+});
+
+test('Undo stop: the stopped set and the skipped ones after it are to do again', () => {
+  const sets = [{ status: 'done' }, { status: 'stopped' }, { status: 'skipped' }];
+  assert.deepEqual(unstopSets(sets, 3).map((s) => s.status), ['done', 'todo', 'todo']);
+  assert.equal(statusAfterLog(unstopSets(sets, 3)), 'active');
+  // A stop on the very first set with nothing logged (a false stop): back to untouched.
+  assert.deepEqual(unstopSets([{ status: 'stopped' }, { status: 'skipped' }], 2).map((s) => s.status), ['todo', 'todo']);
+  // A stop on an extra set: the extra row goes away.
+  assert.deepEqual(unstopSets(S('done', 'done', 'stopped'), 2).map((s) => s.status), ['done', 'done']);
 });

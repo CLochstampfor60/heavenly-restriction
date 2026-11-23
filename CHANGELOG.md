@@ -19,6 +19,8 @@ change how things work.
   Start workout and Continue open it at the first exercise not yet done.
 - An exercise marks itself Done when its last planned set is logged, and takes extra sets after
   that.
+- Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the
+  history, the calendar and the records, and reopens the exercise.
 - An app icon, with versions for Android's round and shaped launcher masks, an iPhone home-screen
   icon and browser tab favicons. `npm run icons` makes them all from one source file.
 - The app can be installed from the browser ("Install app" or "Add to Home screen") and opens full
@@ -29,6 +31,12 @@ change how things work.
   Signing out also deletes the cached copy.
 - The design system documents the app icon (a new App icon section and a Brand asset group holding
   the icon's source file) and the compact bottom-bar buttons on Today.
+
+### Fixed
+- No exercise state locks logging any more. A Stopped, Skipped or Done exercise can always be
+  logged; logging reopens a Stopped or Skipped one (and a finished workout). Before, Stop was the
+  only way to move past an exercise, it left a false stop on record, and the exercise stayed locked
+  as Stopped.
 
 ### Removed
 - Only one exercise could be open at a time, and only through Start or Next. Exercises no longer

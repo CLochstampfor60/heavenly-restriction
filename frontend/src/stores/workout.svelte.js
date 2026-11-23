@@ -4,7 +4,17 @@
 import { tick } from 'svelte';
 import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
-import { firstUnfinished, isLogged, nextSetIndex, openAtFinish, pageList, placeholderFor, statusAfterLog } from '../logic.js';
+import {
+  firstUnfinished,
+  isLogged,
+  nextSetIndex,
+  openAtFinish,
+  pageList,
+  placeholderFor,
+  reopenSets,
+  statusAfterLog,
+  unstopSets,
+} from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
 import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
 import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
@@ -12,6 +22,7 @@ import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
 export { e1rm };
 
 const today = dateKey();
+const ENDED = ['done', 'stopped', 'skipped'];
 
 export const day = $state({ order: [], slots: {}, cardio: [], gear: {}, gearOpen: false, finished: false });
 export const rest = $state({ running: false, endsAt: 0, total: 0, now: Date.now(), buzzed: false });
@@ -165,14 +176,20 @@ function restore(session, sets, stops) {
     while (slot.sets.length < row.set) slot.sets.push({ status: 'todo' });
     slot.sets[row.set] = { w: row.w, r: row.r, s: row.s, rir: row.rir, status: row.pr ? 'pr' : 'done' };
   }
+  // A stop marks its own set only; it never covers sets logged after the exercise reopened.
   for (const row of stops) {
     const slot = day.slots[row.slotId];
     if (!slot) continue;
-    slot.sets = slot.sets.map((set, k) => {
-      if (k < row.set) return set;
-      if (k === row.set) return { w: row.w, status: 'stopped', symptom: row.symptom, note: row.note };
-      return { status: 'skipped' };
-    });
+    while (slot.sets.length < row.set) slot.sets.push({ status: 'todo' });
+    if (!isLogged(slot.sets[row.set] ?? { status: 'todo' })) {
+      slot.sets[row.set] = { w: row.w, status: 'stopped', symptom: row.symptom, note: row.note };
+    }
+  }
+  // Sets left to do on an ended exercise show as skipped, as they did before the reload.
+  for (const slot of Object.values(day.slots)) {
+    if (ENDED.includes(slot.status)) {
+      slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
+    }
   }
   if (session.rest?.running) {
     Object.assign(rest, session.rest, { now: Date.now(), buzzed: session.rest.endsAt <= Date.now() });
@@ -351,6 +368,8 @@ export function loggedCount(slot) {
 
 // Why the row shows something other than the programmed exercise, if it does.
 export function slotNote(slot) {
+  const stop = slot.status === 'stopped' && slot.sets.find((set) => set.status === 'stopped');
+  if (stop) return { kind: 'plain', text: `Stopped · ${stop.symptom}` };
   const ex = exerciseFor(slot);
   const planned = CATALOG[slot.exerciseId];
   if (ex.id !== planned.id && ex.id !== slot.plan.alt) {
@@ -366,15 +385,13 @@ export function requiredIds() {
   return day.order.filter((id) => !day.slots[id].plan.optional && day.slots[id].plan.loggable);
 }
 
-const ENDED = ['done', 'stopped', 'skipped'];
-
 // How today stands for the calendar: null until something is logged, then partial, then
 // done or stop once every exercise has ended (stop wins if any exercise was stopped).
 export function dayStatus() {
   const slots = requiredIds().map((id) => day.slots[id]);
   const all = Object.values(day.slots);
   const ended = slots.every((s) => ENDED.includes(s.status)) || day.finished;
-  const stopped = all.some((s) => s.status === 'stopped');
+  const stopped = all.some(hasStop);
   if (ended && slots.length) return stopped ? 'stop' : 'done';
   if (stopped) return 'stop';
   return all.some((s) => s.doneAs) ? 'partial' : null;
@@ -396,8 +413,13 @@ function priorSets(exerciseId) {
   return [...(CATALOG[exerciseId].last ?? []), ...past, ...todaySets(exerciseId)];
 }
 
+function hasStop(slot) {
+  return slot.sets.some((set) => set.status === 'stopped');
+}
+
+// A stop today (not undone) means no personal record for that exercise today, as on the server.
 function stoppedToday(exerciseId) {
-  return Object.values(day.slots).some((s) => s.doneAs === exerciseId && s.status === 'stopped');
+  return Object.values(day.slots).some((s) => s.doneAs === exerciseId && hasStop(s));
 }
 
 // Ranked substitutions first (plus the either/or option), then other exercises for the muscle.
@@ -526,10 +548,14 @@ export function pickSwap(exerciseId) {
 // ---------- Set logging ----------
 
 // Logs the next set: the first planned set still to do, or an extra set after the plan. Opening
-// or leaving an exercise changes nothing; only logging does. The exercise marks itself Done once
-// its last planned set is logged, and stays Done through extra sets.
+// or leaving an exercise changes nothing; only logging does. Workouts are never linear: no state
+// locks logging, and logging into a Skipped, Stopped or Done exercise reopens it (and a finished
+// workout). The exercise marks itself Done once its last planned set is logged, and stays Done
+// through extra sets.
 export function logSet(slotId, { w, r, s, rir }) {
   const slot = day.slots[slotId];
+  slot.sets = reopenSets(slot.sets);
+  day.finished = false;
   const k = nextSetIndex(slot.sets);
   const ex = exerciseFor(slot);
   const m = measureFor(slot);
@@ -537,7 +563,7 @@ export function logSet(slotId, { w, r, s, rir }) {
   const pr =
     !stoppedToday(ex.id) &&
     isPr(value, priorSets(ex.id), { assisted: m.assisted, measure: m.measure, repFloor: m.min });
-  const wasDone = slot.status === 'done';
+  const wasDone = slot.status === 'done' && !slot.sets.some((x) => x.status === 'todo');
   slot.doneAs = ex.id;
   slot.sets[k] = { ...value, rir, status: pr ? 'pr' : 'done' };
   saveSet(slot, k);
@@ -610,6 +636,19 @@ export function stopSlot(slotId, { w, symptom, note }) {
   slot.status = 'stopped';
   ui.banner = null;
   skipRest();
+}
+
+// Undo stop: deletes the stop event here and on the server (history, calendar, records) and
+// reopens the exercise as it was before the stop.
+export function undoStop(slotId) {
+  const slot = day.slots[slotId];
+  const id = `${today}/${slotId}`;
+  slot.sets = unstopSets(slot.sets, slot.plan.sets);
+  if (!loggedCount(slot)) slot.doneAs = null;
+  slot.status = slot.doneAs ? statusAfterLog(slot.sets) : 'todo';
+  day.finished = false;
+  db.stops.delete(id).catch(warn);
+  enqueue({ kind: 'unstop', method: 'DELETE', path: path(`/stops/${id}`) });
 }
 
 // ---------- Rest timer ----------

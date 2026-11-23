@@ -187,3 +187,98 @@ test('the jump sheet lists every page and jumps', async () => {
   await context.close();
   assert.deepEqual(errors, []);
 });
+
+// ---------- No exercise state locks logging ----------
+
+async function stopHere(page, symptom = 'Pinch') {
+  await visible(page).getByRole('button', { name: 'Stop', exact: true }).click();
+  await page.getByRole('button', { name: symptom, exact: true }).click();
+  await page.getByRole('button', { name: 'Stop and record' }).click();
+}
+
+test('a stopped exercise can still be logged, which reopens it; the stop survives a reload', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await stopHere(page);
+  const p = visible(page);
+  await p.locator('.hr-chip--stopped').waitFor();
+  await p.getByRole('button', { name: 'Log set 3', exact: true }).click(); // set 2 is the stopped one
+  assert.equal(await p.locator('.hr-chip--stopped').count(), 0);
+  assert.match(await p.innerText(), /2 of 3 sets/);
+  await page.reload();
+  await page.waitForSelector('.pager-count');
+  const q = visible(page);
+  assert.equal(await q.locator('.hr-set--stopped').count(), 1);
+  assert.equal(await q.locator('.hr-set--done, .hr-set--pr').count(), 2);
+  assert.equal(await q.locator('.hr-chip--stopped').count(), 0);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('Undo stop on Today removes a false stop everywhere, and after a reload', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  await stopHere(page, 'Other'); // stopped only to move on, nothing logged
+  await page.getByRole('link', { name: 'Today' }).click();
+  const row = page.locator('.hr-exrow', { hasText: 'Seated Cable Row' });
+  assert.match(await row.innerText(), /Stopped · Other/);
+  await row.getByRole('button', { name: 'Undo stop' }).click();
+  assert.doesNotMatch(await row.innerText(), /Stopped/);
+  await page.reload();
+  await page.waitForSelector('.app__bar');
+  assert.doesNotMatch(await page.locator('.hr-exrow', { hasText: 'Seated Cable Row' }).innerText(), /Stopped/);
+  await page.locator('.hr-exrow', { hasText: 'Seated Cable Row' }).locator('.exrow-open').click();
+  const p = visible(page);
+  assert.equal(await p.locator('.hr-set--stopped').count(), 0);
+  await p.getByRole('button', { name: 'Log set 1', exact: true }).waitFor();
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('Undo stop on the exercise page reopens it with its logged sets', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s2`); // two sets logged in the demo
+  await stopHere(page);
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Undo stop' }).click();
+  assert.equal(await p.locator('.hr-set--stopped, .hr-set--skipped').count(), 0);
+  assert.equal(await p.locator('.hr-set--done, .hr-set--pr').count(), 2);
+  await p.getByRole('button', { name: 'Log set 3', exact: true }).waitFor();
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('a Skipped exercise (after Finish workout) can be logged, which reopens it and the workout', async () => {
+  const { context, page, errors } = await phone();
+  await page.getByRole('button', { name: 'Finish workout' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Finish' }).click();
+  await page.getByText('Workout finished').or(page.getByText('Demo data')).first().waitFor();
+  const row = page.locator('.hr-exrow', { hasText: 'Hammer Curl' });
+  await row.locator('.exrow-open').click();
+  const p = visible(page);
+  await p.getByText('Skipped', { exact: true }).first().waitFor();
+  await p.getByRole('button', { name: 'Log set 1', exact: true }).click();
+  assert.equal(await p.locator('.hr-set--skipped').count(), 0);
+  await page.getByRole('link', { name: 'Today' }).click();
+  assert.match(await page.locator('.hr-exrow', { hasText: 'Hammer Curl' }).innerText(), /1 of 3 sets/);
+  await page.getByRole('button', { name: /^Continue/ }).waitFor(); // the workout is open again
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('a Swapped exercise logs under the exercise actually done', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Swap' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /Chest-Supported Row/ }).click();
+  const p = visible(page);
+  assert.match(await p.locator('h1').innerText(), /Chest-Supported Row/);
+  await p.getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await page.getByRole('link', { name: 'Today' }).click();
+  const row = page.locator('.hr-exrow', { hasText: 'Chest-Supported Row' });
+  assert.match(await row.innerText(), /Swapped from Seated Cable Row/);
+  assert.match(await row.innerText(), /1 of 3 sets/);
+  await context.close();
+  assert.deepEqual(errors, []);
+});

@@ -34,6 +34,7 @@ Warmup Routine module, injury guardrails as enforced rules (they are pinned note
 - Before any UI work, read `docs/DESIGN.md` and `design-system/README.md`. Build only from `design-system/` tokens and `hr-` classes; Dark and Light themes both ship.
 - Plain labels first on every screen; Jujutsu Kaisen theme names are secondary flavor only.
 - Logging a set must take one or two taps. Usable one-handed, mid-workout, on weak signal.
+- Workouts are never linear; no exercise state locks logging.
 - Icons and art are original designs. Never use Toji's likeness or official anime art.
 
 ## Security rules (public repo)

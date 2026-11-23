@@ -476,7 +476,9 @@ def log_set(date: Date, body: SetIn, response: Response, db: DB) -> dict:
     )
     db.add(row)
     slot.done_as_id = ex.id
-    if slot.status == "todo":
+    # Workouts are never linear: logging works in any state and reopens an ended exercise.
+    # (A Done exercise taking an extra set stays Done.)
+    if slot.status in {"todo", "skipped", "stopped"}:
         slot.status = "active"
     db.commit()
     return set_dict(row)
@@ -513,19 +515,52 @@ class StopIn(BaseModel):
 
 @router.post("/sessions/{date}/stops", status_code=201)
 def stop(date: Date, body: StopIn, response: Response, db: DB) -> dict:
-    existing = db.scalar(select(StopEvent).where(StopEvent.client_id == body.client_id))
-    if existing is not None:
-        response.status_code = 200
-        return stop_dict(existing)
+    """Records a stop. One per slot and day: stopping again after the exercise was reopened
+    replaces the earlier stop (a retry of the same stop changes nothing)."""
     session = get_session(db, date)
     slot = session_slot(session, body.slot_key)
     exercise_or_404(db, body.exercise_id)
-    row = StopEvent(session_id=session.id, **body.model_dump())
-    db.add(row)
+    existing = db.scalar(
+        select(StopEvent).where(
+            (StopEvent.client_id == body.client_id)
+            | ((StopEvent.session_id == session.id) & (StopEvent.slot_key == body.slot_key))
+        )
+    )
+    if existing is not None:
+        for field, value in body.model_dump().items():
+            setattr(existing, field, value)
+        row = existing
+        response.status_code = 200
+    else:
+        row = StopEvent(session_id=session.id, **body.model_dump())
+        db.add(row)
     slot.status = "stopped"
     slot.done_as_id = body.exercise_id
     db.commit()
     return stop_dict(row)
+
+
+@router.delete("/sessions/{date}/stops/{client_id:path}", status_code=204)
+def undo_stop(date: Date, client_id: str, db: DB) -> Response:
+    """Undo stop: deletes the stop event everywhere (history, calendar, records) and reopens
+    the exercise. Already gone is fine: the phone may retry."""
+    session = get_session(db, date, create=False)
+    row = db.scalar(select(StopEvent).where(StopEvent.client_id == client_id))
+    if session is not None and row is not None and row.session_id == session.id:
+        slot = session_slot(session, row.slot_key)
+        db.delete(row)
+        db.flush()
+        if slot.status == "stopped":
+            logged = db.scalar(
+                select(SetLog).where(
+                    SetLog.session_id == session.id, SetLog.slot_key == row.slot_key
+                )
+            )
+            slot.status = "active" if logged is not None else "todo"
+            if logged is None:
+                slot.done_as_id = None
+        db.commit()
+    return Response(status_code=204)
 
 
 class SwapIn(BaseModel):
