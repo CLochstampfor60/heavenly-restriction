@@ -123,7 +123,10 @@ switch ($Command) {
     'deploy' {
         $hash = Assert-DeployableTree
         Write-Output "Building frontend\dist from $hash ..."
-        & npm --prefix (Join-Path $repo 'frontend') run build
+        # Through cmd, so build warnings on stderr are plain text, not PowerShell errors that would
+        # abort the script mid-build. The exit code decides.
+        $frontend = Join-Path $repo 'frontend'
+        & cmd.exe /d /c "npm --prefix `"$frontend`" run build 2>&1"
         if ($LASTEXITCODE -ne 0) { throw 'The build failed; the server was not restarted.' }
         $built = Get-ChildItem (Join-Path $repo 'frontend\dist\assets') -Filter 'index-*.js' |
             Select-String -SimpleMatch "build $hash " -List
