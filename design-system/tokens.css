@@ -10,9 +10,9 @@
   --surface-1: #141816;
   --surface-2: #1c211e;
   --surface-3: #252b27;
-  --card: #1a1e28;
+  --card: #1e222d;
   --card-2: #222734;
-  --card-edge: #2e3444;
+  --card-edge: #4a5368;
   --border: #2e3531;
   --border-strong: #707a74;
   --text: #e9edea;
@@ -60,9 +60,9 @@
   --surface-1: #ffffff;
   --surface-2: #eaede8;
   --surface-3: #dfe3dd;
-  --card: #eceff5;
-  --card-2: #e2e6ef;
-  --card-edge: #cdd3de;
+  --card: #e6e9f1;
+  --card-2: #dde2eb;
+  --card-edge: #a7b0c0;
   --border: #d4d9d2;
   --border-strong: #6f7872;
   --text: #121614;
@@ -78,7 +78,7 @@
   --preset-blue: #176a8a;
   --preset-blue-strong: #145f7c;
   --preset-blue-soft: #dbeef6;
-  --preset-gold: #7d6000;
+  --preset-gold: #745900;
   --preset-gold-strong: #6b5200;
   --preset-gold-soft: #f7eecb;
   --cursed: #6550ad;
