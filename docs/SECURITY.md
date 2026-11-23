@@ -162,7 +162,9 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   Kept: the newest of each of the last 14 days and of each of the last 8 weeks, never fewer than
   the newest one. `doctor` fails if the newest is more than 36 hours old or fails
   `PRAGMA integrity_check` (run on a local copy), and checks the schema is at the newest
-  migration. `deploy` and `migrate` refuse to run if the backup fails.
+  migration. `deploy` and `migrate` refuse to run if the backup fails. `doctor` also warns
+  when the sync app (Proton Drive) is not running, since backups would then stay on the
+  workstation.
 - **Accepted.** The workstation's system drive is not encrypted (no BitLocker). It is a home
   desktop with a low theft risk, and the owner has had an unrecoverable BitLocker lockout
   before; losing the data to a lockout is the larger risk here. `doctor` reports the drive's

@@ -304,6 +304,16 @@ function Invoke-Doctor {
     } else {
         Report PASS ("Off-machine backup: newest {0}, {1} h old, integrity ok ({2} kept)" -f $v.file, $v.age_hours, $v.count)
     }
+    # A backup folder inside Proton Drive only leaves this machine while the Proton Drive app runs.
+    $bdir = Get-EnvValue 'HR_BACKUP_DIR'
+    if ($bdir -and $bdir -like '*\Proton Drive\*') {
+        if (Get-Process -Name 'ProtonDrive' -ErrorAction SilentlyContinue) {
+            Report PASS 'Proton Drive app: running, so backups sync to the cloud'
+        } else {
+            Report WARN 'Proton Drive app (ProtonDrive.exe) is not running: backups stay on this PC and never reach the cloud' 'Start Proton Drive, and in its settings turn on "Launch at startup"'
+        }
+    }
+
     # Disk encryption: an accepted risk on this home desktop (docs\SECURITY.md), so INFO only.
     $letter = [IO.Path]::GetPathRoot($repo).Substring(0, 2)
     $bl = $null

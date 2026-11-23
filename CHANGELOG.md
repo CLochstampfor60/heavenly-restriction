@@ -42,7 +42,8 @@ change how things work.
   deploy and migration, into a cloud-synced folder set in `.env`. Each is checked before it is
   copied in. The last 14 days and 8 weeks are kept. `server.ps1 backup` makes one on demand,
   `server.ps1 migrate` backs up and then migrates, and `doctor` fails if the newest backup is
-  more than 36 hours old or damaged. A restore test (into a scratch copy) is one command.
+  more than 36 hours old or damaged, and warns if the Proton Drive app is not running (backups
+  would then stay on this PC). A restore test (into a scratch copy) is one command.
 - Settings › About shows the app version and the build's commit ("0.4.1 · build 1a2b3c4"), so you
   can see which version the phone is running.
 - Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the
