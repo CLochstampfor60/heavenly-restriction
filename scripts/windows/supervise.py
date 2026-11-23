@@ -7,16 +7,25 @@ console to send Ctrl+C to, and it starts the server again after every exit, what
 reason. Each start and exit goes to server.log with the reason in plain words; the last exit is
 also written to state.json for `server.ps1 status`.
 
+The server needs no network (it listens on loopback), so it starts at once. A second thread
+waits for the tailnet: it checks /api/health over https://<WEBAUTHN_RP_ID> (from .env) every
+15 s until it answers, then every minute, and logs each change (reachable or not, and why) to
+tailnet.log, including how long after the supervisor started it first answered. It never
+changes anything. `server.ps1 status` and `doctor` show the result.
+
 Files (outside the repo): %LOCALAPPDATA%\\HeavenlyRestriction\\logs\\server.log (rolled to
-server.log.1 at 5 MB), %LOCALAPPDATA%\\HeavenlyRestriction\\state.json, and supervisor.lock, which
-keeps a second supervisor from starting.
+server.log.1 at 5 MB), logs\\tailnet.log (same), %LOCALAPPDATA%\\HeavenlyRestriction\\state.json,
+and supervisor.lock, which keeps a second supervisor from starting.
 """
 
 import json
 import msvcrt
 import os
+import ssl
 import subprocess
+import threading
 import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -26,6 +35,8 @@ HOME = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "HeavenlyRestrictio
 LOG = HOME / "logs" / "server.log"
 STATE = HOME / "state.json"
 LOCK = HOME / "supervisor.lock"
+TAILNET_LOG = HOME / "logs" / "tailnet.log"
+ENV_FILE = REPO / ".env"
 
 DELAY = 5  # seconds before starting again
 FAST_RUN = 30  # a run shorter than this counts as a fast failure
@@ -63,7 +74,15 @@ def log(message: str) -> None:
         f.write(f"{now()} [supervisor] {message}\n")
 
 
+_state_lock = threading.Lock()
+
+
 def save_state(**fields) -> None:
+    with _state_lock:
+        _save_state(**fields)
+
+
+def _save_state(**fields) -> None:
     state = {}
     try:
         state = json.loads(STATE.read_text(encoding="utf-8"))
@@ -75,10 +94,90 @@ def save_state(**fields) -> None:
     os.replace(tmp, STATE)
 
 
+def tailnet_log(message: str) -> None:
+    with open(TAILNET_LOG, "a", encoding="ascii", errors="replace") as f:
+        f.write(f"{now()} {message}\n")
+
+
+def service_host() -> str | None:
+    """WEBAUTHN_RP_ID from .env: the service hostname the phone uses."""
+    try:
+        for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() == "WEBAUTHN_RP_ID":
+                value = value.strip().strip('"')
+                return value if value and value != "localhost" else None
+    except OSError:
+        pass
+    return None
+
+
+def tailscale_state() -> str:
+    """Tailscale's backend state ("Running", "Stopped", ...) or why it could not be read."""
+    try:
+        out = subprocess.run(
+            ["tailscale", "status", "--json"],
+            capture_output=True,
+            timeout=15,
+            creationflags=CREATE_NO_WINDOW,
+        )
+        return json.loads(out.stdout).get("BackendState", "unknown")
+    except FileNotFoundError:
+        return "tailscale not found"
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+        return f"unreadable ({type(error).__name__})"
+
+
+def check_tailnet(host: str) -> tuple[bool, str]:
+    """Is /api/health answering over the tailnet? (ok, reason in words)."""
+    try:
+        with urllib.request.urlopen(
+            f"https://{host}/api/health", timeout=10, context=ssl.create_default_context()
+        ) as r:
+            if json.loads(r.read()).get("status") == "ok":
+                return True, "health ok over HTTPS"
+            return False, "health answered but not ok"
+    except Exception as error:  # any failure is "not reachable"; the reason is logged
+        reason = getattr(error, "reason", error)
+        state = tailscale_state()
+        return False, f"no answer ({type(error).__name__}: {reason}); Tailscale state: {state}"
+
+
+def watch_tailnet(started: float) -> None:
+    """Logs when the app becomes reachable over the tailnet, and every change after that."""
+    host = service_host()
+    if not host:
+        tailnet_log("not checked: WEBAUTHN_RP_ID in .env is not the service hostname")
+        return
+    tailnet_log("waiting for the tailnet (checks /api/health at the service hostname)")
+    time.sleep(5)  # let the server finish starting, so the first result is about the tailnet
+    last = None
+    first_ok = True
+    while True:
+        try:
+            ok, reason = check_tailnet(host)
+        except Exception as error:  # never let the watcher die
+            ok, reason = False, f"check failed: {error!r}"
+        if ok != last:
+            if ok and first_ok:
+                after = time.monotonic() - started
+                tailnet_log(f"reachable: {reason}, {after:.0f} s after the supervisor started")
+                first_ok = False
+            else:
+                tailnet_log(("reachable: " if ok else "NOT reachable: ") + reason)
+            last = ok
+        try:
+            save_state(tailnet_ok=ok, tailnet_reason=reason, tailnet_checked_at=now())
+        except OSError:
+            pass
+        time.sleep(60 if ok else 15)
+
+
 def roll_log() -> None:
     try:
-        if LOG.stat().st_size > ROLL_AT:
-            os.replace(LOG, LOG.with_suffix(".log.1"))
+        for path in (LOG, TAILNET_LOG):
+            if path.exists() and path.stat().st_size > ROLL_AT:
+                os.replace(path, path.with_suffix(".log.1"))
     except OSError:
         pass
 
@@ -118,6 +217,8 @@ def main() -> int:
     log(f"supervisor started (pid {os.getpid()})")
     # The last exit stays (it may explain why the previous supervisor stopped); the count resets.
     save_state(supervisor_pid=os.getpid(), supervisor_started_at=now(), restarts=0)
+    started = time.monotonic()
+    threading.Thread(target=watch_tailnet, args=(started,), daemon=True).start()
     restarts = 0
     fast = 0
     while True:

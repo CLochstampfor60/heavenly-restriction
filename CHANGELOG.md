@@ -31,6 +31,9 @@ change how things work.
   is a clean commit with nothing newer to deploy, the database and its latest backup, disk space,
   and leftover test browsers. It also warns when ProtonVPN is connected, which blocks this PC from
   the tailnet.
+- After a restart, the server supervisor waits for the tailnet and keeps checking that the app
+  answers over its HTTPS address, logging when it becomes reachable (and how long that took after
+  sign-in) and every change after that, with the reason. `server.ps1 status` shows the latest.
 - `scripts\windows\server.ps1 backup` copies the database to `data\backups\` while the server
   runs, and checks the copy.
 - Settings › About shows the app version and the build's commit ("0.4.1 · build 1a2b3c4"), so you

@@ -87,7 +87,7 @@ To keep it running without a terminal (Windows), install it as a Task Scheduler 
 
 The live server only runs a build of a clean, pushed commit (Settings › About shows it as `build <commit>`). `deploy` refuses anything else, and `npm run build` refuses to write `frontend\dist` from a tree with uncommitted changes. Tests and screenshots build into `frontend\dist-test`. `deploy` does not run database migrations: run `server.ps1 backup` first, then `alembic upgrade head` as in the setup above.
 
-The `tailscale serve` config for `svc:hr` is saved by the Tailscale service itself and survives restarts; check it with `tailscale serve status`.
+The `tailscale serve` config for `svc:hr` is saved by the Tailscale service itself and survives restarts; check it with `tailscale serve status`. The server needs no network and starts at once; the supervisor then waits for the tailnet, retries `/api/health` over `https://hr.<tailnet>.ts.net` every 15 seconds until it answers (then every minute), and logs each change and the reason to `%LOCALAPPDATA%\HeavenlyRestriction\logs	ailnet.log`. `status` shows the latest result.
 
 Frontend with live reload while developing, at http://127.0.0.1:5173 (it proxies `/api` to the server above):
 

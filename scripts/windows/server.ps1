@@ -388,6 +388,15 @@ switch ($Command) {
             } else {
                 Write-Output ("Last exit:   none since the supervisor started at {0}" -f $s.supervisor_started_at)
             }
+            if ($null -ne $s.tailnet_ok) {
+                $word = if ($s.tailnet_ok) { 'reachable' } else { 'NOT reachable' }
+                Write-Output ("Tailnet:     {0} at {1}: {2}" -f $word, $s.tailnet_checked_at, $s.tailnet_reason)
+            }
+        }
+        $tlog = Join-Path $home_ 'logs\tailnet.log'
+        if (Test-Path $tlog) {
+            Write-Output "Tailnet log: $tlog (last 3 lines)"
+            Get-Content -Path $tlog -Tail 3
         }
         if (Test-Path $log) {
             Write-Output "Log:         $log (last 5 lines)"
