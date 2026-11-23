@@ -14,6 +14,80 @@ export function readyToLog(weight, count) {
   return weight != null && !Number.isNaN(weight) && count != null && !Number.isNaN(count);
 }
 
+// ---------- Set slots: any order, extra sets allowed ----------
+
+const LOGGED = ['done', 'pr'];
+
+export function isLogged(set) {
+  return LOGGED.includes(set.status);
+}
+
+// Where the next set goes: the first planned set still to do, or a new extra set at the end.
+export function nextSetIndex(sets) {
+  const k = sets.findIndex((s) => s.status === 'todo');
+  return k === -1 ? sets.length : k;
+}
+
+// An exercise is Done once no planned set is left to do; extra sets after that keep it Done.
+export function statusAfterLog(sets) {
+  return sets.some((s) => s.status === 'todo') ? 'active' : 'done';
+}
+
+// ---------- Exercise pager ----------
+
+// The pager's pages in Today's order: each slot of day.order, with the cardio entries placed
+// after the forearm block, before the cool-down and anything moved to Later (as Today shows it).
+// `rows`: [{ id, block, later }] in day.order; `cardio`: [{ id }].
+export function pageList(rows, cardio = []) {
+  const out = [];
+  let placed = !cardio.length;
+  const place = () => {
+    if (!placed) out.push(...cardio.map((c) => ({ kind: 'cardio', id: c.id })));
+    placed = true;
+  };
+  for (const r of rows) {
+    if (r.later || r.block === 'cooldown') place();
+    out.push({ kind: 'slot', id: r.id });
+  }
+  place();
+  return out;
+}
+
+const ENDED_PAGE = ['done', 'stopped', 'skipped'];
+
+// Where Start workout / Continue opens: the first required page not yet ended, else the first
+// optional one, else the first page. `pages`: [{ status, optional }].
+export function firstUnfinished(pages) {
+  const open = (p) => !ENDED_PAGE.includes(p.status);
+  const k = pages.findIndex((p) => open(p) && !p.optional);
+  if (k !== -1) return k;
+  return Math.max(0, pages.findIndex(open));
+}
+
+// Swipes never start within EDGE px of the screen's sides (Android's back gesture lives there).
+export const EDGE = 24;
+const SLOP = 10;
+
+export function swipeMayStart(x, width) {
+  return x >= EDGE && x <= width - EDGE;
+}
+
+// Which way a drag is going once it has moved past the slop: 'x', 'y', or null (not yet).
+export function dragAxis(dx, dy) {
+  if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return null;
+  return Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
+}
+
+// The page a released swipe lands on: a quarter of the width, or a quick flick, turns the page.
+// dx > 0 is a drag to the right (back one page). `velocity` is px per ms.
+export function swipeTarget(index, count, dx, width, velocity = 0) {
+  const far = Math.abs(dx) > width / 4;
+  const flick = Math.abs(dx) > 30 && Math.abs(velocity) > 0.4;
+  if (!far && !flick) return index;
+  const next = dx < 0 ? index + 1 : index - 1;
+  return Math.min(count - 1, Math.max(0, next));
+}
+
 // ---------- Save status (the outbox of changes waiting for the server) ----------
 
 // Outbox entries -> counts. Only `set` entries are logged sets; the rest are session state,

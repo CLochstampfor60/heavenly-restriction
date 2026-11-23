@@ -53,12 +53,13 @@ try {
   // Lat Pulldown is mid-exercise in the demo; one set above its best shows the PR banner.
   await shot(browser, 'set-logging', '#/log/s2', {
     act: async (page) => {
-      const [weight, reps] = await page.locator('.hr-stepper input').all();
+      const here = page.locator('.pager-page:not([inert])'); // the pager also renders its neighbors
+      const [weight, reps] = await here.locator('.hr-stepper input').all();
       await weight.fill('145');
       await weight.dispatchEvent('change');
       await reps.fill('10');
       await reps.dispatchEvent('change');
-      await page.getByRole('button', { name: 'Log set 3', exact: true }).click();
+      await here.getByRole('button', { name: 'Log set 3', exact: true }).click();
       await page.waitForSelector('.hr-pr-banner');
     },
   });

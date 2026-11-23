@@ -12,3 +12,10 @@ window.addEventListener('hashchange', () => {
 export function go(path) {
   location.hash = path;
 }
+
+// Changes the route without a new history entry: moving between pager pages, so the back
+// gesture still returns to Today in one step.
+export function replace(path) {
+  history.replaceState(history.state, '', `#${path}`);
+  route.path = path;
+}

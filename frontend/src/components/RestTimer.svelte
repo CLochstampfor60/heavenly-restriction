@@ -1,7 +1,6 @@
 <script>
   import { addRest, clock, rest, restLeft, skipRest } from '../stores/workout.svelte.js';
 
-  let { target } = $props();
   const RING = 2 * Math.PI * 13;
 
   $effect(() => {
@@ -43,7 +42,7 @@
   </svg>
   <span class="hr-timer__grow">
     <span class="hr-timer__time">{clock(left)}</span>
-    <span class="hr-timer__label">{done ? 'Rest done · go' : `Rest · target ${clock(target)}`}</span>
+    <span class="hr-timer__label">{done ? 'Rest done · go' : `Rest · ${clock(rest.total)}`}</span>
   </span>
   <button class="hr-btn hr-btn--ghost hr-btn--compact timer-btn" aria-label="Add 15 seconds" onclick={() => addRest(15)}>+15 s</button>
   <button class="hr-btn hr-btn--ghost hr-btn--compact timer-btn" onclick={skipRest}>Skip</button>

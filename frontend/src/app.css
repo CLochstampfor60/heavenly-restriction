@@ -79,7 +79,6 @@ a.hr-btn { text-decoration: none; }
 }
 button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .exrow-tag { margin: var(--space-1) 0 2px; }
-.exrow-continue { flex: none; padding: 0 var(--space-3); }
 
 /* ---------- Set logging ---------- */
 .exh-row { display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap-row); }
@@ -252,3 +251,45 @@ a.save-status { text-decoration: none; }
 .passkey-row { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); }
 .passkey-row__name { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .passkey-row__actions { display: flex; gap: var(--space-2); margin: 0 calc(-1 * var(--space-4)) calc(-1 * var(--space-2)); }
+
+/* ---------- Exercise pager (Set logging): one page per exercise, swiped ---------- */
+.pager { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* Above any sheet's scrim, so Home and the arrows work with a sheet open. */
+.pager-top {
+  position: relative; z-index: 11; flex: none;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-1);
+  padding: var(--space-1) var(--space-2); background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.pager-home { justify-self: start; padding: 0 var(--space-3); }
+.pager-nav { display: flex; align-items: center; gap: var(--space-2); }
+.pager-nav .hr-icon-btn:disabled { color: var(--text-faded); cursor: default; }
+.pager-count {
+  min-width: 76px; min-height: var(--tap-min); padding: 0 var(--space-2); border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong); background: var(--card); color: var(--text); cursor: pointer;
+  font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 22px;
+}
+.flip { display: inline-flex; transform: scaleX(-1); }
+.pager-view { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.pager-track { display: flex; height: 100%; touch-action: pan-y; }
+.pager-track--anim { transition: transform var(--duration-base) var(--ease-out); }
+.pager-page { position: relative; flex: 0 0 100%; min-width: 0; display: flex; flex-direction: column; }
+.app:has(.pager) .sheet-layer .hr-sheet { max-height: calc(100% - var(--tap-row) - var(--space-2)); }
+.page-head { display: flex; align-items: center; gap: var(--space-3); }
+/* Placeholder for the media bar (photos and videos come later): initials or an icon. */
+.media-ph {
+  width: var(--tap-row); height: var(--tap-row); flex: none; display: grid; place-items: center;
+  border-radius: var(--radius-md); background: var(--cursed-soft); color: var(--cursed);
+  font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1;
+}
+.media-ph--recover { background: var(--recover-soft); color: var(--recover); }
+.page-status { min-height: var(--tap-min); }
+.log-row { display: flex; gap: var(--space-2); }
+.log-btn { flex: 1 1 auto; min-width: 0; }
+.rir-open { flex: none; min-width: var(--tap-hero); height: var(--tap-hero); padding: 0 var(--space-3); }
+.jump-n {
+  width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong); color: var(--text-2); font-family: var(--font-display); font-weight: 600; font-size: 15px;
+}
+.jump-n .hr-icon { width: 18px; height: 18px; }
+.hr-sheet__option[aria-current="page"] { border-color: var(--cursed); }
+.exrow-open { color: inherit; text-decoration: none; }

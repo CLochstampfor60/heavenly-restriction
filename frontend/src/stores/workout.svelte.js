@@ -4,7 +4,7 @@
 import { tick } from 'svelte';
 import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
-import { openAtFinish, placeholderFor } from '../logic.js';
+import { firstUnfinished, isLogged, nextSetIndex, openAtFinish, pageList, placeholderFor, statusAfterLog } from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
 import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
 import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
@@ -162,6 +162,7 @@ function restore(session, sets, stops) {
   for (const row of sets) {
     const slot = day.slots[row.slotId];
     if (!slot) continue;
+    while (slot.sets.length < row.set) slot.sets.push({ status: 'todo' });
     slot.sets[row.set] = { w: row.w, r: row.r, s: row.s, rir: row.rir, status: row.pr ? 'pr' : 'done' };
   }
   for (const row of stops) {
@@ -345,7 +346,7 @@ export function priorFor(ex, k, slot) {
 }
 
 export function loggedCount(slot) {
-  return slot.sets.filter((s) => s.status === 'done' || s.status === 'pr').length;
+  return slot.sets.filter(isLogged).length;
 }
 
 // Why the row shows something other than the programmed exercise, if it does.
@@ -377,15 +378,6 @@ export function dayStatus() {
   if (ended && slots.length) return stopped ? 'stop' : 'done';
   if (stopped) return 'stop';
   return all.some((s) => s.doneAs) ? 'partial' : null;
-}
-
-export function activeSlotId() {
-  return day.order.find((id) => day.slots[id].status === 'active');
-}
-
-// The next required exercise still to do (optional and checklist items are picked by hand).
-export function nextTodo() {
-  return requiredIds().find((id) => day.slots[id].status === 'todo');
 }
 
 // Completed sets logged today under this exercise, in program order.
@@ -424,6 +416,33 @@ export function swapGroups(slot) {
     .filter((g) => g.options.length);
 }
 
+// ---------- Pager ----------
+
+// Every page of today's pager, in Today's order: [{ kind: 'slot' | 'cardio', id }].
+export function pages() {
+  return pageList(
+    day.order.map((id) => ({ id, block: day.slots[id].plan.block, later: day.slots[id].later })),
+    day.cardio,
+  );
+}
+
+// What a page is: its name, status and whether it is optional. `item` is true for pages that
+// are ticked Done / Skipped rather than logged set by set (warm-up, cool-down, cardio).
+export function pageInfo(page) {
+  if (page.kind === 'cardio') {
+    const c = day.cardio.find((x) => x.id === page.id);
+    return { name: c.mode, status: c.status, optional: false, item: true, cardio: c };
+  }
+  const slot = day.slots[page.id];
+  return { name: exerciseFor(slot).name, status: slot.status, optional: slot.plan.optional, item: !slot.plan.loggable, slot };
+}
+
+// Where Start workout / Continue opens the pager.
+export function firstUnfinishedId() {
+  const list = pages();
+  return list[firstUnfinished(list.map(pageInfo))]?.id;
+}
+
 export function restLeft() {
   return Math.max(0, Math.ceil((rest.endsAt - rest.now) / 1000));
 }
@@ -442,15 +461,6 @@ export function later(slotId) {
   const slot = day.slots[slotId];
   day.order = [...day.order.filter((id) => id !== slotId), slotId];
   slot.later = true;
-  if (slot.status === 'active') slot.status = 'todo';
-}
-
-export function start(slotId) {
-  for (const id of day.order) {
-    if (day.slots[id].status === 'active') day.slots[id].status = 'todo';
-  }
-  day.slots[slotId].status = 'active';
-  day.finished = false;
 }
 
 export function finish() {
@@ -515,38 +525,40 @@ export function pickSwap(exerciseId) {
 
 // ---------- Set logging ----------
 
+// Logs the next set: the first planned set still to do, or an extra set after the plan. Opening
+// or leaving an exercise changes nothing; only logging does. The exercise marks itself Done once
+// its last planned set is logged, and stays Done through extra sets.
 export function logSet(slotId, { w, r, s, rir }) {
   const slot = day.slots[slotId];
-  const k = slot.sets.findIndex((x) => x.status === 'todo');
-  if (k === -1) return;
+  const k = nextSetIndex(slot.sets);
   const ex = exerciseFor(slot);
   const m = measureFor(slot);
   const value = m.measure === 'seconds' ? { w, s, r: null } : { w, r, s: null };
   const pr =
     !stoppedToday(ex.id) &&
     isPr(value, priorSets(ex.id), { assisted: m.assisted, measure: m.measure, repFloor: m.min });
+  const wasDone = slot.status === 'done';
   slot.doneAs = ex.id;
   slot.sets[k] = { ...value, rir, status: pr ? 'pr' : 'done' };
   saveSet(slot, k);
   ui.banner = pr
     ? { slotId, text: setText(ex, value, m.perSide), e1: !m.assisted && m.measure === 'reps' && w ? Math.round(e1rm(w, r)) : null }
     : null;
-  if (k === slot.sets.length - 1) {
-    slot.status = 'done';
-    skipRest();
-  } else {
-    startRest(slot.plan.rest);
-  }
+  slot.status = wasDone ? 'done' : statusAfterLog(slot.sets);
+  if (slot.status === 'done' && !wasDone) skipRest();
+  else startRest(slot.plan.rest);
 }
 
-// Only the most recent set can be undone.
+// Only the most recent set can be undone. An undone extra set is removed; a planned one goes
+// back to to-do.
 export function undoSet(slotId, k) {
   const slot = day.slots[slotId];
-  slot.sets[k] = { status: 'todo' };
+  if (k >= slot.plan.sets) slot.sets.splice(k, 1);
+  else slot.sets[k] = { status: 'todo' };
   db.sets.delete(setId(slotId, k)).catch(warn);
   enqueue({ kind: 'undo', method: 'DELETE', path: path(`/sets/${setId(slotId, k)}`) });
-  slot.status = 'active';
   if (!loggedCount(slot)) slot.doneAs = null;
+  slot.status = slot.doneAs ? statusAfterLog(slot.sets) : 'todo';
   ui.banner = null;
   skipRest();
 }
@@ -562,8 +574,7 @@ export function finishSlot(slotId) {
 // Ends the exercise: the current set is saved as stopped, the rest as skipped.
 export function stopSlot(slotId, { w, symptom, note }) {
   const slot = day.slots[slotId];
-  const k = slot.sets.findIndex((s) => s.status === 'todo');
-  if (k === -1) return;
+  const k = nextSetIndex(slot.sets);
   slot.doneAs = exerciseFor(slot).id;
   slot.sets = slot.sets.map((set, i) => {
     if (i < k) return set;

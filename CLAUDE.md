@@ -30,6 +30,7 @@ Program edits create a new program_version; old logs stay tied to the version th
 Warmup Routine module, injury guardrails as enforced rules (they are pinned notes for now), scale/Fitbit import, a read-only Reference section in the Library for the program's guide tabs (Shonen, Calisthenics Translation, Hip Halo, Rehab & Activation, Core Menu).
 
 ## UI rules
+- At the gym: fewest taps, least typing, least thinking. Show plenty of data, ask for little input. No confirmation dialogs except Stop and Finish workout.
 - Before any UI work, read `docs/DESIGN.md` and `design-system/README.md`. Build only from `design-system/` tokens and `hr-` classes; Dark and Light themes both ship.
 - Plain labels first on every screen; Jujutsu Kaisen theme names are secondary flavor only.
 - Logging a set must take one or two taps. Usable one-handed, mid-workout, on weak signal.

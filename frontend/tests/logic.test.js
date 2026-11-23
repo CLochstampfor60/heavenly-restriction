@@ -3,15 +3,23 @@ import { test } from 'node:test';
 import {
   canWipe,
   deviceName,
+  dragAxis,
+  EDGE,
   finishMessage,
   finishPrompt,
+  firstUnfinished,
   lastUsedText,
+  nextSetIndex,
   openAtFinish,
   outboxDisposition,
+  pageList,
   placeholderFor,
   queueCounts,
   readyToLog,
   saveStatus,
+  statusAfterLog,
+  swipeMayStart,
+  swipeTarget,
 } from '../src/logic.js';
 
 test('first log of an exercise: no weight placeholder, reps from the plan', () => {
@@ -143,4 +151,69 @@ test('last used wording', () => {
   assert.equal(lastUsedText(new Date(2026, 10, 19, 23, 0).toISOString(), now), 'Last used yesterday');
   assert.equal(lastUsedText(new Date(2026, 10, 3, 9, 0).toISOString(), now), 'Last used Nov 3');
   assert.equal(lastUsedText(new Date(2025, 11, 30, 9, 0).toISOString(), now), 'Last used Dec 30, 2025');
+});
+
+// ---------- Set slots in any order ----------
+
+const S = (...statuses) => statuses.map((status) => ({ status }));
+
+test('the next set fills the first planned set left, else adds an extra one', () => {
+  assert.equal(nextSetIndex(S('todo', 'todo')), 0);
+  assert.equal(nextSetIndex(S('done', 'todo', 'todo')), 1);
+  assert.equal(nextSetIndex(S('done', 'pr', 'done')), 3); // all planned sets logged: extra set
+  assert.equal(nextSetIndex([]), 0);
+});
+
+test('an exercise is Done once no planned set is left to do', () => {
+  assert.equal(statusAfterLog(S('done', 'todo')), 'active');
+  assert.equal(statusAfterLog(S('done', 'pr')), 'done');
+  assert.equal(statusAfterLog(S('done', 'done', 'done')), 'done'); // with an extra set
+});
+
+// ---------- Pager ----------
+
+test('pages follow Today: cardio after the forearm block, before the cool-down and Later', () => {
+  const rows = [
+    { id: 'WU', block: 'warmup' },
+    { id: '1', block: 'main' },
+    { id: 'F1', block: 'forearm' },
+    { id: 'CD', block: 'cooldown' },
+    { id: '2', block: 'main', later: true },
+  ];
+  const ids = pageList(rows, [{ id: 'cardio1' }, { id: 'cardio2' }]).map((p) => p.id);
+  assert.deepEqual(ids, ['WU', '1', 'F1', 'cardio1', 'cardio2', 'CD', '2']);
+  assert.deepEqual(pageList(rows.slice(0, 3), [{ id: 'cardio1' }]).map((p) => p.id), ['WU', '1', 'F1', 'cardio1']);
+  assert.equal(pageList(rows, [{ id: 'cardio1' }])[3].kind, 'cardio');
+});
+
+test('Start / Continue opens at the first required page not ended', () => {
+  const P = (status, optional = false) => ({ status, optional });
+  assert.equal(firstUnfinished([P('done'), P('stopped'), P('todo', true), P('active'), P('todo')]), 3);
+  assert.equal(firstUnfinished([P('done'), P('todo', true)]), 1); // only optional work left
+  assert.equal(firstUnfinished([P('done'), P('skipped')]), 0); // all ended
+});
+
+test('swipes never start at the screen edges (Android back gesture)', () => {
+  assert.equal(EDGE, 24);
+  assert.equal(swipeMayStart(10, 360), false);
+  assert.equal(swipeMayStart(23, 360), false);
+  assert.equal(swipeMayStart(24, 360), true);
+  assert.equal(swipeMayStart(200, 360), true);
+  assert.equal(swipeMayStart(340, 360), false);
+});
+
+test('a drag is a swipe only when it is mostly sideways', () => {
+  assert.equal(dragAxis(4, 3), null); // still within the slop
+  assert.equal(dragAxis(30, 5), 'x');
+  assert.equal(dragAxis(5, 30), 'y');
+  assert.equal(dragAxis(20, 20), 'y'); // diagonal: leave it to scrolling
+});
+
+test('a quarter of the width or a flick turns the page, never past the ends', () => {
+  assert.equal(swipeTarget(3, 10, -100, 360), 4);
+  assert.equal(swipeTarget(3, 10, 100, 360), 2);
+  assert.equal(swipeTarget(3, 10, -60, 360), 3); // short and slow: springs back
+  assert.equal(swipeTarget(3, 10, -60, 360, -0.8), 4); // short and quick: a flick
+  assert.equal(swipeTarget(0, 10, 200, 360), 0);
+  assert.equal(swipeTarget(9, 10, -200, 360), 9);
 });

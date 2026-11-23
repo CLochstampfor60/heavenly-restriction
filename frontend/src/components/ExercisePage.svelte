@@ -1,52 +1,64 @@
 <script>
-  import Icon from '../components/Icon.svelte';
-  import RestTimer from '../components/RestTimer.svelte';
-  import SaveStatus from '../components/SaveStatus.svelte';
-  import Sheet from '../components/Sheet.svelte';
-  import Stepper from '../components/Stepper.svelte';
+  // One exercise's page in the pager: header, pinned note, set rows, and the logging bar.
+  import Icon from './Icon.svelte';
+  import RestTimer from './RestTimer.svelte';
+  import SaveStatus from './SaveStatus.svelte';
+  import Sheet from './Sheet.svelte';
+  import Stepper from './Stepper.svelte';
   import { readyToLog } from '../logic.js';
-  import { go } from '../router.svelte.js';
   import {
+    blockLabel,
     clock,
     day,
     exerciseFor,
     finishSlot,
     fmt,
-    later,
     loggedCount,
     logSet,
     measureFor,
-    nextTodo,
     openSwap,
     planText,
     priorFor,
     rest,
-    start,
     stopSlot,
     targetText,
     ui,
     undoSet,
   } from '../stores/workout.svelte.js';
 
-  let { slotId } = $props();
+  let { slotId, current } = $props();
 
   const SYMPTOMS = ['Pinch', 'Sharp pain', 'Numbness or tingling', 'Dull ache', 'Form breaking down', 'Other'];
   const RIR = ['0', '1', '2', '3', '4+'];
 
   const slot = $derived(day.slots[slotId]);
   const ex = $derived(exerciseFor(slot));
-  const position = $derived(day.order.indexOf(slotId) + 1);
-  const active = $derived(slot.sets.findIndex((s) => s.status === 'todo'));
-  const working = $derived(slot.status === 'active' && active !== -1);
+  const initials = $derived(
+    ex.name
+      .split(/[\s-]+/)
+      .filter((w) => /^[A-Za-z]/.test(w))
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join(''),
+  );
+  // The set the next Log set fills: the first planned set to do, else an extra one at the end.
+  const active = $derived.by(() => {
+    const k = slot.sets.findIndex((s) => s.status === 'todo');
+    return k === -1 ? slot.sets.length : k;
+  });
+  const extra = $derived(active >= slot.plan.sets);
+  const ended = $derived(slot.status === 'stopped' || slot.status === 'skipped');
   const lastLogged = $derived(slot.sets.findLastIndex((s) => s.status === 'done' || s.status === 'pr'));
-  const prior = $derived(priorFor(ex, Math.max(active, 0), slot));
+  const prior = $derived(priorFor(ex, active, slot));
   const m = $derived(measureFor(slot));
   const timed = $derived(m.measure === 'seconds');
   const side = $derived(m.perSide ? ' / side' : '');
   const wUnit = $derived(m.assisted ? 'lb assist' : 'lb');
   const nUnit = $derived(`${timed ? 's' : 'reps'}${side}`);
   const logged = $derived(loggedCount(slot));
-  const canFinish = $derived(working && logged >= slot.plan.setsMin && logged > 0 && logged < slot.sets.length);
+  const canFinish = $derived(
+    slot.status === 'active' && logged >= slot.plan.setsMin && logged > 0 && logged < slot.plan.sets,
+  );
   const isPlanned = $derived(ex.id === slot.exerciseId || ex.id === slot.plan.alt);
   // The program's cue for this slot (and any load cap) when doing the planned exercise.
   const pinned = $derived.by(() => {
@@ -55,13 +67,13 @@
     return notes.filter((x, k) => notes.findIndex((y) => y.text === x.text) === k);
   });
   const banner = $derived(ui.banner?.slotId === slotId ? ui.banner : null);
-  const next = $derived(nextTodo());
   const stopped = $derived(slot.sets.find((s) => s.status === 'stopped'));
 
-  // Edited values for the active set; null means "use last time's value".
+  // Edited values for the next set; null means "use last time's value".
   let w = $state(null);
   let n = $state(null); // reps, or seconds for timed sets
   let rir = $state(null);
+  let rirOpen = $state(false);
   const priorN = $derived((timed ? prior.s : prior.r) ?? slot.plan.target.min ?? null);
   const curW = $derived(w ?? prior.w);
   const curN = $derived(n ?? priorN);
@@ -79,11 +91,7 @@
     w = null;
     n = null;
     rir = null;
-  }
-
-  function doLater() {
-    later(slotId);
-    go('/');
+    rirOpen = false;
   }
 
   function openStop() {
@@ -96,42 +104,42 @@
     stopSlot(slotId, { w: curW, symptom: symptom ?? 'Other', note: stopNote.trim() });
     stopOpen = false;
   }
-
-  function goNext() {
-    const id = next; // `next` re-derives as soon as start() runs
-    start(id);
-    go(`/log/${id}`);
-  }
 </script>
 
-<div class="app__scroll">
+<div class="app__scroll pager-body">
   <header class="hr-exh">
-    <div class="exh-row">
-      <a href="#/" class="hr-icon-btn" aria-label="Back to today's workout"><Icon name="back" /></a>
+    <div class="page-head">
+      <span class="media-ph hr-num" aria-hidden="true">{initials}</span>
       <div class="exh-title">
-        <span class="hr-eyebrow">{day.name} · exercise {position} of {day.order.length}</span>
+        <span class="hr-eyebrow">{blockLabel(slot.plan.block)}{slot.plan.optional ? ' · optional' : ''}</span>
         <h1 class="hr-exh__name"><a class="name-link" href="#/exercise/{ex.id}">{ex.name}</a></h1>
       </div>
-      {#if working}
+      {#if !ended}
         <button class="hr-stop" onclick={openStop}><Icon name="stop" />Stop</button>
       {/if}
     </div>
-    <div class="exh-indent exh-meta-row">
+    <div class="exh-meta-row">
       <span class="hr-tag">{ex.region}</span>
       <span class="hr-exh__meta">{planText(slot)} · rest {clock(slot.plan.rest)}</span>
     </div>
-    <div class="exh-indent"><SaveStatus /></div>
-    {#if slot.status === 'active' || slot.status === 'todo'}
-      <div class="hr-exh__actions exh-indent">
-        <button class="hr-btn hr-btn--ghost hr-btn--compact exh-action" onclick={doLater}>
-          <Icon name="later" />Later
+    <SaveStatus />
+    <div class="exh-meta-row page-status">
+      {#if slot.status === 'done'}
+        <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
+      {:else if slot.status === 'stopped'}
+        <span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>
+      {:else if slot.status === 'skipped'}
+        <span class="hr-chip"><Icon name="skip" />Skipped</span>
+      {/if}
+      <span class="small muted hr-num">{logged} of {slot.plan.sets} sets</span>
+      {#if !slot.doneAs}
+        <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" onclick={() => openSwap(slotId)}>
+          <Icon name="swap" />Swap
         </button>
-        {#if !slot.doneAs}
-          <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" onclick={() => openSwap(slotId)}>
-            <Icon name="swap" />Swap
-          </button>
-        {/if}
-      </div>
+      {/if}
+    </div>
+    {#if stopped}
+      <span class="small muted">{stopped.symptom} at {fmt(stopped.w)} {wUnit}, set {slot.sets.indexOf(stopped) + 1}</span>
     {/if}
   </header>
 
@@ -157,11 +165,11 @@
 
   <div class="stack" role="list" aria-label="Sets">
     {#each slot.sets as set, k (k)}
-      {@const isActive = working && k === active}
+      {@const isActive = !ended && k === active}
       {@const todo = set.status === 'todo'}
       {@const p = priorFor(ex, k, slot)}
       {@const pN = (timed ? p.s : p.r) ?? slot.plan.target.min}
-      {@const logged = set.status === 'done' || set.status === 'pr'}
+      {@const isLog = set.status === 'done' || set.status === 'pr'}
       <div
         role="listitem"
         class="hr-set"
@@ -201,7 +209,7 @@
           >
             <span class="hr-box"></span>
           </button>
-        {:else if logged}
+        {:else if isLog}
           {@const undoable = k === lastLogged && slot.status !== 'stopped'}
           <button
             class="hr-set__check"
@@ -222,10 +230,12 @@
 </div>
 
 <div class="app__bar app__bar--log">
-  {#if working}
-    {#if rest.running}
-      <RestTimer target={slot.plan.rest} />
-    {/if}
+  {#if current && rest.running}
+    <RestTimer />
+  {/if}
+  {#if ended}
+    <p class="small muted hint">This exercise has ended.</p>
+  {:else}
     <div class="stepper-pair">
       <Stepper
         label={m.assisted ? 'Assist · lb · less is better' : 'Weight · lb'}
@@ -250,51 +260,39 @@
         onchange={(v) => (n = v === null ? null : Math.round(v))}
       />
     </div>
-    <div class="rir-row" role="group" aria-label="Reps in reserve, optional">
-      <span class="option-text">
-        <span class="hr-eyebrow rir-label">RIR</span>
-        <span class="meta">optional</span>
-      </span>
-      <div class="hr-rir__cells">
-        {#each RIR as label, k (label)}
-          <button
-            class="hr-rir__cell"
-            aria-pressed={rir === k}
-            aria-label="{label} reps in reserve"
-            onclick={() => (rir = rir === k ? null : k)}>{label}</button
-          >
-        {/each}
+    {#if rirOpen}
+      <div class="rir-row hr-rir" role="group" aria-label="Reps in reserve, optional">
+        <span class="option-text">
+          <span class="hr-eyebrow rir-label">RIR</span>
+          <span class="meta">optional</span>
+        </span>
+        <div class="hr-rir__cells">
+          {#each RIR as label, k (label)}
+            <button
+              class="hr-rir__cell"
+              aria-pressed={rir === k}
+              aria-label="{label} reps in reserve"
+              onclick={() => (rir = rir === k ? null : k)}>{label}</button
+            >
+          {/each}
+        </div>
       </div>
+    {/if}
+    <div class="log-row">
+      {#if !rirOpen}
+        <button class="hr-btn hr-btn--ghost hr-btn--compact rir-open" aria-expanded="false" onclick={() => (rirOpen = true)}>
+          RIR{rir != null ? ` ${RIR[rir]}` : ''}
+        </button>
+      {/if}
+      <button class="hr-btn hr-btn--primary hr-btn--hero log-btn" onclick={log} disabled={!ready}>
+        {#if ready}<Icon name="check" />Log {extra ? 'extra ' : ''}set {active + 1}
+        {:else}Enter {curW == null ? (m.assisted ? 'assistance' : 'weight') : timed ? 'seconds' : 'reps'} for set {active + 1}{/if}
+      </button>
     </div>
-    <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={log} disabled={!ready}>
-      {#if ready}<Icon name="check" />Log set {active + 1}
-      {:else}Enter {curW == null ? (m.assisted ? 'assistance' : 'weight') : timed ? 'seconds' : 'reps'} for set {active + 1}{/if}
-    </button>
     {#if canFinish}
-      <button class="hr-btn hr-btn--secondary" onclick={() => finishSlot(slotId)}>
+      <button class="hr-btn hr-btn--secondary hr-btn--compact" onclick={() => finishSlot(slotId)}>
         Finish after {logged} sets
       </button>
-    {/if}
-  {:else if slot.status === 'todo'}
-    <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={() => start(slotId)}>
-      Start this exercise
-    </button>
-  {:else}
-    <div class="finish-line">
-      {#if stopped}
-        <span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>
-        <span class="small muted">{stopped.symptom} at {fmt(stopped.w)} {wUnit}, set {slot.sets.indexOf(stopped) + 1}</span>
-      {:else}
-        <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
-        <span class="small muted">{logged} set{logged === 1 ? '' : 's'} logged</span>
-      {/if}
-    </div>
-    {#if next}
-      <button class="hr-btn hr-btn--primary hr-btn--hero" onclick={goNext}>
-        Next: {exerciseFor(day.slots[next]).name}
-      </button>
-    {:else}
-      <a href="#/" class="hr-btn hr-btn--primary hr-btn--hero"><Icon name="back" />Back to today</a>
     {/if}
   {/if}
 </div>
@@ -315,11 +313,11 @@
     <div class="stop-summary">
       <span class="hr-eyebrow">Saved with it</span>
       <span class="heading hr-num">{ex.name} · set {active + 1} · {fmt(curW)} {wUnit}</span>
-      <span class="meta">Shows on this exercise's history and the calendar.</span>
+      <span class="meta">Shows on this exercise's history and the calendar. Only for symptoms: to move on, just swipe.</span>
     </div>
     <div class="stack-tight">
-      <label for="stop-note" class="hr-eyebrow">Note · optional</label>
-      <input id="stop-note" class="text-field" type="text" placeholder="Where, and how it felt" bind:value={stopNote}>
+      <label for="stop-note-{slotId}" class="hr-eyebrow">Note · optional</label>
+      <input id="stop-note-{slotId}" class="text-field" type="text" placeholder="Where, and how it felt" bind:value={stopNote}>
     </div>
     <div class="sheet-actions">
       <button class="hr-btn hr-btn--secondary" onclick={() => (stopOpen = false)}>Cancel</button>

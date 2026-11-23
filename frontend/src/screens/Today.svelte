@@ -8,23 +8,21 @@
   import { go } from '../router.svelte.js';
   import { source } from '../stores/source.svelte.js';
   import {
-    activeSlotId,
     blockLabel,
     day,
     exerciseFor,
     finishAndSync,
+    firstUnfinishedId,
     lastText,
     later,
     loggedCount,
     markCardio,
     markItem,
-    nextTodo,
     openSlots,
     openSwap,
     planText,
     requiredIds,
     slotNote,
-    start,
     toggleGear,
   } from '../stores/workout.svelte.js';
 
@@ -33,8 +31,6 @@
   const required = $derived(requiredIds());
   const total = $derived(required.length);
   const doneCount = $derived(required.filter((id) => day.slots[id].status === 'done').length);
-  const activeId = $derived(activeSlotId());
-  const todoId = $derived(nextTodo());
   const begun = $derived(
     day.order.some((id) => day.slots[id].status !== 'todo') || day.cardio.some((c) => c.status !== 'todo'),
   );
@@ -60,12 +56,15 @@
     return out;
   });
 
+  // Start workout / Continue open the pager at the first exercise not yet ended; with every
+  // required exercise ended, the button finishes the workout.
+  const ENDED = ['done', 'stopped', 'skipped'];
   const hero = $derived.by(() => {
     if (day.finished || !day.order.length) return null;
-    if (activeId) return { icon: null, label: `Continue: ${exerciseFor(day.slots[activeId]).name}`, slot: activeId };
-    if (todoId) {
-      const label = begun ? `Next: ${exerciseFor(day.slots[todoId]).name}` : 'Start workout';
-      return { icon: null, label, slot: todoId };
+    if (!required.every((id) => ENDED.includes(day.slots[id].status))) {
+      const id = firstUnfinishedId();
+      const name = day.slots[id] ? exerciseFor(day.slots[id]).name : day.cardio.find((c) => c.id === id)?.mode;
+      return { icon: null, label: begun ? `Continue: ${name}` : 'Start workout', slot: id };
     }
     return { icon: 'check', label: 'Finish workout', slot: null };
   });
@@ -99,10 +98,8 @@
   }
 
   function heroAction() {
-    const id = hero.slot; // `hero` re-derives as soon as start() runs
-    if (!id) return askFinish();
-    start(id);
-    go(`/log/${id}`);
+    if (!hero.slot) return askFinish();
+    go(`/log/${hero.slot}`);
   }
 </script>
 
@@ -170,10 +167,10 @@
             {#each day.cardio as c (c.id)}
               <div role="listitem" class="hr-exrow" class:hr-exrow--done={c.status === 'done'}>
                 <span class="hr-exrow__mark" aria-hidden="true"><Icon name={c.status === 'done' ? 'check' : 'pulse'} /></span>
-                <span class="hr-exrow__body">
+                <a class="hr-exrow__body exrow-open" href="#/log/{c.id}">
                   <span class="hr-exrow__name">{c.mode}</span>
                   <span class="hr-exrow__meta">{cardioMeta(c)}</span>
-                </span>
+                </a>
                 {@render ticks(c.status, c.mode, (status) => markCardio(c.id, status))}
               </div>
             {/each}
@@ -186,46 +183,42 @@
             {@const isSwap = note?.kind === 'info' && !isDone}
             {@const sets = loggedCount(slot)}
             {@const checklist = !slot.plan.loggable}
+            {@const going = slot.status === 'active'}
             <div
               role="listitem"
               class="hr-exrow"
               class:hr-exrow--done={isDone}
-              class:hr-exrow--current={slot.status === 'active'}
-              class:hr-exrow--swap={isSwap && slot.status !== 'active'}
+              class:hr-exrow--current={going}
+              class:hr-exrow--swap={isSwap && !going}
             >
               <span class="hr-exrow__mark" aria-hidden="true">
                 {#if isDone}<Icon name="check" />
                 {:else if slot.status === 'stopped'}<Icon name="stop" />
                 {:else if slot.status === 'skipped'}<Icon name="skip" />
+                {:else if going}<Icon name="partial" />
                 {:else if isSwap}<Icon name="swap" />
                 {:else if slot.plan.block === 'cooldown'}<Icon name="moon" />
                 {:else}{slot.plan.code}{/if}
               </span>
-              <span class="hr-exrow__body">
+              <a class="hr-exrow__body exrow-open" href="#/log/{id}">
                 <span class="hr-exrow__name">{ex.name}</span>
                 {#if !checklist}<span class="hr-tag exrow-tag">{ex.region}</span>{/if}
                 <span class="hr-exrow__meta">
-                  {slot.plan.optional ? 'Optional · ' : ''}{planText(slot)}{#if !checklist}{' · '}{sets && !isDone ? `${sets} of ${slot.sets.length} sets` : lastText(ex)}{/if}
+                  {slot.plan.optional ? 'Optional · ' : ''}{planText(slot)}{#if !checklist}{' · '}{sets ? `${sets} of ${slot.plan.sets} sets` : lastText(ex)}{/if}
                 </span>
                 {#if note}
                   <span class={note.kind === 'info' ? 'hr-exrow__note' : 'hr-exrow__meta'}>{note.text}</span>
                 {/if}
-              </span>
+              </a>
               {#if checklist}
                 {@render ticks(slot.status, ex.name, (status) => markItem(id, status))}
               {:else if isDone}
                 <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
               {:else if slot.status === 'stopped'}
                 <span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>
-              {:else if slot.status === 'active'}
-                <a href="#/log/{id}" class="hr-btn hr-btn--primary hr-btn--compact exrow-continue">Continue</a>
               {:else}
                 <span class="hr-exrow__actions">
-                  {#if slot.plan.optional}
-                    <button class="hr-icon-btn" aria-label="Start {ex.name}" onclick={() => { start(id); go(`/log/${id}`); }}>
-                      <Icon name="chevron-right" />
-                    </button>
-                  {:else}
+                  {#if !slot.plan.optional && !slot.later}
                     <button class="hr-icon-btn muted" aria-label="Do {ex.name} later" onclick={() => later(id)}>
                       <Icon name="later" />
                     </button>
@@ -243,7 +236,7 @@
       </section>
     {/each}
     {#if day.order.length}
-      <p class="meta hint">Later moves an exercise to the bottom. Swap picks another for the same muscle. Optional work never counts as missed.</p>
+      <p class="meta hint">Tap any exercise to log it, in any order. Later moves one to the bottom. Swap picks another for the same muscle. Optional work never counts as missed.</p>
     {:else}
       <p class="body muted hint">Nothing planned today.</p>
     {/if}

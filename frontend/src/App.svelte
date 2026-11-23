@@ -4,16 +4,23 @@
   import ExerciseCard from './screens/ExerciseCard.svelte';
   import Library from './screens/Library.svelte';
   import Login from './screens/Login.svelte';
+  import Pager from './screens/Pager.svelte';
   import Progress from './screens/Progress.svelte';
-  import SetLog from './screens/SetLog.svelte';
   import Settings from './screens/Settings.svelte';
   import Today from './screens/Today.svelte';
   import { ensureExercise } from './stores/source.svelte.js';
-  import { day } from './stores/workout.svelte.js';
+  import { closeSwap, day } from './stores/workout.svelte.js';
   import { applyUpdate, updates } from './stores/updates.svelte.js';
 
   const logId = $derived(route.path.match(/^\/log\/([^/]+)$/)?.[1]);
   const exerciseId = $derived(route.path.match(/^\/exercise\/(\w+)$/)?.[1]);
+  const onPage = $derived(!!logId && (!!day.slots[logId] || day.cardio.some((c) => c.id === logId)));
+
+  // Leaving a screen (Home, the back gesture) closes the swap sheet with it.
+  $effect(() => {
+    void route.path;
+    closeSwap();
+  });
 </script>
 
 <div class="app">
@@ -25,8 +32,8 @@
   {/if}
   {#if route.path === '/login'}
     <Login />
-  {:else if logId && day.slots[logId]?.plan.loggable}
-    {#key logId}<SetLog slotId={logId} />{/key}
+  {:else if onPage}
+    <Pager id={logId} />
   {:else if exerciseId}
     {#key exerciseId}
       {#await ensureExercise(exerciseId)}

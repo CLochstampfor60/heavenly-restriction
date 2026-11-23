@@ -8,6 +8,17 @@ change how things work.
 ## [Unreleased]
 
 ### Added
+- Set logging is a pager: one page per exercise of today (warm-up, main lifts, core, forearm,
+  cardio, cool-down) in Today's order. Swipe the page sideways, or use the small arrows, to move
+  between exercises in any order; moving changes nothing. The "4 of 10" label opens a list of all
+  of today's exercises to jump to. Home (top left) and the phone's back gesture return to Today
+  from any page, even with a sheet open or the rest timer running. Each page has a small picture
+  area (the exercise's initials for now), the last time's values filled in, so an unchanged set is
+  one tap on Log set, and RIR folded away until wanted.
+- Every row on Today opens the pager at that exercise and shows its progress ("2 of 4 sets").
+  Start workout and Continue open it at the first exercise not yet done.
+- An exercise marks itself Done when its last planned set is logged, and takes extra sets after
+  that.
 - An app icon, with versions for Android's round and shaped launcher masks, an iPhone home-screen
   icon and browser tab favicons. `npm run icons` makes them all from one source file.
 - The app can be installed from the browser ("Install app" or "Add to Home screen") and opens full
@@ -20,6 +31,8 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Removed
+- Only one exercise could be open at a time, and only through Start or Next. Exercises no longer
+  need to be started; the Start this exercise, Next and Continue buttons on the set screen are gone.
 - The planned Escanor theme is dropped from the parking lot: its colors overlap the Gold accent
   and the Stop amber.
 
