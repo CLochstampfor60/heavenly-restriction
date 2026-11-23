@@ -25,6 +25,14 @@ change how things work.
 - `scripts\windows\server.ps1 deploy` builds the app from the current commit and restarts the
   server, and refuses unless that commit is clean and already pushed. Building into the folder the
   live server serves also refuses a tree with uncommitted changes.
+- `scripts\windows\server.ps1 doctor` checks everything the phone depends on and prints PASS or
+  FAIL for each, with the command that fixes it: the server task, supervisor and address, health
+  on this PC and over the tailnet, Tailscale and the service's serve config, that the live build
+  is a clean commit with nothing newer to deploy, the database and its latest backup, disk space,
+  and leftover test browsers. It also warns when ProtonVPN is connected, which blocks this PC from
+  the tailnet.
+- `scripts\windows\server.ps1 backup` copies the database to `data\backups\` while the server
+  runs, and checks the copy.
 - Settings › About shows the app version and the build's commit ("0.4.1 · build 1a2b3c4"), so you
   can see which version the phone is running.
 - Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the
@@ -73,6 +81,8 @@ change how things work.
   fails or the run crashes, ends any of its processes that outlive the close, and fails the run if
   one survives. A browser left by a run that was killed outright is ended at the next launch.
   `npm run browsers:check` lists leftovers and `npm run browsers:clean` ends them.
+- `server.ps1 status` no longer reports "exited unexpectedly" when the server is fine: that code
+  only means the task's 5-minute repeat start was skipped because it was already running.
 
 ### Removed
 - Only one exercise could be open at a time, and only through Start or Next. Exercises no longer

@@ -79,9 +79,13 @@ To keep it running without a terminal (Windows), install it as a Task Scheduler 
 .\scripts\windows\server.ps1 start      # start it again
 .\scripts\windows\server.ps1 uninstall
 .\scripts\windows\server.ps1 deploy     # build frontend\dist from HEAD and restart; refused unless HEAD is clean and pushed
+.\scripts\windows\server.ps1 doctor     # check everything the phone depends on: PASS/FAIL with the fix for each
+.\scripts\windows\server.ps1 backup     # copy the database to data\backups\ (safe while the server runs)
 ```
 
-The live server only runs a build of a clean, pushed commit (Settings › About shows it as `build <commit>`). `deploy` refuses anything else, and `npm run build` refuses to write `frontend\dist` from a tree with uncommitted changes. Tests and screenshots build into `frontend\dist-test`. `deploy` does not run database migrations: back up `data\hr.db` first, then run `alembic upgrade head` as in the setup above.
+**If the phone says it can't reach the server, run `doctor` first.** It checks, in plain words: the task (installed, enabled, running, starts at logon), the supervisor, the server on 127.0.0.1:8000 only, `/api/health` on this PC and over `https://hr.<tailnet>.ts.net`, Tailscale connected and the `svc:hr` serve config (approved host, no Funnel), that the live build is a clean commit on origin/main with no newer app changes, the database and its latest backup, free disk space, and leftover test browsers. Each FAIL line is followed by the command that fixes it; the exit code is 1 if anything failed. It also warns when ProtonVPN is connected: ProtonVPN blocks this PC (not the phone) from the tailnet unless its split tunneling excludes `100.64.0.0/10` and `fd7a:115c:a1e0::/48`.
+
+The live server only runs a build of a clean, pushed commit (Settings › About shows it as `build <commit>`). `deploy` refuses anything else, and `npm run build` refuses to write `frontend\dist` from a tree with uncommitted changes. Tests and screenshots build into `frontend\dist-test`. `deploy` does not run database migrations: run `server.ps1 backup` first, then `alembic upgrade head` as in the setup above.
 
 The `tailscale serve` config for `svc:hr` is saved by the Tailscale service itself and survives restarts; check it with `tailscale serve status`.
 
@@ -113,7 +117,10 @@ The app listens on `127.0.0.1:8000` only; publish it with `tailscale serve` as a
 .\.venv\Scripts\pre-commit run --all-files
 .\.venv\Scripts\python -m pytest
 npm --prefix frontend test
+npm --prefix frontend run test:e2e    # optional: end-to-end, headless Edge or Chrome, demo data
 ```
+
+Every browser the tests, screenshots and icons use is headless and closed even when a run fails; `npm --prefix frontend run browsers:check` lists any left behind and `browsers:clean` ends them.
 
 The pre-commit hooks include the private-strings leak guard. It reads `internal_docs\private-strings.txt` (one string per line, gitignored) and is skipped with a note when that file does not exist.
 
