@@ -151,6 +151,11 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Done.** On the workstation, the repository (with `.env`, the database and `data\backups\`)
   is readable only by the owner's account, SYSTEM and Administrators; the Users group was
   removed. The server's log and state folder under `%LOCALAPPDATA%` is the owner's only.
+- **Fixed (2026-11-23).** The Desktop folder, which every repository on it inherits from, had a
+  non-default entry giving the Users group modify access. The owner removed it; the Desktop
+  now lists only SYSTEM, Administrators and the owner. `doctor` fails if the Desktop, the
+  repository, `.env`, `data\` or the database gives any access to Users, Everyone or
+  Authenticated Users.
 - **Done.** Backups leave the workstation: daily (from the server supervisor) and before every
   deploy and migration, into a cloud-synced folder named only in the local `.env`. Each is a
   consistent SQLite snapshot, integrity-checked before it is copied in and renamed into place.

@@ -333,7 +333,26 @@ function Invoke-Doctor {
         Report PASS 'Server log: no full API paths (no workout dates or ids)'
     }
 
-    # 7. Leftover test browsers.
+    # 7. Folder permissions: no other account on this PC can read the health data. Checks the
+    # Desktop (the repo inherits from it), the repo, .env, data\ and the database for any allow
+    # entry for Users (S-1-5-32-545), Everyone (S-1-1-0) or Authenticated Users (S-1-5-11).
+    $broad = @{ 'S-1-5-32-545' = 'Users'; 'S-1-1-0' = 'Everyone'; 'S-1-5-11' = 'Authenticated Users' }
+    $open = @()
+    foreach ($p in @([Environment]::GetFolderPath('Desktop'), $repo, (Join-Path $repo '.env'), (Join-Path $repo 'data'), $db)) {
+        if (-not (Test-Path -LiteralPath $p)) { continue }
+        foreach ($ace in (Get-Acl -LiteralPath $p).Access) {
+            if ($ace.AccessControlType -ne 'Allow') { continue }
+            try { $sid = $ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { continue }
+            if ($broad.ContainsKey($sid)) { $open += ('{0} ({1})' -f $p, $broad[$sid]) }
+        }
+    }
+    if ($open.Count) {
+        Report FAIL ('Permissions: other accounts can open {0}' -f (($open | Select-Object -Unique) -join '; ')) ('In PowerShell, for each path: icacls "<path>" /remove:g "*S-1-5-32-545" "*S-1-1-0" "*S-1-5-11"   (if the entry is inherited, remove it where it is set, usually the Desktop)')
+    } else {
+        Report PASS 'Permissions: Desktop, repo, .env and the database: no Users, Everyone or Authenticated Users access'
+    }
+
+    # 8. Leftover test browsers.
     $left = @(Get-TestBrowsers)
     if ($left.Count) {
         Report FAIL ('Test browsers left running: {0} process(es), pid {1}' -f $left.Count, (($left | ForEach-Object { $_.ProcessId }) -join ', ')) 'npm --prefix frontend run browsers:clean'

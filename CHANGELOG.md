@@ -31,6 +31,8 @@ change how things work.
   is a clean commit with nothing newer to deploy, the database and its latest backup, disk space,
   and leftover test browsers. It also warns when ProtonVPN is connected, which blocks this PC from
   the tailnet.
+  It also fails if the Desktop, the repository, `.env` or the database can be opened by other
+  accounts on the PC (Users, Everyone or Authenticated Users).
   It reports the system drive's encryption state as information only: not encrypting this home
   desktop is an accepted risk (see docs/SECURITY.md).
 - After a restart, the server supervisor waits for the tailnet and keeps checking that the app
