@@ -7,6 +7,7 @@ import { mount } from 'svelte';
 import App from './App.svelte';
 import { checkAuth, needsSignIn } from './stores/auth.svelte.js';
 import { watchSystemTheme } from './settings.svelte.js';
+import { loadPrefs } from './stores/prefs.svelte.js';
 import { checkPersistence } from './stores/storage.svelte.js';
 import { registerServiceWorker } from './stores/updates.svelte.js';
 import { loadToday } from './stores/workout.svelte.js';
@@ -25,6 +26,7 @@ checkAuth().then(async () => {
     mount(App, { target });
     return;
   }
+  await loadPrefs(); // before loadToday, so a rest timer left running obeys the setting
   await loadToday();
   mount(App, { target });
 });

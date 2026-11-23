@@ -282,3 +282,41 @@ test('a Swapped exercise logs under the exercise actually done', async () => {
   await context.close();
   assert.deepEqual(errors, []);
 });
+
+// ---------- Rest timer setting ----------
+
+test('rest timer on (the default): logging a set starts the countdown', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/settings`);
+  assert.equal(await page.getByRole('switch', { name: /Rest timer/ }).getAttribute('aria-checked'), 'true');
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await visible(page).getByRole('timer').waitFor();
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('rest timer off: no countdown, pill or ring anywhere, and it stays off after a reload', async () => {
+  const { context, page, errors } = await phone();
+  // The demo starts mid-rest; turning the timer off ends that countdown too.
+  await page.goto(`${BASE}/#/settings`);
+  const toggle = page.getByRole('switch', { name: /Rest timer/ });
+  await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-checked'), 'false');
+  await page.goto(`${BASE}/#/log/s2`);
+  await page.waitForSelector('.pager-count');
+  assert.equal(await page.locator('.hr-timer').count(), 0);
+  await visible(page).getByRole('button', { name: 'Log set 3', exact: true }).click();
+  await swipe(page, 300, 60);
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('.hr-timer, [role="timer"]').count(), 0);
+  await page.reload();
+  await page.waitForSelector('.pager-count');
+  await visible(page).getByRole('button', { name: 'Log set 2', exact: true }).click();
+  assert.equal(await page.locator('.hr-timer').count(), 0);
+  await page.goto(`${BASE}/#/settings`);
+  assert.equal(await page.getByRole('switch', { name: /Rest timer/ }).getAttribute('aria-checked'), 'false');
+  await context.close();
+  assert.deepEqual(errors, []);
+});

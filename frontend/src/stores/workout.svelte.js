@@ -16,6 +16,7 @@ import {
   unstopSets,
 } from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
+import { prefs } from './prefs.svelte.js';
 import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
 import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
 
@@ -191,7 +192,7 @@ function restore(session, sets, stops) {
       slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
     }
   }
-  if (session.rest?.running) {
+  if (session.rest?.running && prefs.restTimer) {
     Object.assign(rest, session.rest, { now: Date.now(), buzzed: session.rest.endsAt <= Date.now() });
   }
 }
@@ -653,7 +654,9 @@ export function undoStop(slotId) {
 
 // ---------- Rest timer ----------
 
+// Starts after a logged set, unless the rest timer is off in Settings > Workout.
 export function startRest(seconds) {
+  if (!prefs.restTimer) return;
   rest.total = seconds;
   rest.now = Date.now();
   rest.endsAt = rest.now + seconds * 1000;

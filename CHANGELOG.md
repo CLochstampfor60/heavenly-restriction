@@ -19,6 +19,9 @@ change how things work.
   Start workout and Continue open it at the first exercise not yet done.
 - An exercise marks itself Done when its last planned set is logged, and takes extra sets after
   that.
+- Settings › Workout › Rest timer, on or off. On by default. Off means no automatic start and no
+  timer pill, ring or countdown anywhere. The choice is saved to your account on the server and
+  kept on the phone, so every device matches and it works with no signal.
 - Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the
   history, the calendar and the records, and reopens the exercise.
 - An app icon, with versions for Android's round and shaped launcher masks, an iPhone home-screen

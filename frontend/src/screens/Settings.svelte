@@ -4,6 +4,7 @@
   import Passkeys from '../components/Passkeys.svelte';
   import { setAccent, setTheme, settings } from '../settings.svelte.js';
   import { DEMO_ONLY, setDemo } from '../mode.js';
+  import { prefs, setRestTimer } from '../stores/prefs.svelte.js';
   import { source } from '../stores/source.svelte.js';
   import { requestPersistence, storage } from '../stores/storage.svelte.js';
   import { auth, checkAuth, explain, signOut } from '../stores/auth.svelte.js';
@@ -50,7 +51,7 @@
     }
   });
   const grouped = (secret) => secret.match(/.{1,4}/g).join(' ');
-  import { resetToday } from '../stores/workout.svelte.js';
+  import { resetToday, skipRest } from '../stores/workout.svelte.js';
 
   const THEMES = [
     { id: 'system', label: 'System' },
@@ -64,6 +65,11 @@
     { id: 'gold', label: 'Gold', jjk: 'Super Saiyan' },
   ];
 
+  function toggleRestTimer() {
+    setRestTimer(!prefs.restTimer);
+    if (!prefs.restTimer) skipRest(); // off means no countdown anywhere, now included
+  }
+
   // Two taps, so a stray touch can't wipe the session.
   let confirmReset = $state(false);
 </script>
@@ -73,6 +79,17 @@
     <a href="#/" class="hr-icon-btn" aria-label="Back to today's workout"><Icon name="back" /></a>
     <h1 class="title screen-title">Settings</h1>
   </header>
+
+  <section class="stack" aria-labelledby="workout-label">
+    <span id="workout-label" class="hr-eyebrow">Workout</span>
+    <button class="hr-toggle" role="switch" aria-checked={prefs.restTimer} onclick={toggleRestTimer}>
+      <span class="option-text">
+        <span>Rest timer</span>
+        <span class="meta">Counts down after each logged set. Saved to your account, so every device matches.</span>
+      </span>
+      <span class="hr-toggle__switch"></span>
+    </button>
+  </section>
 
   <section class="stack" aria-labelledby="theme-label">
     <span id="theme-label" class="hr-eyebrow">Theme</span>

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import (
+    AccountSetting,
     BodyMetric,
     CardioEntry,
     Exclusion,
@@ -643,6 +644,45 @@ def delete_note(note_id: int, db: DB) -> Response:
         db.delete(note)
         db.commit()
     return Response(status_code=204)
+
+
+# ---------------------------------------------------------------- account settings
+
+# Every setting and its default for a new account.
+SETTINGS = {"rest_timer": True}
+
+
+def settings_dict(db: Session) -> dict:
+    out = dict(SETTINGS)
+    for row in db.scalars(select(AccountSetting)):
+        if row.key in SETTINGS:
+            out[row.key] = row.value.get("v", SETTINGS[row.key])
+    return out
+
+
+class SettingsIn(BaseModel):
+    # A field left out is unchanged.
+    rest_timer: bool | None = None
+
+
+@router.get("/settings")
+def get_settings(db: DB) -> dict:
+    return settings_dict(db)
+
+
+@router.put("/settings")
+def put_settings(body: SettingsIn, db: DB) -> dict:
+    for key in body.model_fields_set:
+        value = getattr(body, key)
+        if value is None:
+            continue
+        row = db.get(AccountSetting, key)
+        if row is None:
+            db.add(AccountSetting(key=key, value={"v": value}))
+        else:
+            row.value = {"v": value}
+    db.commit()
+    return settings_dict(db)
 
 
 # ---------------------------------------------------------------- body metrics

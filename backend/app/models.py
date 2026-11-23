@@ -366,6 +366,18 @@ class BodyMetric(Base):
     unit: Mapped[str] = mapped_column(String(10))  # lb | in
 
 
+class AccountSetting(Base):
+    """Account-wide settings, so every signed-in device agrees (e.g. rest_timer -> true).
+
+    A setting with no row has its default, defined in api.SETTINGS.
+    """
+
+    __tablename__ = "account_setting"
+
+    key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON)  # {"v": <value>}
+
+
 # ---------------------------------------------------------------- login
 
 
