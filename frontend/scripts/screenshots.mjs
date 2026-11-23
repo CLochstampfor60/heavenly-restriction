@@ -46,7 +46,8 @@ async function shot(browser, name, path, { theme = 'dark', act } = {}) {
 }
 
 mkdirSync(OUT, { recursive: true });
-const server = await preview({ preview: { port: PORT, strictPort: true, host: '127.0.0.1' } });
+// dist-test/, never dist/: a screenshot build must not replace what the live server serves.
+const server = await preview({ preview: { port: PORT, strictPort: true, host: '127.0.0.1' }, build: { outDir: 'dist-test' } });
 const browser = await launch();
 try {
   await shot(browser, 'today', '#/');

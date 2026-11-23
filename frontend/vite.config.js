@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
@@ -6,6 +7,19 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
 
 const designSystem = fileURLToPath(new URL('../design-system', import.meta.url));
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+
+// Which build this is, shown in Settings > About: the short commit hash, plus "+changes" when
+// the working tree had uncommitted changes at build time.
+function commit() {
+  const git = (args) => execSync(`git ${args}`, { cwd: fileURLToPath(new URL('.', import.meta.url)), stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  try {
+    const hash = git('rev-parse --short HEAD');
+    return git('status --porcelain --untracked-files=no') ? `${hash}+changes` : hash;
+  } catch {
+    return 'unknown';
+  }
+}
 
 // The fonts are bundled into assets/ under hashed names; their license must ship beside them.
 function fontLicense() {
@@ -74,6 +88,7 @@ export default defineConfig(({ mode }) => {
   const proxy = demoOnly ? {} : { '/api': 'http://127.0.0.1:8000' };
   return {
     plugins: [svelte(), fontLicense(), serviceWorker()],
+    define: { __APP_VERSION__: JSON.stringify(pkg.version), __APP_COMMIT__: JSON.stringify(commit()) },
     resolve: { alias: { '@ds': designSystem } },
     server: { host: demoOnly ? undefined : '127.0.0.1', fs: { allow: ['..'] }, proxy },
     preview: { host: demoOnly ? undefined : '127.0.0.1', proxy },

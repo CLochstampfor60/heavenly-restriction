@@ -2,7 +2,8 @@
 //
 //   npm run test:e2e        (builds first; needs Microsoft Edge or Google Chrome installed)
 //
-// Serves the built app with `vite preview` and drives the installed browser through
+// Builds into dist-test/ (never dist/, which the live server serves to the phone), serves it
+// with `vite preview` and drives the installed browser through
 // playwright-core at the phone's size (360 x 780). The network is cut before the pager opens,
 // so every swipe and log below happens offline.
 import assert from 'node:assert/strict';
@@ -27,7 +28,11 @@ async function launch() {
 }
 
 before(async () => {
-  server = await preview({ preview: { port: PORT, strictPort: true, host: '127.0.0.1' }, logLevel: 'silent' });
+  server = await preview({
+    preview: { port: PORT, strictPort: true, host: '127.0.0.1' },
+    build: { outDir: 'dist-test' },
+    logLevel: 'silent',
+  });
   browser = await launch();
 });
 
@@ -317,6 +322,29 @@ test('rest timer off: no countdown, pill or ring anywhere, and it stays off afte
   assert.equal(await page.locator('.hr-timer').count(), 0);
   await page.goto(`${BASE}/#/settings`);
   assert.equal(await page.getByRole('switch', { name: /Rest timer/ }).getAttribute('aria-checked'), 'false');
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('a stopped exercise never shows an ended state: Undo stop and logging are both there', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  await stopHere(page);
+  await page.reload(); // as the phone opens it later
+  await page.waitForSelector('.pager-count');
+  const p = visible(page);
+  assert.doesNotMatch(await page.locator('body').innerText(), /has ended/i);
+  await p.getByRole('button', { name: 'Undo stop' }).waitFor();
+  await p.getByRole('button', { name: 'Log set 2', exact: true }).waitFor();
+  assert.equal(await p.locator('.hr-stepper').count(), 2);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('Settings > About shows the version and the build commit', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/settings`);
+  assert.match(await page.locator('.about-card').innerText(), /Heavenly Restriction \d+\.\d+\.\d+ · build [0-9a-f]{7,}(\+changes)? · MIT License/);
   await context.close();
   assert.deepEqual(errors, []);
 });

@@ -237,6 +237,8 @@ seed/private/
 # Frontend build output
 node_modules/
 frontend/dist/
+# Test and screenshot builds: never the folder the live server serves.
+frontend/dist-test/
 
 # ---- Local-only: never pushed ----
 internal_docs/

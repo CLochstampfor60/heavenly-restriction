@@ -580,10 +580,16 @@ export function logSet(slotId, { w, r, s, rir }) {
 // back to to-do.
 export function undoSet(slotId, k) {
   const slot = day.slots[slotId];
-  if (k >= slot.plan.sets) slot.sets.splice(k, 1);
+  if (k >= slot.plan.sets && k === slot.sets.length - 1) slot.sets.splice(k, 1);
   else slot.sets[k] = { status: 'todo' };
   db.sets.delete(setId(slotId, k)).catch(warn);
   enqueue({ kind: 'undo', method: 'DELETE', path: path(`/sets/${setId(slotId, k)}`) });
+  // A stopped exercise stays Stopped (and keeps the exercise its stop was saved under).
+  if (slot.status === 'stopped' && hasStop(slot)) {
+    ui.banner = null;
+    skipRest();
+    return;
+  }
   if (!loggedCount(slot)) slot.doneAs = null;
   slot.status = slot.doneAs ? statusAfterLog(slot.sets) : 'todo';
   ui.banner = null;

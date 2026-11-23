@@ -9,8 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test \"tests/*.test.js\"",
-    "test:e2e": "vite build && node --test \"tests/e2e/*.e2e.mjs\"",
-    "screenshots": "vite build && node scripts/screenshots.mjs",
+    "test:e2e": "vite build --outDir dist-test && node --test \"tests/e2e/*.e2e.mjs\"",
+    "screenshots": "vite build --outDir dist-test && node scripts/screenshots.mjs",
     "icons": "node scripts/icons.mjs"
   },
   "devDependencies": {

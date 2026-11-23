@@ -22,6 +22,8 @@ change how things work.
 - Settings › Workout › Rest timer, on or off. On by default. Off means no automatic start and no
   timer pill, ring or countdown anywhere. The choice is saved to your account on the server and
   kept on the phone, so every device matches and it works with no signal.
+- Settings › About shows the app version and the build's commit ("0.4.1 · build 1a2b3c4"), so you
+  can see which version the phone is running.
 - Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the
   history, the calendar and the records, and reopens the exercise.
 - An app icon, with versions for Android's round and shaped launcher masks, an iPhone home-screen
@@ -39,6 +41,12 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Fixed
+- The phone could be served a half-finished build: the end-to-end tests and screenshots built into
+  the folder the live server serves. They now build into their own folder.
+- A new version found on an earlier run, but never applied with Reload, now takes over the next
+  time the app is opened (before anything is on screen). While the app is open it still only shows
+  "Update available · Reload".
+- The last logged set can be undone on a stopped exercise too.
 - No exercise state locks logging any more. A Stopped, Skipped or Done exercise can always be
   logged; logging reopens a Stopped or Skipped one (and a finished workout). Before, Stop was the
   only way to move past an exercise, it left a false stop on record, and the exercise stayed locked

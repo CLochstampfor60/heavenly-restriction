@@ -214,7 +214,7 @@
             <span class="hr-box"></span>
           </button>
         {:else if isLog}
-          {@const undoable = k === lastLogged && slot.status !== 'stopped'}
+          {@const undoable = k === lastLogged}
           <button
             class="hr-set__check"
             aria-label="Set {k + 1} done{set.status === 'pr' ? ', personal record' : ''}{undoable ? ', tap to undo' : ''}"
