@@ -44,6 +44,8 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Changed
+- The design system's color notes give each contrast figure for both themes ("5.4:1 Dark, 4.7:1
+  Light"), rounded down, instead of one theme's figure. No color changed.
 - The README screenshots are made in the browser from the demo data by `npm run screenshots`
   (same nine scenes, file names and captions, 720 px wide WebP) and show the current app: Today
   rows open the pager, and the swap sheet opens from an exercise's page in the pager.
@@ -51,7 +53,7 @@ change how things work.
   raised #dde2eb) and a lighter one in Dark (#1e222d), with a much stronger card outline
   (#a7b0c0 Light, #4a5368 Dark). The raised Dark card stays as it was, because a lighter one would
   push the personal-record red too close to the contrast floor. The Gold accent in Light is a
-  little deeper (#745900), now 5.1:1 or better on every surface and card. Every text, accent and
+  little deeper (#745900), now 5.0:1 or better on every surface and card. Every text, accent and
   signal color still passes 4.5:1 on the page, every surface and both card colors, in both themes
   and all four accents.
 
