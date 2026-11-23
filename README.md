@@ -7,7 +7,7 @@ A self-hosted workout tracker for training hard within injury limits. FastAPI + 
   <tr>
     <td align="center" width="33%"><a href="docs/screenshots/today-plum-dark.webp"><img src="docs/screenshots/today-plum-dark.webp" width="240" alt="Today's workout in the Dark theme with the Plum accent: one exercise done, one in progress, Continue and Finish workout buttons"></a><br><b>Today's workout</b><br><sub>Dark theme, Plum (Toji) accent</sub></td>
     <td align="center" width="33%"><a href="docs/screenshots/today-swaps.webp"><img src="docs/screenshots/today-swaps.webp" width="240" alt="Today's list with a swapped exercise, Band Face Pull, Hammer Curl and a gear-based alternative"></a><br><b>Swaps and gear</b><br><sub>Swapped exercises and the next ones</sub></td>
-    <td align="center" width="33%"><a href="docs/screenshots/swap-sheet.webp"><img src="docs/screenshots/swap-sheet.webp" width="240" alt="Swap sheet for Seated Cable Row listing substitutions and same-muscle options with last weights"></a><br><b>Swap an exercise</b><br><sub>Your substitutions, then same muscle</sub></td>
+    <td align="center" width="33%"><a href="docs/screenshots/swap-sheet.webp"><img src="docs/screenshots/swap-sheet.webp" width="240" alt="Swap sheet for Seated Cable Row, opened from its page in the exercise pager, listing substitutions and same-muscle options with last weights"></a><br><b>Swap an exercise</b><br><sub>Your substitutions, then same muscle</sub></td>
   </tr>
   <tr>
     <td align="center" width="33%"><a href="docs/screenshots/today-blue-light.webp"><img src="docs/screenshots/today-blue-light.webp" width="240" alt="Today's workout in the Light theme with the Blue accent"></a><br><b>Light theme</b><br><sub>Blue (Six Eyes) accent</sub></td>
@@ -15,13 +15,13 @@ A self-hosted workout tracker for training hard within injury limits. FastAPI + 
     <td align="center" width="33%"><a href="docs/screenshots/library.webp"><img src="docs/screenshots/library.webp" width="240" alt="Exercise library with search, filters and the Back region expanded to Lats, with grade badges"></a><br><b>Exercise library</b><br><sub>By body region and muscle</sub></td>
   </tr>
   <tr>
-    <td align="center" width="33%"><a href="docs/screenshots/progress.webp"><img src="docs/screenshots/progress.webp" width="240" alt="Progress: 4 of 5 sessions, 150 of 345 cardio minutes, and the bodyweight tab"></a><br><b>Progress</b><br><sub>Sessions, cardio and bodyweight</sub></td>
+    <td align="center" width="33%"><a href="docs/screenshots/progress.webp"><img src="docs/screenshots/progress.webp" width="240" alt="Progress: 1 of 5 sessions this week, 150 of 345 cardio minutes, and the bodyweight chart"></a><br><b>Progress</b><br><sub>Sessions, cardio and bodyweight</sub></td>
     <td align="center" width="33%"><a href="docs/screenshots/progress-chart.webp"><img src="docs/screenshots/progress-chart.webp" width="240" alt="Bodyweight chart for October with a dashed goal line at 185, and sets per muscle group this week"></a><br><b>Bodyweight and sets</b><br><sub>Goal line, sets per muscle group</sub></td>
     <td align="center" width="33%"><a href="docs/screenshots/progress-calendar.webp"><img src="docs/screenshots/progress-calendar.webp" width="240" alt="November calendar with done, cardio and recovery days, the legend, and a recent personal record"></a><br><b>Calendar and records</b><br><sub>Done, cardio, recovery and PRs</sub></td>
   </tr>
 </table>
 
-Click any screenshot to see it full size. Screenshots are from the phone (Galaxy S23, Brave) in the app's demo mode: a made-up program and history, never real data. They are cropped to the app, with the browser bar removed. `npm --prefix frontend run screenshots` makes a matching set from the demo data in headless Edge.
+Click any screenshot to see it full size. The screenshots use the app's demo mode: a made-up program and history, never real data. `npm --prefix frontend run screenshots` makes all nine in headless Edge or Chrome at the phone's size (360 × 780, saved 720 px wide as WebP).
 
 ## How it's built
 - **Design:** the screens and the design system (`design-system/`, `docs/DESIGN.md`) were designed in claude.ai.

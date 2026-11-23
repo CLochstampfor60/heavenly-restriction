@@ -44,6 +44,9 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Changed
+- The README screenshots are made in the browser from the demo data by `npm run screenshots`
+  (same nine scenes, file names and captions, 720 px wide WebP) and show the current app: Today
+  rows open the pager, and the swap sheet opens from an exercise's page in the pager.
 - Cards stand out from the page in both themes: a slightly deeper card color in Light (#e6e9f1,
   raised #dde2eb) and a lighter one in Dark (#1e222d), with a much stronger card outline
   (#a7b0c0 Light, #4a5368 Dark). The raised Dark card stays as it was, because a lighter one would
