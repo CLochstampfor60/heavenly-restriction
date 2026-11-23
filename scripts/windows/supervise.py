@@ -13,6 +13,9 @@ waits for the tailnet: it checks /api/health over https://<WEBAUTHN_RP_ID> (from
 tailnet.log, including how long after the supervisor started it first answered. It never
 changes anything. `server.ps1 status` and `doctor` show the result.
 
+A third thread backs the database up off this machine once a day (backup_db.py, into
+HR_BACKUP_DIR from .env) and logs each backup or failure to backup.log.
+
 Files (outside the repo): %LOCALAPPDATA%\\HeavenlyRestriction\\logs\\server.log (rolled to
 server.log.1 at 5 MB), logs\\tailnet.log (same), %LOCALAPPDATA%\\HeavenlyRestriction\\state.json,
 and supervisor.lock, which keeps a second supervisor from starting.
@@ -36,6 +39,7 @@ LOG = HOME / "logs" / "server.log"
 STATE = HOME / "state.json"
 LOCK = HOME / "supervisor.lock"
 TAILNET_LOG = HOME / "logs" / "tailnet.log"
+BACKUP_LOG = HOME / "logs" / "backup.log"
 ENV_FILE = REPO / ".env"
 
 DELAY = 5  # seconds before starting again
@@ -173,9 +177,49 @@ def watch_tailnet(started: float) -> None:
         time.sleep(60 if ok else 15)
 
 
+def backup_log(message: str) -> None:
+    with open(BACKUP_LOG, "a", encoding="ascii", errors="replace") as f:
+        f.write(f"{now()} {message}\n")
+
+
+def daily_backups() -> None:
+    """Backs up the database off this machine once a day (backup_db.py, HR_BACKUP_DIR): checks
+    every hour, backs up when the newest backup is 24 hours old or more, and tries again after
+    15 minutes when a backup fails (say, the folder is not there yet after sign-in)."""
+    import backup_db  # beside this file
+
+    time.sleep(60)  # let the server and the sync client start first
+    backup_log("daily backups on: checking every hour, backing up when the newest is 24 h old")
+    told_unset = False
+    while True:
+        wait = 3600
+        try:
+            folder = backup_db.backup_dir()
+            if not folder:
+                if not told_unset:
+                    backup_log("no daily backup: HR_BACKUP_DIR is not set in .env")
+                    told_unset = True
+            else:
+                found = backup_db.backups(folder)
+                age = (datetime.now() - found[0][0]).total_seconds() / 3600 if found else None
+                if age is None or age >= 24:
+                    out = backup_db.make_backup("daily")
+                    pruned = len(out["pruned"])
+                    backup_log(f"backed up: {out['file']} ({out['bytes']} bytes), pruned {pruned}")
+                    save_state(backup_ok=True, backup_file=out["file"], backup_at=now())
+        except Exception as error:  # keep trying; never take the supervisor down
+            try:
+                backup_log(f"FAILED: {type(error).__name__}: {error}; trying again in 15 min")
+                save_state(backup_ok=False, backup_error=type(error).__name__, backup_at=now())
+            except OSError:
+                pass
+            wait = 900
+        time.sleep(wait)
+
+
 def roll_log() -> None:
     try:
-        for path in (LOG, TAILNET_LOG):
+        for path in (LOG, TAILNET_LOG, BACKUP_LOG):
             if path.exists() and path.stat().st_size > ROLL_AT:
                 os.replace(path, path.with_suffix(".log.1"))
     except OSError:
@@ -219,6 +263,7 @@ def main() -> int:
     save_state(supervisor_pid=os.getpid(), supervisor_started_at=now(), restarts=0)
     started = time.monotonic()
     threading.Thread(target=watch_tailnet, args=(started,), daemon=True).start()
+    threading.Thread(target=daily_backups, daemon=True).start()
     restarts = 0
     fast = 0
     while True:

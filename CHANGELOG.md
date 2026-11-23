@@ -36,8 +36,11 @@ change how things work.
 - After a restart, the server supervisor waits for the tailnet and keeps checking that the app
   answers over its HTTPS address, logging when it becomes reachable (and how long that took after
   sign-in) and every change after that, with the reason. `server.ps1 status` shows the latest.
-- `scripts\windows\server.ps1 backup` copies the database to `data\backups\` while the server
-  runs, and checks the copy.
+- Database backups leave this machine: once a day from the server supervisor, and before every
+  deploy and migration, into a cloud-synced folder set in `.env`. Each is checked before it is
+  copied in. The last 14 days and 8 weeks are kept. `server.ps1 backup` makes one on demand,
+  `server.ps1 migrate` backs up and then migrates, and `doctor` fails if the newest backup is
+  more than 36 hours old or damaged. A restore test (into a scratch copy) is one command.
 - Settings › About shows the app version and the build's commit ("0.4.1 · build 1a2b3c4"), so you
   can see which version the phone is running.
 - Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the

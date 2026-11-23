@@ -8,7 +8,8 @@
 #   .\scripts\windows\server.ps1 deploy     build frontend\dist from HEAD and restart the server;
 #                                          refused unless HEAD is a clean commit already pushed
 #   .\scripts\windows\server.ps1 doctor     check everything the phone depends on: PASS/FAIL, with the fix
-#   .\scripts\windows\server.ps1 backup     copy the database to data\backups\ (safe while it runs)
+#   .\scripts\windows\server.ps1 backup     back up the database to HR_BACKUP_DIR (off this machine)
+#   .\scripts\windows\server.ps1 migrate    back up, then migrate the database with the server stopped
 #   .\scripts\windows\server.ps1 trim-log   stop, remove log lines with full API paths, start again
 #
 # The task runs as the current user (no stored password, no admin): at logon, and again every
@@ -19,7 +20,7 @@
 #
 # Log and state (outside the repo): %LOCALAPPDATA%\HeavenlyRestriction\
 
-param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall', 'deploy', 'doctor', 'backup', 'trim-log')][string]$Command = 'status')
+param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall', 'deploy', 'doctor', 'backup', 'migrate', 'trim-log')][string]$Command = 'status')
 
 $ErrorActionPreference = 'Stop'
 $TaskName = 'HeavenlyRestriction Server'
@@ -30,7 +31,6 @@ $home_ = Join-Path $env:LOCALAPPDATA 'HeavenlyRestriction'
 $log = Join-Path $home_ 'logs\server.log'
 $state = Join-Path $home_ 'state.json'
 $python = Join-Path $repo '.venv\Scripts\python.exe'
-$backups = Join-Path $repo 'data\backups'
 
 function Get-ServerTask {
     Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
@@ -135,6 +135,16 @@ function Get-LiveBuild {
     $b = [regex]::Match($js, 'build ([0-9a-f]{7,40}(\+changes)?|unknown) ')
     if (-not $b.Success) { throw 'the app script names no build' }
     $b.Groups[1].Value
+}
+
+# Backs up the database to HR_BACKUP_DIR (off this machine) with scripts\windows\backup_db.py.
+# Throws if it fails, so callers (deploy, migrate) stop before changing anything.
+function Invoke-Backup([string]$reason) {
+    $out = & $python (Join-Path $PSScriptRoot 'backup_db.py') backup --reason $reason
+    $result = $out | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0 -or $result.problem) { throw "Backup failed: $($result.problem). Nothing was changed." }
+    $pruned = if ($result.pruned.Count) { "; removed $($result.pruned.Count) older by the retention rule" } else { '' }
+    Write-Output ("Backed up the database off this machine: {0} ({1:N0} KB){2}" -f $result.file, ($result.bytes / 1KB), $pruned)
 }
 
 function Invoke-Doctor {
@@ -269,23 +279,30 @@ function Invoke-Doctor {
     if (Test-Path $db) {
         Report PASS ('Database: present ({0:N0} KB)' -f ((Get-Item $db).Length / 1KB))
     } else {
-        Report FAIL "Database: not found at $db" 'Check DATABASE_URL in .env; restore the newest file from data\backups\ if it was lost'
+        Report FAIL "Database: not found at $db" 'Check DATABASE_URL in .env; if it was lost, copy the newest file from the HR_BACKUP_DIR folder back to that path'
     }
     if (Test-Path $db) {
         $schema = & $python (Join-Path $PSScriptRoot 'schema_check.py') $db 2>&1
         switch ($LASTEXITCODE) {
             0 { Report PASS "Database schema: at the newest migration ($(($schema -split ' ')[0]))" }
-            1 { Report FAIL "Database schema: database at $(($schema -split ' ')[0]), code expects $(($schema -split ' ')[1])" '.\scripts\windows\server.ps1 backup; .\.venv\Scripts\alembic -c backend\alembic.ini upgrade head; .\scripts\windows\server.ps1 stop; .\scripts\windows\server.ps1 start' }
+            1 { Report FAIL "Database schema: database at $(($schema -split ' ')[0]), code expects $(($schema -split ' ')[1])" '.\scripts\windows\server.ps1 migrate' }
             default { Report FAIL "Database schema: could not check ($schema)" 'Check that .venv exists: .\.venv\Scripts\python -m pip install -r backend\requirements.txt' }
         }
     }
-    $latest = Get-ChildItem $backups -Filter '*.db' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
-    if (-not $latest) {
-        Report FAIL 'Backup: none in data\backups\' '.\scripts\windows\server.ps1 backup'
+    # Off-machine backup (HR_BACKUP_DIR): newest at most 36 hours old, and it passes
+    # PRAGMA integrity_check on a local copy.
+    $v = $null
+    try { $v = (& $python (Join-Path $PSScriptRoot 'backup_db.py') verify 2>$null) | ConvertFrom-Json } catch { }
+    if (-not $v) {
+        Report FAIL 'Off-machine backup: could not check' '.\.venv\Scripts\python scripts\windows\backup_db.py verify'
+    } elseif ($v.problem) {
+        Report FAIL "Off-machine backup: $($v.problem)" 'Set HR_BACKUP_DIR in .env (see .env.example), then: .\scripts\windows\server.ps1 backup'
+    } elseif ($v.integrity -ne 'ok') {
+        Report FAIL "Off-machine backup: newest ($($v.file)) failed its integrity check: $($v.integrity)" '.\scripts\windows\server.ps1 backup'
+    } elseif ($v.age_hours -gt 36) {
+        Report FAIL "Off-machine backup: newest ($($v.file)) is $($v.age_hours) hours old (limit 36)" '.\scripts\windows\server.ps1 backup   (the daily backup runs in the supervisor: server.ps1 status, logs\backup.log)'
     } else {
-        $age = [int]((Get-Date) - $latest.LastWriteTime).TotalDays
-        $what = 'Backup: latest is {0}, {1} day(s) old' -f $latest.Name, $age
-        if ($age -gt 7) { Report WARN $what '.\scripts\windows\server.ps1 backup' } else { Report PASS $what }
+        Report PASS ("Off-machine backup: newest {0}, {1} h old, integrity ok ({2} kept)" -f $v.file, $v.age_hours, $v.count)
     }
     # Disk encryption: an accepted risk on this home desktop (docs\SECURITY.md), so INFO only.
     $letter = [IO.Path]::GetPathRoot($repo).Substring(0, 2)
@@ -345,10 +362,19 @@ switch ($Command) {
         Write-Output "Started '$TaskName' again."
     }
     'backup' {
-        $db = Get-DatabasePath
-        $target = Join-Path $backups ('hr-{0}.db' -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
-        & $python (Join-Path $PSScriptRoot 'backup_db.py') $db $target
-        if ($LASTEXITCODE -ne 0) { throw 'The backup failed; see the message above.' }
+        Invoke-Backup 'manual'
+    }
+    'migrate' {
+        # Back up off-machine first (refuses to migrate without a backup), then migrate with the
+        # server stopped, and start it again.
+        Invoke-Backup 'migrate'
+        Stop-Server
+        & (Join-Path $repo '.venv\Scripts\alembic.exe') -c (Join-Path $repo 'backend\alembic.ini') upgrade head
+        $migrated = $LASTEXITCODE
+        Enable-ScheduledTask -TaskName $TaskName | Out-Null
+        Start-ScheduledTask -TaskName $TaskName
+        if ($migrated -ne 0) { throw 'The migration failed (the server was started again on the old schema); restore from the backup above if needed.' }
+        Write-Output 'Migrated to the newest schema and started the server again.'
     }
     'install' {
         if (-not (Test-Path $pythonw)) { throw "Missing $pythonw. Create the .venv first (see README)." }
@@ -383,6 +409,7 @@ switch ($Command) {
     }
     'deploy' {
         $hash = Assert-DeployableTree
+        Invoke-Backup 'deploy'  # before anything changes; no backup, no deploy
         Write-Output "Building frontend\dist from $hash ..."
         # Through cmd, so build warnings on stderr are plain text, not PowerShell errors that would
         # abort the script mid-build. The exit code decides.
@@ -403,7 +430,7 @@ switch ($Command) {
         }
         if (-not $ok) { throw "Built $hash and restarted, but the server did not answer /api/health. Check: server.ps1 status" }
         Write-Output "Deployed build $hash. The phone offers it as 'Update available - Reload'."
-        Write-Output 'Database migrations are not run by deploy (back up data\hr.db, then alembic upgrade head).'
+        Write-Output 'deploy does not migrate the database; if doctor says the schema is behind: server.ps1 migrate'
     }
     'status' {
         $task = Get-ServerTask
@@ -440,6 +467,11 @@ switch ($Command) {
                 $word = if ($s.tailnet_ok) { 'reachable' } else { 'NOT reachable' }
                 Write-Output ("Tailnet:     {0} at {1}: {2}" -f $word, $s.tailnet_checked_at, $s.tailnet_reason)
             }
+        }
+        $blog = Join-Path $home_ 'logs\backup.log'
+        if (Test-Path $blog) {
+            Write-Output "Backup log:  $blog (last 2 lines)"
+            Get-Content -Path $blog -Tail 2
         }
         $tlog = Join-Path $home_ 'logs\tailnet.log'
         if (Test-Path $tlog) {

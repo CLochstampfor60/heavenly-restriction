@@ -151,16 +151,24 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Done.** On the workstation, the repository (with `.env`, the database and `data\backups\`)
   is readable only by the owner's account, SYSTEM and Administrators; the Users group was
   removed. The server's log and state folder under `%LOCALAPPDATA%` is the owner's only.
-- **Done.** `server.ps1 backup` makes a consistent copy while the server runs and checks it;
-  `doctor` reports the latest backup's age and whether the schema is at the newest migration.
-  Back up before every migration.
+- **Done.** Backups leave the workstation: daily (from the server supervisor) and before every
+  deploy and migration, into a cloud-synced folder named only in the local `.env`. Each is a
+  consistent SQLite snapshot, integrity-checked before it is copied in and renamed into place.
+  Kept: the newest of each of the last 14 days and of each of the last 8 weeks, never fewer than
+  the newest one. `doctor` fails if the newest is more than 36 hours old or fails
+  `PRAGMA integrity_check` (run on a local copy), and checks the schema is at the newest
+  migration. `deploy` and `migrate` refuse to run if the backup fails.
 - **Accepted.** The workstation's system drive is not encrypted (no BitLocker). It is a home
   desktop with a low theft risk, and the owner has had an unrecoverable BitLocker lockout
   before; losing the data to a lockout is the larger risk here. `doctor` reports the drive's
   encryption state as INFO, not as a failure.
 - **Planned (December).** The database moves to the NAS onto an encrypted volume.
-- **Planned.** Off-site backups are encrypted before they leave the NAS.
-- **Planned.** At least one restore is actually tested, and the date recorded.
+- **Planned.** Backups encrypted before they leave the machine. Today they rely on the sync
+  provider's encryption.
+- **Done.** Restore tested on 2026-11-23: the newest off-machine backup restored into a scratch
+  copy (never over the live database) passed its integrity check and matched the live row
+  counts (sessions, sets, stops, body metrics); the scratch copy was then deleted.
+  `backup_db.py restore-test` repeats it.
 
 ### Media uploads
 - **Planned.** EXIF and other metadata stripped from photos and videos.
