@@ -3,12 +3,13 @@
 //
 //   npm run icons        (writes public/icons/*.png; the SVG itself is not copied)
 //
-// Renders with an installed Edge or Chrome through playwright-core; no browser download needed.
+// Renders with an installed Edge or Chrome, headless, through scripts/browser.mjs; no browser
+// download needed.
 // The same full-bleed artwork serves "any" and "maskable": the background fills the square, and
 // launchers that mask to a circle or squircle only trim background.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright-core';
+import { closeBrowser, launchBrowser } from './browser.mjs';
 
 const DIR = fileURLToPath(new URL('../public/icons/', import.meta.url));
 const SOURCE = fileURLToPath(new URL('../../design-system/assets/Brand/app-icon.svg', import.meta.url));
@@ -24,18 +25,7 @@ const OUTPUTS = [
   ['favicon-16.png', 16],
 ];
 
-async function launch() {
-  for (const channel of ['msedge', 'chrome']) {
-    try {
-      return await chromium.launch({ channel });
-    } catch {
-      // try the next installed browser
-    }
-  }
-  throw new Error('Needs Microsoft Edge or Google Chrome installed.');
-}
-
-const browser = await launch();
+const browser = await launchBrowser();
 try {
   for (const [name, size] of OUTPUTS) {
     const page = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
@@ -49,5 +39,5 @@ try {
     console.log(`public/icons/${name}`);
   }
 } finally {
-  await browser.close();
+  await closeBrowser(browser);
 }

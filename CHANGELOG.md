@@ -68,6 +68,11 @@ change how things work.
   logged; logging reopens a Stopped or Skipped one (and a finished workout). Before, Stop was the
   only way to move past an exercise, it left a false stop on record, and the exercise stayed locked
   as Stopped.
+- Test runs no longer leave browser windows behind. The end-to-end tests, screenshots and icons
+  all start their browser through one helper that is headless only, closes it even when a test
+  fails or the run crashes, ends any of its processes that outlive the close, and fails the run if
+  one survives. A browser left by a run that was killed outright is ended at the next launch.
+  `npm run browsers:check` lists leftovers and `npm run browsers:clean` ends them.
 
 ### Removed
 - Only one exercise could be open at a time, and only through Start or Next. Exercises no longer

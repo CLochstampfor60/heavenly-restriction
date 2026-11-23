@@ -3,29 +3,19 @@
 //   npm run test:e2e        (builds first; needs Microsoft Edge or Google Chrome installed)
 //
 // Builds into dist-test/ (never dist/, which the live server serves to the phone), serves it
-// with `vite preview` and drives the installed browser through
-// playwright-core at the phone's size (360 x 780). The network is cut before the pager opens,
-// so every swipe and log below happens offline.
+// with `vite preview` and drives the installed browser, headless, through scripts/browser.mjs at
+// the phone's size (360 x 780). The network is cut before the pager opens, so every swipe and
+// log below happens offline. Teardown closes every context and the browser even when a test
+// fails, and fails the run if any browser process is left behind.
 import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
-import { chromium } from 'playwright-core';
+import { after, afterEach, before, test } from 'node:test';
 import { preview } from 'vite';
+import { closeBrowser, launchBrowser } from '../../scripts/browser.mjs';
 
 const PORT = 4175;
 const BASE = `http://127.0.0.1:${PORT}`;
 let server;
 let browser;
-
-async function launch() {
-  for (const channel of ['msedge', 'chrome']) {
-    try {
-      return await chromium.launch({ channel });
-    } catch {
-      // try the next installed browser
-    }
-  }
-  throw new Error('Needs Microsoft Edge or Google Chrome installed.');
-}
 
 before(async () => {
   server = await preview({
@@ -33,12 +23,20 @@ before(async () => {
     build: { outDir: 'dist-test' },
     logLevel: 'silent',
   });
-  browser = await launch();
+  browser = await launchBrowser();
+});
+
+// A failed assertion skips the test's own context.close(); close whatever it left open.
+afterEach(async () => {
+  for (const context of browser?.contexts() ?? []) await context.close().catch(() => {});
 });
 
 after(async () => {
-  await browser?.close();
-  await new Promise((resolve) => server.httpServer.close(resolve));
+  try {
+    await closeBrowser(browser);
+  } finally {
+    if (server) await new Promise((resolve) => server.httpServer.close(resolve));
+  }
 });
 
 // A fresh phone: empty IndexedDB, demo mode, the demo's mid-workout start (Lat Pulldown two

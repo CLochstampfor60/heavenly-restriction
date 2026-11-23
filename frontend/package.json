@@ -9,9 +9,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test \"tests/*.test.js\"",
-    "test:e2e": "vite build --outDir dist-test && node --test \"tests/e2e/*.e2e.mjs\"",
-    "screenshots": "vite build --outDir dist-test && node scripts/screenshots.mjs",
-    "icons": "node scripts/icons.mjs"
+    "test:e2e": "vite build --outDir dist-test && node --test \"tests/e2e/*.e2e.mjs\" && node scripts/browser.mjs",
+    "screenshots": "vite build --outDir dist-test && node scripts/screenshots.mjs && node scripts/browser.mjs",
+    "icons": "node scripts/icons.mjs",
+    "browsers:check": "node scripts/browser.mjs",
+    "browsers:clean": "node scripts/browser.mjs --kill"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "7.3.1",

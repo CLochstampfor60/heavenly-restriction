@@ -3,28 +3,18 @@
 //   npm run screenshots        (builds into dist-test first, then writes docs/screenshots/*.webp)
 //
 // Serves the built app with `vite preview` (no API, so real data cannot appear) and drives an
-// installed Edge or Chrome through playwright-core; no browser download needed. Each shot is the
+// installed Edge or Chrome, headless, through scripts/browser.mjs; no browser download needed.
+// The browser is closed and checked gone even if a shot fails. Each shot is the
 // phone's size (360 x 780) at twice the pixels, saved as a 720 px wide WebP. The file names and
 // scenes match the README table.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright-core';
 import { preview } from 'vite';
+import { closeBrowser, launchBrowser } from './browser.mjs';
 
 const OUT = fileURLToPath(new URL('../../docs/screenshots/', import.meta.url));
 const PORT = 4174;
 const BASE = `http://127.0.0.1:${PORT}`;
-
-async function launch() {
-  for (const channel of ['msedge', 'chrome']) {
-    try {
-      return await chromium.launch({ channel });
-    } catch {
-      // try the next installed browser
-    }
-  }
-  throw new Error('Needs Microsoft Edge or Google Chrome installed.');
-}
 
 // PNG -> WebP, encoded by the browser itself (no image library needed).
 async function toWebp(browser, png) {
@@ -99,10 +89,11 @@ async function shot(browser, name, path, { theme = 'dark', accent = 'green', act
 mkdirSync(OUT, { recursive: true });
 // dist-test/, never dist/: a screenshot build must not replace what the live server serves.
 const server = await preview({ preview: { port: PORT, strictPort: true, host: '127.0.0.1' }, build: { outDir: 'dist-test' } });
-const browser = await launch();
+let browser;
 const plum = { theme: 'dark', accent: 'plum' };
 const blue = { theme: 'light', accent: 'blue' };
 try {
+  browser = await launchBrowser();
   // Row 1: Dark theme, Plum (Toji) accent.
   await shot(browser, 'today-plum-dark', '#/', plum);
   await shot(browser, 'today-swaps', '#/', {
@@ -141,6 +132,9 @@ try {
     act: (page) => scrollTo(page, { selector: '.cal-head', offset: 56 }),
   });
 } finally {
-  await browser.close();
-  await new Promise((resolve) => server.httpServer.close(resolve));
+  try {
+    await closeBrowser(browser);
+  } finally {
+    await new Promise((resolve) => server.httpServer.close(resolve));
+  }
 }
