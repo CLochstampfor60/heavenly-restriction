@@ -168,7 +168,9 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 ### Logging
 - **Done.** The server's access log keeps no personal details: API paths are cut to their first
   two parts with no query string (`POST /api/sessions/...`), so dates, ids and stop events are
-  not written. Lines written before 2026-11-23 still have full paths; the log rolls at 5 MB.
+  not written. Older lines with full paths were removed on 2026-11-23 (`server.ps1 trim-log`).
+  The log rolls at 5 MB into one older copy, `server.log.1`, which replaces the previous one;
+  `doctor` fails if either file holds a full API path.
 - **Done.** Authentication events only (sign-in, failure, passkey added or removed, device code
   issued, sign-out) go to an
   `auth_event` table: kind, success, and a short non-sensitive detail. Never health data,

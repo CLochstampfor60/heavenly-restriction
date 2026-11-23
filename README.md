@@ -81,6 +81,7 @@ To keep it running without a terminal (Windows), install it as a Task Scheduler 
 .\scripts\windows\server.ps1 deploy     # build frontend\dist from HEAD and restart; refused unless HEAD is clean and pushed
 .\scripts\windows\server.ps1 doctor     # check everything the phone depends on: PASS/FAIL with the fix for each
 .\scripts\windows\server.ps1 backup     # copy the database to data\backups\ (safe while the server runs)
+.\scripts\windows\server.ps1 trim-log   # remove log lines with full API paths (restarts the server briefly)
 ```
 
 **If the phone says it can't reach the server, run `doctor` first.** It checks, in plain words: the task (installed, enabled, running, starts at logon), the supervisor, the server on 127.0.0.1:8000 only, `/api/health` on this PC and over `https://hr.<tailnet>.ts.net`, Tailscale connected and the `svc:hr` serve config (approved host, no Funnel), that the live build is a clean commit on origin/main with no newer app changes, the database and its latest backup, free disk space, and leftover test browsers. Each FAIL line is followed by the command that fixes it; the exit code is 1 if anything failed. It also warns when ProtonVPN is connected: ProtonVPN blocks this PC (not the phone) from the tailnet unless its split tunneling excludes `100.64.0.0/10` and `fd7a:115c:a1e0::/48`.

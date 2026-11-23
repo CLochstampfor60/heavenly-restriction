@@ -55,6 +55,7 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Changed
+- FastAPI updated to 0.165.0.
 - The design system's color notes give each contrast figure for both themes ("5.4:1 Dark, 4.7:1
   Light"), rounded down, instead of one theme's figure. No color changed.
 - The README screenshots are made in the browser from the demo data by `npm run screenshots`
@@ -106,7 +107,8 @@ change how things work.
 - An unexpected server error (500) now carries the security headers too.
 - The automatic API documentation pages (`/docs`, `/redoc`, `/openapi.json`) are turned off.
 - The server's access log no longer records dates, ids or query strings from API paths, so it
-  does not show which days you trained or stopped.
+  does not show which days you trained or stopped. `server.ps1 trim-log` removes older lines that
+  still do, and `doctor` fails if any are left in the log or its rolled copy.
 - The test and screenshot previews no longer forward `/api` to the live server.
 - A known vulnerability in a package FastAPI uses (opentelemetry-api) is fixed by pinning its
   patched version.

@@ -9,6 +9,7 @@
 #                                          refused unless HEAD is a clean commit already pushed
 #   .\scripts\windows\server.ps1 doctor     check everything the phone depends on: PASS/FAIL, with the fix
 #   .\scripts\windows\server.ps1 backup     copy the database to data\backups\ (safe while it runs)
+#   .\scripts\windows\server.ps1 trim-log   stop, remove log lines with full API paths, start again
 #
 # The task runs as the current user (no stored password, no admin): at logon, and again every
 # 5 minutes as a backstop (a no-op while it is running). It never times out, and restarts every
@@ -18,7 +19,7 @@
 #
 # Log and state (outside the repo): %LOCALAPPDATA%\HeavenlyRestriction\
 
-param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall', 'deploy', 'doctor', 'backup')][string]$Command = 'status')
+param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall', 'deploy', 'doctor', 'backup', 'trim-log')][string]$Command = 'status')
 
 $ErrorActionPreference = 'Stop'
 $TaskName = 'HeavenlyRestriction Server'
@@ -292,7 +293,23 @@ function Invoke-Doctor {
     elseif ($freeGb -lt 5) { Report WARN "Disk: $freeGb GB free on $($drive.Name):" 'Free up some space soon' }
     else { Report PASS "Disk: $freeGb GB free on $($drive.Name):" }
 
-    # 6. Leftover test browsers.
+    # 6. The server log keeps no workout dates or ids: API paths must be in the short form the
+    # access-log filter writes (/api/sessions/..., /api/today?...). server.log.1 is the one older
+    # copy kept when the log rolls, so it is checked too.
+    $unsafe = 0
+    foreach ($f in @($log, "$log.1")) {
+        if (-not (Test-Path $f)) { continue }
+        foreach ($m in (Select-String -Path $f -Pattern '"(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (/api/\S+) HTTP/')) {
+            if ($m.Matches[0].Groups[2].Value -notmatch '^/api/[^/?]+(/\.\.\.)?(\?\.\.\.)?$') { $unsafe++ }
+        }
+    }
+    if ($unsafe) {
+        Report FAIL "Server log: $unsafe line(s) with full API paths (workout dates, ids)" '.\scripts\windows\server.ps1 trim-log'
+    } else {
+        Report PASS 'Server log: no full API paths (no workout dates or ids)'
+    }
+
+    # 7. Leftover test browsers.
     $left = @(Get-TestBrowsers)
     if ($left.Count) {
         Report FAIL ('Test browsers left running: {0} process(es), pid {1}' -f $left.Count, (($left | ForEach-Object { $_.ProcessId }) -join ', ')) 'npm --prefix frontend run browsers:clean'
@@ -309,6 +326,16 @@ switch ($Command) {
     'doctor' {
         Invoke-Doctor
         exit [int]($script:fails -gt 0)
+    }
+    'trim-log' {
+        # The server holds server.log open, so it is stopped while the file is rewritten.
+        Stop-Server
+        & $python (Join-Path $PSScriptRoot 'trim_log.py')
+        $trimmed = $LASTEXITCODE
+        Enable-ScheduledTask -TaskName $TaskName | Out-Null
+        Start-ScheduledTask -TaskName $TaskName
+        if ($trimmed -ne 0) { throw 'Trimming failed (the server was started again); see the message above.' }
+        Write-Output "Started '$TaskName' again."
     }
     'backup' {
         $db = Get-DatabasePath
