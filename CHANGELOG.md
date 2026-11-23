@@ -22,6 +22,9 @@ change how things work.
 - Settings › Workout › Rest timer, on or off. On by default. Off means no automatic start and no
   timer pill, ring or countdown anywhere. The choice is saved to your account on the server and
   kept on the phone, so every device matches and it works with no signal.
+- `scripts\windows\server.ps1 deploy` builds the app from the current commit and restarts the
+  server, and refuses unless that commit is clean and already pushed. Building into the folder the
+  live server serves also refuses a tree with uncommitted changes.
 - Settings › About shows the app version and the build's commit ("0.4.1 · build 1a2b3c4"), so you
   can see which version the phone is running.
 - Undo stop, on a stopped exercise's page and on its row on Today: deletes that stop from the

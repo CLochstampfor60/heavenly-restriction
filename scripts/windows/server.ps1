@@ -5,6 +5,8 @@
 #   .\scripts\windows\server.ps1 stop       stop it and keep it stopped (also across logons)
 #   .\scripts\windows\server.ps1 start      start it again (re-enables the task)
 #   .\scripts\windows\server.ps1 uninstall  stop it and remove the task
+#   .\scripts\windows\server.ps1 deploy     build frontend\dist from HEAD and restart the server;
+#                                          refused unless HEAD is a clean commit already pushed
 #
 # The task runs as the current user (no stored password, no admin): at logon, and again every
 # 5 minutes as a backstop (a no-op while it is running). It never times out, and restarts every
@@ -14,7 +16,7 @@
 #
 # Log and state (outside the repo): %LOCALAPPDATA%\HeavenlyRestriction\
 
-param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall')][string]$Command = 'status')
+param([ValidateSet('install', 'status', 'stop', 'start', 'uninstall', 'deploy')][string]$Command = 'status')
 
 $ErrorActionPreference = 'Stop'
 $TaskName = 'HeavenlyRestriction Server'
@@ -50,6 +52,27 @@ function Format-ExitCode([long]$code) {
         default { 'exited unexpectedly' }
     }
     '{0} (code {1}, 0x{2:X8})' -f $words, $code, $code
+}
+
+function Invoke-Git {
+    # Returns git's output; throws if git fails.
+    $out = & git -C $repo @args 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed: $out" }
+    $out
+}
+
+# The live server only runs a build made from a clean, pushed commit. Returns HEAD's short hash.
+function Assert-DeployableTree {
+    $dirty = Invoke-Git status --porcelain --untracked-files=no
+    if ($dirty) {
+        throw "Refusing to deploy: uncommitted changes in tracked files. Commit and push first.`n$($dirty -join "`n")"
+    }
+    Invoke-Git fetch --quiet origin | Out-Null
+    $onRemote = Invoke-Git branch --remotes --contains HEAD
+    if (-not $onRemote) {
+        throw 'Refusing to deploy: HEAD is not on any branch of origin. Push it first.'
+    }
+    Invoke-Git rev-parse --short HEAD
 }
 
 function Stop-Server {
@@ -96,6 +119,27 @@ switch ($Command) {
         Stop-Server
         if (Get-ServerTask) { Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false }
         Write-Output "Removed '$TaskName'. Log and state stay in $home_"
+    }
+    'deploy' {
+        $hash = Assert-DeployableTree
+        Write-Output "Building frontend\dist from $hash ..."
+        & npm --prefix (Join-Path $repo 'frontend') run build
+        if ($LASTEXITCODE -ne 0) { throw 'The build failed; the server was not restarted.' }
+        $built = Get-ChildItem (Join-Path $repo 'frontend\dist\assets') -Filter 'index-*.js' |
+            Select-String -SimpleMatch "build $hash " -List
+        if (-not $built) { throw "The new build does not say 'build $hash'; the server was not restarted." }
+        Stop-Server
+        Enable-ScheduledTask -TaskName $TaskName | Out-Null
+        Start-ScheduledTask -TaskName $TaskName
+        $ok = $false
+        foreach ($i in 1..20) {
+            Start-Sleep -Milliseconds 500
+            try { $ok = (Invoke-RestMethod -Uri 'http://127.0.0.1:8000/api/health' -TimeoutSec 2).status -eq 'ok' } catch { }
+            if ($ok) { break }
+        }
+        if (-not $ok) { throw "Built $hash and restarted, but the server did not answer /api/health. Check: server.ps1 status" }
+        Write-Output "Deployed build $hash. The phone offers it as 'Update available - Reload'."
+        Write-Output 'Database migrations are not run by deploy (back up data\hr.db, then alembic upgrade head).'
     }
     'status' {
         $task = Get-ServerTask

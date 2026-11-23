@@ -21,6 +21,26 @@ function commit() {
   }
 }
 
+// frontend/dist is what the live server serves. A build into it from a tree with uncommitted
+// changes is refused, so "+changes" can never reach the phone. Tests and screenshots build into
+// dist-test instead. (Without git, e.g. inside the Docker build, the commit reads "unknown".)
+function liveBuildGuard(commitId) {
+  return {
+    name: 'hr-live-build-guard',
+    apply: 'build',
+    configResolved(config) {
+      const served = resolve(config.root, 'dist');
+      if (resolve(config.root, config.build.outDir) === served && commitId.endsWith('+changes')) {
+        throw new Error(
+          `Refusing to build into frontend/dist from a tree with uncommitted changes (build ${commitId}). ` +
+            'The live server only runs a build of a clean, pushed commit: commit and push first, then ' +
+            'run .\\scripts\\windows\\server.ps1 deploy. For tests or screenshots, build with --outDir dist-test.',
+        );
+      }
+    },
+  };
+}
+
 // The fonts are bundled into assets/ under hashed names; their license must ship beside them.
 function fontLicense() {
   return {
@@ -86,9 +106,10 @@ export default defineConfig(({ mode }) => {
     );
   }
   const proxy = demoOnly ? {} : { '/api': 'http://127.0.0.1:8000' };
+  const commitId = commit();
   return {
-    plugins: [svelte(), fontLicense(), serviceWorker()],
-    define: { __APP_VERSION__: JSON.stringify(pkg.version), __APP_COMMIT__: JSON.stringify(commit()) },
+    plugins: [liveBuildGuard(commitId), svelte(), fontLicense(), serviceWorker()],
+    define: { __APP_VERSION__: JSON.stringify(pkg.version), __APP_COMMIT__: JSON.stringify(commitId) },
     resolve: { alias: { '@ds': designSystem } },
     server: { host: demoOnly ? undefined : '127.0.0.1', fs: { allow: ['..'] }, proxy },
     preview: { host: demoOnly ? undefined : '127.0.0.1', proxy },

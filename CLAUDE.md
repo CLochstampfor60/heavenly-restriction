@@ -51,5 +51,6 @@ Warmup Routine module, injury guardrails as enforced rules (they are pinned note
 - American English everywhere (color, behavior, center, license).
 - Commands and code must work the first time; test before saying something works.
 - Mark clearly what is required vs optional. No padded caveats.
+- The live server only runs a build made from a clean, pushed commit. Never deploy a build with '+changes' in its version, and never build tests or screenshots into frontend/dist. Deploy with `.\scripts\windows\server.ps1 deploy` (it refuses a dirty or unpushed tree; `npm run build` into frontend/dist refuses a dirty tree too).
 - Small, focused commits. Run `pre-commit run --all-files` and `pytest` before committing.
 - CHANGELOG.md (Keep a Changelog, semantic versions): every feature or fix commit adds a plain-words line under `## [Unreleased]`, in the same commit. Never name the real program, exercises, caps, injuries, symptoms, machine names, the tailnet or IPs there.

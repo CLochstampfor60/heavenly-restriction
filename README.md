@@ -78,7 +78,10 @@ To keep it running without a terminal (Windows), install it as a Task Scheduler 
 .\scripts\windows\server.ps1 stop       # stop it and keep it stopped, also across logons
 .\scripts\windows\server.ps1 start      # start it again
 .\scripts\windows\server.ps1 uninstall
+.\scripts\windows\server.ps1 deploy     # build frontend\dist from HEAD and restart; refused unless HEAD is clean and pushed
 ```
+
+The live server only runs a build of a clean, pushed commit (Settings › About shows it as `build <commit>`). `deploy` refuses anything else, and `npm run build` refuses to write `frontend\dist` from a tree with uncommitted changes. Tests and screenshots build into `frontend\dist-test`. `deploy` does not run database migrations: back up `data\hr.db` first, then run `alembic upgrade head` as in the setup above.
 
 The `tailscale serve` config for `svc:hr` is saved by the Tailscale service itself and survives restarts; check it with `tailscale serve status`.
 
