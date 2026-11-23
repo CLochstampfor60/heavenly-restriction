@@ -32,6 +32,9 @@ change how things work.
   your data, which stays in the phone's database and syncs as before). When a new version is
   deployed, a small "Update available · Reload" bar appears instead of switching on its own.
   Signing out also deletes the cached copy.
+- The design notes (docs/DESIGN.md) describe the exercise pager, the new Today rows and buttons,
+  and the Settings screen, and add the gym rule: fewest taps, least typing, least thinking. The
+  Exercise row, Set row and Button notes in the design system match.
 - The design system documents the app icon (a new App icon section and a Brand asset group holding
   the icon's source file) and the compact bottom-bar buttons on Today.
 

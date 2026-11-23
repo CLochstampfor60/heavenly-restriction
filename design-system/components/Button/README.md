@@ -6,8 +6,8 @@ Buttons for every action except stopping an exercise, which has its own StopButt
 
 **The consumer provides:** a `<button>` element, a plain-language label in sentence case, and an optional leading icon from the Icons group (inline SVG, `class="hr-icon"`). Icon-only buttons need `aria-label`.
 
-- One primary per screen region. On the set-logging screen it is **Log set** in the bottom action bar, at hero size.
-- On Today's workout, the bottom-bar button (Start workout / Continue / Next / Finish workout) and the secondary Finish workout under it are both `hr-btn--compact`, full width, so the bar stays short. It is one button whose label changes, so its size never changes with the label. Only Log set stays hero.
+- One primary per screen region. On each page of the exercise pager it is **Log set** in the bottom action bar, at hero size.
+- On Today's workout, the bottom-bar button (Start workout / Continue / Finish workout) and the secondary Finish workout under it are both `hr-btn--compact`, full width, so the bar stays short. It is one button whose label changes, so its size never changes with the label. Only Log set stays hero.
 - Secondary for Swap and other alternatives; ghost for low-stakes moves like Later.
 - Default height is `tap-row` (56px). Never go below `hr-btn--compact` (44px). Keep `space-2` (8px) between neighbors.
 - Labels stay plain: "Swap", not "Weapon Swap". JJK names belong in headers and sheets, not on buttons.
