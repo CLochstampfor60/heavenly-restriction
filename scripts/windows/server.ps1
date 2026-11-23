@@ -287,6 +287,13 @@ function Invoke-Doctor {
         $what = 'Backup: latest is {0}, {1} day(s) old' -f $latest.Name, $age
         if ($age -gt 7) { Report WARN $what '.\scripts\windows\server.ps1 backup' } else { Report PASS $what }
     }
+    # Disk encryption: an accepted risk on this home desktop (docs\SECURITY.md), so INFO only.
+    $letter = [IO.Path]::GetPathRoot($repo).Substring(0, 2)
+    $bl = $null
+    try { $bl = (New-Object -ComObject Shell.Application).NameSpace($letter).Self.ExtendedProperty('System.Volume.BitLockerProtection') } catch { }
+    $blWords = switch ($bl) { 1 { 'on' } 3 { 'encrypting' } 5 { 'suspended' } 6 { 'on' } 2 { 'off (accepted risk, see docs\SECURITY.md)' } default { 'unknown' } }
+    Report INFO "Disk encryption ($letter): $blWords"
+
     $drive = Get-PSDrive -Name ([IO.Path]::GetPathRoot($repo).Substring(0, 1))
     $freeGb = [math]::Round($drive.Free / 1GB, 1)
     if ($freeGb -lt 1) { Report FAIL "Disk: only $freeGb GB free on $($drive.Name):" 'Free up space; SQLite needs room to write' }

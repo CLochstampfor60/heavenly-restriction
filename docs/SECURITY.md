@@ -154,9 +154,11 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Done.** `server.ps1 backup` makes a consistent copy while the server runs and checks it;
   `doctor` reports the latest backup's age and whether the schema is at the newest migration.
   Back up before every migration.
-- **Planned.** BitLocker on the workstation's system drive (off today), so a stolen disk does not
-  expose the database or its backups.
-- **Planned.** The NAS volume holding the database is encrypted.
+- **Accepted.** The workstation's system drive is not encrypted (no BitLocker). It is a home
+  desktop with a low theft risk, and the owner has had an unrecoverable BitLocker lockout
+  before; losing the data to a lockout is the larger risk here. `doctor` reports the drive's
+  encryption state as INFO, not as a failure.
+- **Planned (December).** The database moves to the NAS onto an encrypted volume.
 - **Planned.** Off-site backups are encrypted before they leave the NAS.
 - **Planned.** At least one restore is actually tested, and the date recorded.
 
