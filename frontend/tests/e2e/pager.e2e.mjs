@@ -18,7 +18,9 @@ let server;
 let browser;
 
 before(async () => {
+  // mode 'demo': the preview has no /api proxy at all, so nothing can reach the live server.
   server = await preview({
+    mode: 'demo',
     preview: { port: PORT, strictPort: true, host: '127.0.0.1' },
     build: { outDir: 'dist-test' },
     logLevel: 'silent',

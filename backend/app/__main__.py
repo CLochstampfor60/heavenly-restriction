@@ -9,6 +9,7 @@ import sys
 
 import uvicorn
 
+from app.accesslog import log_config
 from app.net import is_loopback
 
 
@@ -22,7 +23,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
-    uvicorn.run("app.main:app", host=host, port=port, proxy_headers=False)
+    uvicorn.run("app.main:app", host=host, port=port, proxy_headers=False, log_config=log_config())
     return 0
 
 

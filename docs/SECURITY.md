@@ -34,6 +34,9 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Done.** The Vite dev server refuses `--host` unless it runs with `--mode demo`, which drops the
   API proxy and forces made-up demo data (`npm run dev:lan-demo`).
 - **Done.** In Docker, the port is published on 127.0.0.1 only.
+- **Done.** No public API map: `/docs`, `/redoc` and `/openapi.json` are turned off.
+- **Done.** Test and screenshot previews run in demo mode with no `/api` proxy, so they cannot
+  reach the live server.
 
 ### Access
 - **Done.** Tailscale is the only way in: `tailscale serve` on the host, never Tailscale Funnel
@@ -42,6 +45,8 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   and only on `tcp:443` to `svc:hr`. A placeholder copy of the policy is in
   [TAILSCALE.md](TAILSCALE.md).
 - **Done.** MFA on the identity account behind the tailnet.
+- **Done.** `server.ps1 doctor` checks that the server listens on 127.0.0.1 only, that the
+  `svc:hr` serve config points at it from the approved host, and that Funnel is off.
 - **Planned.** Tailnet Lock on, so a new node needs a signature from a trusted device. The owner
   turns it on last.
 
@@ -78,7 +83,13 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   one enrollment and never a session.
 - **Done.** Five failures of the same kind (sign-in, setup code, enrollment code, removing the
   last passkey) within 15 minutes lock that action for 15 minutes (429). Pending sign-in challenges are single use,
-  expire after five minutes and are capped in number.
+  expire after five minutes and are capped in number. The lockout is per action, not per
+  device, so any device the tailnet policy lets in could lock sign-in for 15 minutes; with only
+  the owner's two devices allowed, that is accepted.
+- **Planned.** A fresh fingerprint (a recent user-verified passkey check) before the actions that
+  change how you sign in: adding a passkey, new recovery codes, replacing the authenticator app,
+  and issuing a device code. Today a valid session alone can do them, so a borrowed unlocked phone
+  could add its own way in.
 
 ### Sessions
 - **Done.** Server-side sessions; the server stores only a SHA-256 of the token. The cookie is
@@ -111,7 +122,8 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   phone's own storage encryption.
 
 ### HTTP security headers
-- **Done.** On every response, including errors:
+- **Done.** On every response, including errors (an unhandled 500 too: the headers wrap the
+  framework's own error handler), static files and `sw.js`:
   - `Content-Security-Policy`: this origin only; frames limited to
     `https://www.youtube-nocookie.com`; `frame-ancestors 'none'`; `object-src 'none'`;
     `base-uri 'none'`; no `unsafe-inline` or `unsafe-eval`.
@@ -119,16 +131,31 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
   - `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`.
   - `Permissions-Policy` turning off camera, microphone, geolocation, payment, USB and sensors.
   - `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy`: same-origin.
+  - `Cache-Control: no-store` on every `/api/` response, so health data is never kept in a
+    browser or proxy cache.
 
 ### Container
 - **Done (not yet run).** Non-root user, read-only root filesystem, `cap_drop: ALL`,
   `no-new-privileges`, its own network, no `docker.sock` mount.
 - **Planned.** Base images pinned by digest.
 - **Done.** `pip-audit` and `npm audit` run in CI on every push, on pull requests and weekly,
-  with read-only workflow permissions. Secret scanning (gitleaks) runs in CI and as a pre-commit
-  hook.
+  with read-only workflow permissions. Actions are pinned to commit SHAs; Dependabot updates
+  actions, pip and npm weekly. The README's checks also audit the packages installed on the
+  server (`.venv\Scripts\pip-audit`), since CI audits a fresh install. A dependency of a
+  dependency with a known fix is pinned in `requirements.txt` until its parent requires the fix.
+- **Planned.** A full lock file with hashes for every Python package, not only the direct ones.
+- **Done.** Secret scanning (gitleaks) runs in CI on new commits, weekly over the whole history of
+  main (which holds every release tag), and as a pre-commit hook.
 
 ### Data at rest and backups
+- **Done.** On the workstation, the repository (with `.env`, the database and `data\backups\`)
+  is readable only by the owner's account, SYSTEM and Administrators; the Users group was
+  removed. The server's log and state folder under `%LOCALAPPDATA%` is the owner's only.
+- **Done.** `server.ps1 backup` makes a consistent copy while the server runs and checks it;
+  `doctor` reports the latest backup's age and whether the schema is at the newest migration.
+  Back up before every migration.
+- **Planned.** BitLocker on the workstation's system drive (off today), so a stolen disk does not
+  expose the database or its backups.
 - **Planned.** The NAS volume holding the database is encrypted.
 - **Planned.** Off-site backups are encrypted before they leave the NAS.
 - **Planned.** At least one restore is actually tested, and the date recorded.
@@ -139,6 +166,9 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Planned.** Files stored outside the web root and served only through the API.
 
 ### Logging
+- **Done.** The server's access log keeps no personal details: API paths are cut to their first
+  two parts with no query string (`POST /api/sessions/...`), so dates, ids and stop events are
+  not written. Lines written before 2026-11-23 still have full paths; the log rolls at 5 MB.
 - **Done.** Authentication events only (sign-in, failure, passkey added or removed, device code
   issued, sign-out) go to an
   `auth_event` table: kind, success, and a short non-sensitive detail. Never health data,
@@ -149,7 +179,16 @@ compromise of the Tailscale coordination service itself (Tailnet Lock limits wha
 - **Done.** Real program files, databases, `.env` and media are gitignored. Demo data is made up.
 - **Done.** A local pre-commit hook blocks any staged line containing a string from a private,
   gitignored list (distinctive values from the real program, machine names); the same script
-  can audit all tracked files or the full history.
+  can audit all tracked files or the full history (every ref and tag, merge commits included).
+- **Done.** Images in the repository carry no metadata (no EXIF, XMP or text chunks); checked
+  over every image in the history on 2026-11-23.
+
+### Deploy path
+- **Done.** `server.ps1 deploy` refuses uncommitted, untracked or hidden (assume-unchanged)
+  files, and any commit that is not on origin/main. Building into the served folder refuses the
+  same, and tests and screenshots build into their own folder.
+- **Done.** Every browser the tests and scripts start is headless and is closed even when a run
+  fails; leftovers fail the run and show in `doctor`.
 
 ## Reporting a problem
 This is a personal project. If you find a security issue, please open a GitHub issue without

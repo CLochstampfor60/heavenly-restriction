@@ -118,6 +118,7 @@ The app listens on `127.0.0.1:8000` only; publish it with `tailscale serve` as a
 .\.venv\Scripts\python -m pytest
 npm --prefix frontend test
 npm --prefix frontend run test:e2e    # optional: end-to-end, headless Edge or Chrome, demo data
+.\.venv\Scripts\pip-audit             # the packages actually installed here (CI audits a fresh install)
 ```
 
 Every browser the tests, screenshots and icons use is headless and closed even when a run fails; `npm --prefix frontend run browsers:check` lists any left behind and `browsers:clean` ends them.

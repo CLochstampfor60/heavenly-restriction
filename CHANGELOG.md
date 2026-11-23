@@ -84,6 +84,13 @@ change how things work.
   fails or the run crashes, ends any of its processes that outlive the close, and fails the run if
   one survives. A browser left by a run that was killed outright is ended at the next launch.
   `npm run browsers:check` lists leftovers and `npm run browsers:clean` ends them.
+- `server.ps1 deploy` refuses untracked or hidden files and any commit that is not on the main
+  branch on GitHub; before, a commit on any pushed branch (a Dependabot branch, say) could go
+  live, and new untracked files could slip into the build. A build into the served folder now
+  counts untracked app files as uncommitted changes too.
+- `server.ps1 doctor` also checks that the database is at the newest migration (`deploy` does not
+  migrate).
+
 - `server.ps1 status` no longer reports "exited unexpectedly" when the server is fine: that code
   only means the task's 5-minute repeat start was skipped because it was already running.
 
@@ -92,6 +99,19 @@ change how things work.
   need to be started; the Start this exercise, Next and Continue buttons on the set screen are gone.
 - The planned Escanor theme is dropped from the parking lot: its colors overlap the Gold accent
   and the Stop amber.
+
+### Security
+- Every API response says `Cache-Control: no-store`, so nothing from the API is kept in a browser
+  or proxy cache.
+- An unexpected server error (500) now carries the security headers too.
+- The automatic API documentation pages (`/docs`, `/redoc`, `/openapi.json`) are turned off.
+- The server's access log no longer records dates, ids or query strings from API paths, so it
+  does not show which days you trained or stopped.
+- The test and screenshot previews no longer forward `/api` to the live server.
+- A known vulnerability in a package FastAPI uses (opentelemetry-api) is fixed by pinning its
+  patched version.
+- Secret scanning also runs weekly over the whole history, and the private-strings history check
+  covers merge commits.
 
 ## [0.4.1] - 2026-11-20
 

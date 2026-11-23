@@ -67,15 +67,21 @@ function Invoke-Git {
 }
 
 # The live server only runs a build made from a clean, pushed commit. Returns HEAD's short hash.
+# Untracked files count: anything new under frontend\public or design-system would be built in.
+# Files hidden from status with --assume-unchanged or --skip-worktree are refused too.
 function Assert-DeployableTree {
-    $dirty = Invoke-Git status --porcelain --untracked-files=no
+    $dirty = Invoke-Git status --porcelain --untracked-files=all
     if ($dirty) {
-        throw "Refusing to deploy: uncommitted changes in tracked files. Commit and push first.`n$($dirty -join "`n")"
+        throw "Refusing to deploy: uncommitted or untracked files. Commit (or delete) them and push first.`n$($dirty -join "`n")"
     }
-    Invoke-Git fetch --quiet origin | Out-Null
-    $onRemote = Invoke-Git branch --remotes --contains HEAD
-    if (-not $onRemote) {
-        throw 'Refusing to deploy: HEAD is not on any branch of origin. Push it first.'
+    $hidden = Invoke-Git ls-files -v | Where-Object { $_ -cmatch '^([a-z]|S) ' }
+    if ($hidden) {
+        throw "Refusing to deploy: files marked assume-unchanged or skip-worktree.`n$($hidden -join "`n")"
+    }
+    Invoke-Git fetch --quiet --prune origin | Out-Null
+    & git -C $repo merge-base --is-ancestor HEAD origin/main
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Refusing to deploy: HEAD is not on origin/main (only reviewed, merged work goes live). Merge and push it to main first.'
     }
     Invoke-Git rev-parse --short HEAD
 }
@@ -263,6 +269,14 @@ function Invoke-Doctor {
         Report PASS ('Database: present ({0:N0} KB)' -f ((Get-Item $db).Length / 1KB))
     } else {
         Report FAIL "Database: not found at $db" 'Check DATABASE_URL in .env; restore the newest file from data\backups\ if it was lost'
+    }
+    if (Test-Path $db) {
+        $schema = & $python (Join-Path $PSScriptRoot 'schema_check.py') $db 2>&1
+        switch ($LASTEXITCODE) {
+            0 { Report PASS "Database schema: at the newest migration ($(($schema -split ' ')[0]))" }
+            1 { Report FAIL "Database schema: database at $(($schema -split ' ')[0]), code expects $(($schema -split ' ')[1])" '.\scripts\windows\server.ps1 backup; .\.venv\Scripts\alembic -c backend\alembic.ini upgrade head; .\scripts\windows\server.ps1 stop; .\scripts\windows\server.ps1 start' }
+            default { Report FAIL "Database schema: could not check ($schema)" 'Check that .venv exists: .\.venv\Scripts\python -m pip install -r backend\requirements.txt' }
+        }
     }
     $latest = Get-ChildItem $backups -Filter '*.db' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
     if (-not $latest) {

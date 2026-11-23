@@ -1,8 +1,13 @@
 name: secret-scan
 
+# push and pull_request scan only the new commits. The weekly run and a manual run (Actions >
+# secret-scan > Run workflow) scan the whole history of main, which holds every release tag.
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read

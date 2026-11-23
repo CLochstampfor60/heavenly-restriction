@@ -10,12 +10,14 @@ const designSystem = fileURLToPath(new URL('../design-system', import.meta.url))
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 // Which build this is, shown in Settings > About: the short commit hash, plus "+changes" when
-// the working tree had uncommitted changes at build time.
+// the working tree had uncommitted changes at build time, or untracked files the build could pick
+// up (anything new in frontend/ or design-system/, e.g. in public/ or the icon folder).
 function commit() {
   const git = (args) => execSync(`git ${args}`, { cwd: fileURLToPath(new URL('.', import.meta.url)), stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
   try {
     const hash = git('rev-parse --short HEAD');
-    return git('status --porcelain --untracked-files=no') ? `${hash}+changes` : hash;
+    const dirty = git('status --porcelain --untracked-files=no') || git('status --porcelain --untracked-files=all -- . ../design-system');
+    return dirty ? `${hash}+changes` : hash;
   } catch {
     return 'unknown';
   }

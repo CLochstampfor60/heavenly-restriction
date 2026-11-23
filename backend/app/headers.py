@@ -2,6 +2,7 @@
 
 The CSP allows only this origin, plus the YouTube privacy-enhanced player in frames. HSTS takes
 effect once the app is served over HTTPS (tailscale serve); browsers ignore it on plain http.
+API responses also get Cache-Control: no-store.
 """
 
 from starlette.datastructures import MutableHeaders
@@ -52,11 +53,15 @@ class SecurityHeaders:
             await self.app(scope, receive, send)
             return
 
+        api = scope.get("path", "").startswith("/api/")
+
         async def send_with_headers(message: Message) -> None:
             if message["type"] == "http.response.start":
                 headers = MutableHeaders(scope=message)
                 for name, value in HEADERS.items():
                     headers[name] = value
+                if api:  # health data: never kept in any browser or proxy cache
+                    headers["Cache-Control"] = "no-store"
             await send(message)
 
         await self.app(scope, receive, send_with_headers)

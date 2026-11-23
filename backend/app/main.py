@@ -33,11 +33,21 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Heavenly Restriction", lifespan=lifespan)
-# Middleware added later runs first: headers wrap everything, then loopback, then Origin.
+class App(FastAPI):
+    """FastAPI with SecurityHeaders outside Starlette's own error handler, so an unhandled 500
+    carries the headers too (as middleware it would sit inside that handler and miss it)."""
+
+    def build_middleware_stack(self):
+        return SecurityHeaders(super().build_middleware_stack())
+
+
+# No /docs, /redoc or /openapi.json: they would publish the whole API map without a session.
+app = App(
+    title="Heavenly Restriction", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None
+)
+# Middleware added later runs first: loopback, then Origin. SecurityHeaders wraps all (App above).
 app.add_middleware(OriginCheck)
 app.add_middleware(LoopbackOnly)
-app.add_middleware(SecurityHeaders)  # outermost: refusals carry the headers too
 
 # Public: health and the sign-in endpoints. Everything else needs a session.
 app.include_router(auth_router)

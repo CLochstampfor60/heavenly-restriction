@@ -60,7 +60,10 @@ def staged_lines() -> list[tuple[str, int, str]]:
 
 def history_lines() -> list[tuple[str, int, str]]:
     """(commit:file or commit:message, line, text) for every message line and added line."""
-    log = git("log", "--all", "-p", "--no-color", "--no-ext-diff", "--format=@@@COMMIT %H%n%B")
+    # -m: merge commits too, diffed against each parent, so a conflict resolution is scanned.
+    log = git(
+        "log", "--all", "-m", "-p", "--no-color", "--no-ext-diff", "--format=@@@COMMIT %H%n%B"
+    )
     out, where, line_no = [], "", 0
     for raw in log.splitlines():
         if raw.startswith("@@@COMMIT "):

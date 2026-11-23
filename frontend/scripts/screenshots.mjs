@@ -88,7 +88,12 @@ async function shot(browser, name, path, { theme = 'dark', accent = 'green', act
 
 mkdirSync(OUT, { recursive: true });
 // dist-test/, never dist/: a screenshot build must not replace what the live server serves.
-const server = await preview({ preview: { port: PORT, strictPort: true, host: '127.0.0.1' }, build: { outDir: 'dist-test' } });
+// mode 'demo': the preview has no /api proxy at all, so nothing can reach the live server.
+const server = await preview({
+  mode: 'demo',
+  preview: { port: PORT, strictPort: true, host: '127.0.0.1' },
+  build: { outDir: 'dist-test' },
+});
 let browser;
 const plum = { theme: 'dark', accent: 'plum' };
 const blue = { theme: 'light', accent: 'blue' };
