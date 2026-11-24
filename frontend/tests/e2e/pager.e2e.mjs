@@ -75,22 +75,22 @@ test('Continue opens the pager at the first unfinished exercise; swipes move pag
   const { context, page, errors } = await phone();
   await page.getByRole('button', { name: /^Continue: Lat Pulldown/ }).click();
   assert.equal(await hash(page), '#/log/s2');
-  assert.equal(await count(page), '2 of 6');
+  assert.equal(await count(page), '2 of 7');
   const depth = await page.evaluate(() => history.length);
 
   await swipe(page, 300, 60); // left: next
-  assert.equal(await count(page), '3 of 6');
+  assert.equal(await count(page), '3 of 7');
   assert.equal(await hash(page), '#/log/s3');
   await swipe(page, 60, 300); // right: back
-  assert.equal(await count(page), '2 of 6');
+  assert.equal(await count(page), '2 of 7');
   // Page changes replace the history entry, so back still goes straight to Today.
   assert.equal(await page.evaluate(() => history.length), depth);
 
   // Arrows are the backup.
   await page.getByRole('button', { name: 'Next exercise' }).click();
-  assert.equal(await count(page), '3 of 6');
+  assert.equal(await count(page), '3 of 7');
   await page.getByRole('button', { name: 'Previous exercise' }).click();
-  assert.equal(await count(page), '2 of 6');
+  assert.equal(await count(page), '2 of 7');
   await context.close();
   assert.deepEqual(errors, []);
 });
@@ -99,12 +99,12 @@ test('swipes do not start at the screen edges or on the steppers', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/log/s3`);
   await swipe(page, 350, 100); // starts 10 px from the right edge
-  assert.equal(await count(page), '3 of 6');
+  assert.equal(await count(page), '3 of 7');
   await swipe(page, 10, 250); // starts 10 px from the left edge
-  assert.equal(await count(page), '3 of 6');
+  assert.equal(await count(page), '3 of 7');
   const box = await visible(page).locator('.hr-stepper').first().boundingBox();
   await swipe(page, box.x + box.width - 30, box.x - 100, box.y + box.height / 2);
-  assert.equal(await count(page), '3 of 6');
+  assert.equal(await count(page), '3 of 7');
   await context.close();
   assert.deepEqual(errors, []);
 });
@@ -113,7 +113,7 @@ test('reduced motion: a swipe still turns the page', async () => {
   const { context, page, errors } = await phone({ reducedMotion: 'reduce' });
   await page.goto(`${BASE}/#/log/s3`);
   await swipe(page, 300, 60);
-  assert.equal(await count(page), '4 of 6');
+  assert.equal(await count(page), '4 of 7');
   await context.close();
   assert.deepEqual(errors, []);
 });
@@ -125,7 +125,7 @@ test('one tap logs the prefilled set, in any order; Today shows progress', async
   await visible(page).locator('.hr-set--done').first().waitFor();
   await swipe(page, 60, 300);
   await swipe(page, 60, 300);
-  assert.equal(await count(page), '3 of 6');
+  assert.equal(await count(page), '3 of 7');
   await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
   await page.getByRole('link', { name: 'Today' }).click();
   assert.equal(await hash(page), '#/');
@@ -186,9 +186,9 @@ test('the jump sheet lists every page and jumps', async () => {
   await page.goto(`${BASE}/#/log/s1`);
   await page.getByRole('button', { name: /Show all exercises/ }).click();
   const options = page.getByRole('dialog').locator('.hr-sheet__option');
-  assert.equal(await options.count(), 6);
+  assert.equal(await options.count(), 7); // six exercises and the cardio
   await options.nth(4).click();
-  assert.equal(await count(page), '5 of 6');
+  assert.equal(await count(page), '5 of 7');
   await context.close();
   assert.deepEqual(errors, []);
 });
@@ -459,6 +459,68 @@ test('no time is shown until there is something to time', async () => {
   const { context, page, errors } = await phoneAt('2026-11-23T18:00:00');
   await page.goto(`${BASE}/#/progress`);
   assert.equal(await page.getByText(/Workout time/).count(), 0); // the demo's seeded sets carry no times
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+// ---------- Cardio: what was actually done ----------
+
+const stepperValue = (page, label) => page.getByRole('textbox', { name: new RegExp(`^${label}`) }).inputValue();
+
+test('cardio: one tap on Done logs the values prefilled from the program; Today and a reload show them', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/cardio1`);
+  const p = visible(page);
+  assert.equal(await p.getByRole('button', { name: 'Incline walk', exact: true }).getAttribute('aria-pressed'), 'true');
+  assert.equal(await stepperValue(p, 'Minutes'), '20');
+  assert.equal(await stepperValue(p, 'Incline'), '8');
+  assert.equal(await stepperValue(p, 'Speed'), '3');
+  assert.equal(await p.getByRole('textbox', { name: /^Level/ }).count(), 0); // a walk has no level
+  await p.getByRole('button', { name: 'Done', exact: true }).click();
+  await p.locator('.hr-chip--done').waitFor();
+  assert.match(await p.innerText(), /20 min · incline 8 · 3 mph/);
+  await page.reload();
+  await page.waitForSelector('.pager-count');
+  await visible(page).locator('.hr-chip--done').waitFor();
+  await page.getByRole('link', { name: 'Today' }).click();
+  assert.match(await page.locator('.hr-exrow', { hasText: 'Incline walk' }).innerText(), /20 min · incline 8 · 3 mph/);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('cardio: switch the type and adjust the steppers; a bike shows level, the values are kept offline', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/cardio1`);
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Air bike', exact: true }).click();
+  assert.equal(await p.getByRole('textbox', { name: /^Incline/ }).count(), 0);
+  await p.getByRole('button', { name: 'More minutes' }).click();
+  await p.getByRole('button', { name: 'More minutes' }).click();
+  await p.getByRole('button', { name: 'More level' }).click(); // from empty: 1
+  await p.getByRole('textbox', { name: /^Level/ }).fill('7');
+  await p.getByRole('textbox', { name: /^Level/ }).press('Enter'); // a typed value counts too
+  await p.getByRole('textbox', { name: /^Level/ }).blur();
+  assert.equal(await stepperValue(p, 'Minutes'), '22');
+  await p.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.reload();
+  await page.waitForSelector('.pager-count');
+  assert.equal(await visible(page).getByRole('button', { name: 'Air bike', exact: true }).getAttribute('aria-pressed'), 'true');
+  assert.equal(await stepperValue(visible(page), 'Level'), '7');
+  await page.getByRole('link', { name: 'Today' }).click();
+  assert.match(await page.locator('.hr-exrow', { hasText: 'Incline walk' }).innerText(), /Air bike · 22 min · level 7/);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('cardio: Skip and Undo skip, with no dialog', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/cardio1`);
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Skip Incline walk' }).click();
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  await p.locator('.hr-chip', { hasText: 'Skipped' }).waitFor();
+  await p.getByRole('button', { name: 'Undo skip Incline walk' }).click();
+  assert.match(await p.innerText(), /Not logged yet/);
   await context.close();
   assert.deepEqual(errors, []);
 });

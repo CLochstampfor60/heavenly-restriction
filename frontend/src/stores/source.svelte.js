@@ -81,7 +81,7 @@ function loadDemo() {
     version: demo.PROGRAM.version,
     live: false,
     notes: [],
-    cardio: [],
+    cardio: (demo.PROGRAM.cardio ?? []).map(cardioFrom),
     slots: demo.PROGRAM.slots.map((p, k) => ({
       id: p.id,
       exercise: p.exercise,
@@ -126,12 +126,7 @@ export async function loadSource(date = dateKey()) {
     live: true,
     notes: data.day?.notes ?? [],
     slots: data.slots.map(slotFromApi),
-    cardio: data.cardio.map((c, k) => ({
-      id: `cardio${k + 1}`,
-      mode: c.mode,
-      minutes: c.minutes_min === c.minutes_max ? `${c.minutes_min}` : `${c.minutes_min}–${c.minutes_max}`,
-      settings: c.settings ?? {},
-    })),
+    cardio: data.cardio.map(cardioFrom),
   });
   source.status = data.version ? 'ready' : 'empty';
   return data.session;
@@ -189,6 +184,17 @@ export function catalogFromLibrary(row) {
     last: row.last ?? [],
     subs: [],
     same: [],
+  };
+}
+
+// A cardio entry from the API (or the demo, shaped the same).
+function cardioFrom(c, k) {
+  return {
+    id: `cardio${k + 1}`,
+    mode: c.mode,
+    minutes: c.minutes_min === c.minutes_max ? `${c.minutes_min}` : `${c.minutes_min}–${c.minutes_max}`,
+    minutesMin: c.minutes_min,
+    settings: c.settings ?? {},
   };
 }
 

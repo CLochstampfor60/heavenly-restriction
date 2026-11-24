@@ -6,6 +6,7 @@ import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
 import {
   canRemoveSet,
+  cardioDefaults,
   dedupeSwapGroups,
   firstUnfinished,
   fitSets,
@@ -80,7 +81,8 @@ function blankDay() {
     programKey: `${PROGRAM.version}/${PROGRAM.dayKey ?? PROGRAM.name}`,
     order: PROGRAM.slots.map((p) => p.id),
     slots,
-    cardio: PROGRAM.cardio.map((c) => ({ ...c, status: 'todo' })),
+    // log: what is done on it (type, minutes, incline, mph, level), prefilled from the program.
+    cardio: PROGRAM.cardio.map((c) => ({ ...c, status: 'todo', log: cardioDefaults(c) })),
     gear: Object.fromEntries(GEAR.map((g) => [g, false])),
     gearOpen: false,
     finished: false,
@@ -125,6 +127,7 @@ function sessionRow() {
     gear: day.gear,
     finished: day.finished,
     restToday: day.restToday,
+    cardioLog: Object.fromEntries(day.cardio.map((c) => [c.id, c.log])),
     startedAt: day.startedAt,
     finishedAt: day.finishedAt,
     cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
@@ -145,6 +148,7 @@ function serverState() {
     cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
     finished: day.finished,
     rest_timer: day.restToday,
+    cardio_log: Object.fromEntries(day.cardio.map((c) => [c.id, c.log])),
     started_at: day.startedAt,
     finished_at: day.finishedAt,
     order: [...day.order],
@@ -217,7 +221,10 @@ function restore(session, sets, stops) {
   for (const [id, meta] of Object.entries(session.slots)) {
     if (day.slots[id]) Object.assign(day.slots[id], meta);
   }
-  for (const c of day.cardio) c.status = session.cardio?.[c.id] ?? 'todo';
+  for (const c of day.cardio) {
+    c.status = session.cardio?.[c.id] ?? 'todo';
+    if (session.cardioLog?.[c.id]) c.log = { ...c.log, ...session.cardioLog[c.id] };
+  }
   for (const row of sets) {
     const slot = day.slots[row.slotId];
     if (!slot) continue;
@@ -292,6 +299,7 @@ function fromServer(s) {
       gear: s.gear,
       finished: s.finished,
       restToday: s.rest_timer ?? null,
+      cardioLog: s.cardio_log ?? {},
       startedAt: s.started_at ?? null,
       finishedAt: s.finished_at ?? null,
       slots,
@@ -323,6 +331,7 @@ export async function loadToday() {
         server.finished ||
         server.rest_timer ||
         server.started_at ||
+        Object.keys(server.cardio_log ?? {}).length ||
         Object.keys(server.cardio ?? {}).length)
     ) {
       const copy = fromServer(server);
@@ -662,9 +671,18 @@ export function markItem(slotId, status) {
   slot.status = slot.status === status ? 'todo' : status;
 }
 
+// Done logs what the page shows (prefilled from the program, so one tap); Skip as on an
+// exercise. Tapping either again undoes it.
 export function markCardio(id, status) {
   const c = day.cardio.find((x) => x.id === id);
   c.status = c.status === status ? 'todo' : status;
+}
+
+// The cardio page's fields: type, minutes, incline, mph, level. Saved as they change, also after
+// Done, so the logged values are always what the page shows.
+export function setCardio(id, field, value) {
+  const c = day.cardio.find((x) => x.id === id);
+  c.log = { ...c.log, [field]: value };
 }
 
 export function openSwap(slotId) {

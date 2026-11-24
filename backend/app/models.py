@@ -286,6 +286,8 @@ class WorkoutSession(Base):
     gear: Mapped[dict] = mapped_column(JSON, default=dict)
     # Cardio Done / Skip ticks, keyed cardio1.. in the day's cardio_entry position order.
     cardio: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
+    # What was actually done on each cardio item, same keys: {type, minutes, incline, mph, level}.
+    cardio_log: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     finished: Mapped[bool] = mapped_column(Boolean, default=False)
     # Rest timer for this session only (the pager's toggle): "on", "off", or None to follow
     # the account setting.

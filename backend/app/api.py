@@ -254,6 +254,7 @@ def session_dict(db: Session, session: WorkoutSession) -> dict:
         "date": session.date.isoformat(),
         "gear": session.gear,
         "cardio": session.cardio or {},
+        "cardio_log": session.cardio_log or {},
         "finished": session.finished,
         "rest_timer": session.rest_timer,  # today's override: on | off | None (the setting)
         "started_at": iso(session.started_at),
@@ -386,9 +387,20 @@ class SlotState(BaseModel):
     planned_sets: int | None = Field(default=None, ge=1, le=30)
 
 
+class CardioLog(BaseModel):
+    # What was done on one cardio item; every field optional (a bike has no incline).
+    type: Literal["bike", "air_bike", "incline_walk", "stair_climber"]
+    minutes: float | None = Field(default=None, ge=0, le=600)
+    incline: float | None = Field(default=None, ge=0, le=30)
+    mph: float | None = Field(default=None, ge=0, le=20)
+    level: float | None = Field(default=None, ge=0, le=40)
+
+
 class SessionState(BaseModel):
     gear: dict[str, bool] = Field(default_factory=dict)
     cardio: dict[str, str] = Field(default_factory=dict)  # cardio1: done | skipped | todo
+    # cardio1: what was done. Left out (older app copies): unchanged.
+    cardio_log: dict[str, CardioLog] | None = None
     finished: bool = False
     order: list[str] = Field(default_factory=list)
     slots: dict[str, SlotState] = Field(default_factory=dict)
@@ -417,6 +429,8 @@ def put_session(date: Date, body: SessionState, db: DB) -> dict:
         if bad:
             raise HTTPException(422, f"Unknown cardio status {sorted(bad)}")
         session.cardio = dict(body.cardio)
+    if "cardio_log" in body.model_fields_set and body.cardio_log is not None:
+        session.cardio_log = {k: v.model_dump() for k, v in body.cardio_log.items()}
     by_key = {s.slot_key: s for s in session.slots}
     for key, state in body.slots.items():
         if key not in by_key:

@@ -120,6 +120,8 @@ export const PROGRAM = {
     { id: 's5', exercise: 'hammer', sets: 3, reps: '10–12', rest: 60 },
     { id: 's6', exercise: 'lateralWalk', sets: 3, reps: '12' },
   ],
+  // Shaped like the API's cardio entries.
+  cardio: [{ mode: 'Incline walk', minutes_min: 20, minutes_max: 20, settings: { incline: 8, speed_mph: 3 } }],
 };
 
 export const GEAR = ['Bands', 'Hip Halo', 'Straps'];

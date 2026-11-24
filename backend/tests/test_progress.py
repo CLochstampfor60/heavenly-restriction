@@ -77,3 +77,34 @@ def test_assisted_lift_is_least_assistance(client) -> None:
     log(client, MON, "2", pull, 2, w=55, r=8)
     p = progress(client)
     assert p["lift"]["assisted"] is True and p["lift"]["month"] == [["11/16", 45]]
+
+
+def test_cardio_minutes_use_what_was_logged(client) -> None:
+    from tests.test_api import MON
+
+    plan(client, MON)
+    body = {
+        "cardio": {"cardio1": "done", "cardio2": "done"},
+        "cardio_log": {"cardio1": {"type": "air_bike", "minutes": 33, "level": 7}},
+    }
+    s = client.put(f"/api/sessions/{MON}", json=body).json()
+    assert s["cardio_log"]["cardio1"] == {
+        "type": "air_bike",
+        "minutes": 33.0,
+        "incline": None,
+        "mph": None,
+        "level": 7.0,
+    }
+    # Monday's program: 10 + 15 minutes. cardio1 was logged as 33; cardio2 keeps its 15.
+    assert progress(client, MON)["cardio"]["week"][0][1] == 33 + 15
+    # An older app copy sends no cardio_log: the log stays.
+    assert (
+        client.put(f"/api/sessions/{MON}", json={"cardio": {"cardio1": "done"}}).json()[
+            "cardio_log"
+        ]["cardio1"]["minutes"]
+        == 33
+    )
+    bad = {"cardio_log": {"cardio1": {"type": "rowing"}}}
+    assert client.put(f"/api/sessions/{MON}", json=bad).status_code == 422
+    bad = {"cardio_log": {"cardio1": {"type": "bike", "minutes": -5}}}
+    assert client.put(f"/api/sessions/{MON}", json=bad).status_code == 422

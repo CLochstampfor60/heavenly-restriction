@@ -21,6 +21,11 @@ change how things work.
   card show the time from its first to its last set. Each set keeps the time it was logged on
   the phone, even if it reaches the server later. **Needs a database migration:**
   `server.ps1 migrate`.
+- Cardio is logged as done: each cardio page has a type switch (bike, air bike, incline walk,
+  stair climber) and steppers for minutes, incline and speed, or level on the bikes and stair
+  climber, all prefilled from the program, so one tap on Done logs it. Today shows what was
+  logged, and Progress counts the logged minutes. Skip works as on exercises. **Needs a
+  database migration:** `server.ps1 migrate`.
 
 ### Fixed
 - The swap sheet listed an exercise twice when it was both a substitution and a same-muscle

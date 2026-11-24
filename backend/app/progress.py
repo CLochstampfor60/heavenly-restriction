@@ -48,14 +48,20 @@ def required_keys(day: ProgramDay | None) -> set[str]:
     return {s.key for s in day.slots if s.loggable and not s.optional}
 
 
-def cardio_minutes(day: ProgramDay | None, statuses: dict, only_done: bool) -> int:
+def cardio_minutes(
+    day: ProgramDay | None, statuses: dict, only_done: bool, log: dict | None = None
+) -> int:
+    """Planned minutes, or done ones: the logged minutes when the item has them, else the
+    program's."""
     if day is None:
         return 0
-    total = 0
+    total = 0.0
     for k, entry in enumerate(day.cardio):
-        if not only_done or statuses.get(f"cardio{k + 1}") == "done":
-            total += entry.minutes_min or 0
-    return total
+        key = f"cardio{k + 1}"
+        if not only_done or statuses.get(key) == "done":
+            logged = (log or {}).get(key, {}).get("minutes") if only_done else None
+            total += logged if logged is not None else (entry.minutes_min or 0)
+    return round(total)
 
 
 def session_value(ex: Exercise, sets: list[SetLog]) -> float | None:
@@ -146,7 +152,9 @@ def progress(date: Date, db: DB) -> dict:
 
     def cardio_done_on(d: Date) -> int:
         s = sessions.get(d)
-        return cardio_minutes(day_of(d), s.cardio or {}, only_done=True) if s else 0
+        if not s:
+            return 0
+        return cardio_minutes(day_of(d), s.cardio or {}, only_done=True, log=s.cardio_log)
 
     cardio_week = []
     for wd in range(7):

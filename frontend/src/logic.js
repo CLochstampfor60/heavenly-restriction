@@ -309,3 +309,47 @@ export function formatDuration(seconds) {
   if (min < 60) return `${min} min`;
   return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
+
+// ---------- Cardio: what was actually done ----------
+
+// The type switch, and the fields each type shows (minutes always; incline and speed for the
+// walk; level or resistance for bikes and the stair climber).
+export const CARDIO_TYPES = [
+  { id: 'bike', label: 'Bike', fields: ['minutes', 'level'] },
+  { id: 'air_bike', label: 'Air bike', fields: ['minutes', 'level'] },
+  { id: 'incline_walk', label: 'Incline walk', fields: ['minutes', 'incline', 'mph'] },
+  { id: 'stair_climber', label: 'Stair climber', fields: ['minutes', 'level'] },
+];
+
+// The program's wording -> a type: "Air bike" -> air_bike, "Incline Treadmill Walk" ->
+// incline_walk, "Walk" -> incline_walk.
+export function cardioType(mode = '') {
+  const m = mode.toLowerCase();
+  if (m.includes('stair')) return 'stair_climber'; // before "air": "stair" contains it
+  if (/\bair\b/.test(m)) return 'air_bike';
+  if (m.includes('bike') || m.includes('cycle')) return 'bike';
+  return 'incline_walk';
+}
+
+// What a cardio page starts with: the program's minutes (the low end of a range), incline and
+// speed; no level (the program gives none). One tap on Done logs exactly this.
+export function cardioDefaults({ mode, minutesMin, settings = {} }) {
+  return {
+    type: cardioType(mode),
+    minutes: minutesMin ?? null,
+    incline: settings.incline ?? null,
+    mph: settings.speed_mph ?? null,
+    level: null,
+  };
+}
+
+// One line for Today and the page: "20 min · incline 8 · 3 mph", "10 min · level 7".
+export function cardioText(log) {
+  const type = CARDIO_TYPES.find((t) => t.id === log.type) ?? CARDIO_TYPES[2];
+  const parts = [];
+  if (log.minutes != null) parts.push(`${log.minutes} min`);
+  if (type.fields.includes('incline') && log.incline != null) parts.push(`incline ${log.incline}`);
+  if (type.fields.includes('mph') && log.mph != null) parts.push(`${log.mph} mph`);
+  if (type.fields.includes('level') && log.level != null) parts.push(`level ${log.level}`);
+  return parts.join(' · ');
+}

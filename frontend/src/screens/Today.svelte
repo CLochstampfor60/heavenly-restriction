@@ -3,7 +3,7 @@
   import Nav from '../components/Nav.svelte';
   import SaveStatus from '../components/SaveStatus.svelte';
   import Sheet from '../components/Sheet.svelte';
-  import { finishMessage, finishPrompt, formatDuration } from '../logic.js';
+  import { CARDIO_TYPES, cardioText, cardioType, finishMessage, finishPrompt, formatDuration } from '../logic.js';
   import { setDemo } from '../mode.js';
   import { go } from '../router.svelte.js';
   import { source } from '../stores/source.svelte.js';
@@ -76,12 +76,12 @@
   // Set when Finish workout has forced a sync: what reached the server.
   let finishText = $state('');
 
+  // What is (or will be) logged: the page's values, prefilled from the program; the type is
+  // named when it differs from the program's wording.
   function cardioMeta(c) {
-    const parts = [`${c.minutes} min`];
-    if (c.settings.incline != null) parts.push(`incline ${c.settings.incline}`);
-    if (c.settings.speed_mph != null) parts.push(`${c.settings.speed_mph} mph`);
-    if (c.settings.note) parts.push(c.settings.note);
-    return parts.join(' · ');
+    const text = cardioText(c.log);
+    if (c.log.type === cardioType(c.mode)) return text;
+    return `${CARDIO_TYPES.find((t) => t.id === c.log.type)?.label} · ${text}`;
   }
 
   // Finish is reachable once the workout has begun. With exercises still open it asks first.

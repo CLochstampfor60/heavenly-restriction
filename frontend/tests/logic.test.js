@@ -14,6 +14,9 @@ import {
   outboxDisposition,
   pageList,
   canRemoveSet,
+  cardioDefaults,
+  cardioText,
+  cardioType,
   dedupeSwapGroups,
   libraryRegions,
   fitSets,
@@ -317,4 +320,17 @@ test('workout timing: Start or first set, to Finish or last set; exercise: first
   assert.equal(formatDuration(30), 'under 1 min');
   assert.equal(formatDuration(52 * 60 + 40), '52 min');
   assert.equal(formatDuration(65 * 60), '1 h 05 min');
+});
+
+test('cardio: type from the program wording, prefilled from the program, one line of text', () => {
+  assert.equal(cardioType('Air Bike'), 'air_bike');
+  assert.equal(cardioType('Incline Treadmill Walk'), 'incline_walk');
+  assert.equal(cardioType('Walk'), 'incline_walk');
+  assert.equal(cardioType('Stationary bike'), 'bike');
+  assert.equal(cardioType('Stair climber'), 'stair_climber');
+  const walk = cardioDefaults({ mode: 'Incline walk', minutesMin: 20, settings: { incline: 8, speed_mph: 3 } });
+  assert.deepEqual(walk, { type: 'incline_walk', minutes: 20, incline: 8, mph: 3, level: null });
+  assert.equal(cardioText(walk), '20 min · incline 8 · 3 mph');
+  // A bike shows its level, not the walk's incline and speed.
+  assert.equal(cardioText({ ...walk, type: 'air_bike', level: 7 }), '20 min · level 7');
 });
