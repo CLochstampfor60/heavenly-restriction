@@ -1,17 +1,17 @@
 # heavenly-restriction
 A self-hosted workout tracker for training hard within injury limits. FastAPI + PWA, offline logging, passkey login, private by design.
 
-**Status:** early build. Program import, today's session, set logging (add or remove sets for today; a rest timer you set to off, after every set or after each exercise), the library, exercise cards, progress and passkey sign-in work on real data; program editing and media upload are not built yet.
+**Status:** early build. Program import, today's session, set logging (add or remove sets for today, Skip, swap in any library exercise, cardio logged as done, automatic workout timing, and a rest timer you set to off, after every set or after each exercise), the library, exercise cards, progress and passkey sign-in work on real data; program editing and media upload are not built yet.
 
 <table>
   <tr>
     <td align="center" width="33%"><a href="docs/screenshots/today-plum-dark.webp"><img src="docs/screenshots/today-plum-dark.webp" width="240" alt="Today's workout in the Dark theme with the Plum accent: one exercise done, one in progress, Continue and Finish workout buttons"></a><br><b>Today's workout</b><br><sub>Dark theme, Plum (Toji) accent</sub></td>
     <td align="center" width="33%"><a href="docs/screenshots/today-swaps.webp"><img src="docs/screenshots/today-swaps.webp" width="240" alt="Today's list with a swapped exercise, Band Face Pull, Hammer Curl and a gear-based alternative"></a><br><b>Swaps and gear</b><br><sub>Swapped exercises and the next ones</sub></td>
-    <td align="center" width="33%"><a href="docs/screenshots/swap-sheet.webp"><img src="docs/screenshots/swap-sheet.webp" width="240" alt="Swap sheet for Seated Cable Row, opened from its page in the exercise pager, listing substitutions and same-muscle options with last weights"></a><br><b>Swap an exercise</b><br><sub>Your substitutions, then same muscle</sub></td>
+    <td align="center" width="33%"><a href="docs/screenshots/swap-sheet.webp"><img src="docs/screenshots/swap-sheet.webp" width="240" alt="Swap sheet for Seated Cable Row, opened from its page in the exercise pager, listing substitutions and same-muscle options with last weights, then All exercises with a search field and body regions"></a><br><b>Swap an exercise</b><br><sub>Your substitutions, then same muscle</sub></td>
   </tr>
   <tr>
     <td align="center" width="33%"><a href="docs/screenshots/today-blue-light.webp"><img src="docs/screenshots/today-blue-light.webp" width="240" alt="Today's workout in the Light theme with the Blue accent"></a><br><b>Light theme</b><br><sub>Blue (Six Eyes) accent</sub></td>
-    <td align="center" width="33%"><a href="docs/screenshots/today-alternatives.webp"><img src="docs/screenshots/today-alternatives.webp" width="240" alt="Today's list in the Light theme: a swap note and an alternative shown because the Hip Halo wasn't brought"></a><br><b>Alternatives</b><br><sub>Shown when gear wasn't brought</sub></td>
+    <td align="center" width="33%"><a href="docs/screenshots/today-alternatives.webp"><img src="docs/screenshots/today-alternatives.webp" width="240" alt="Today's list in the Light theme: a swap note, an alternative shown because the Hip Halo wasn't brought, and the cardio row with its minutes, incline and speed"></a><br><b>Alternatives</b><br><sub>Shown when gear wasn't brought</sub></td>
     <td align="center" width="33%"><a href="docs/screenshots/library.webp"><img src="docs/screenshots/library.webp" width="240" alt="Exercise library with search, filters and the Back region expanded to Lats, with grade badges"></a><br><b>Exercise library</b><br><sub>By body region and muscle</sub></td>
   </tr>
   <tr>

@@ -7,6 +7,8 @@ change how things work.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-23
+
 ### Added
 - Skip on every exercise page: one tap marks the exercise Skipped for today, with no dialog. It
   is not a Stop: it records no stop event and nothing in the exercise's history, and sets already
@@ -293,7 +295,8 @@ change how things work.
 - A FastAPI server that serves the app and its API from one origin, with secret scanning, linting
   and tests set up from the start.
 
-[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/CLochstampfor60/heavenly-restriction/releases/tag/v0.4.1
