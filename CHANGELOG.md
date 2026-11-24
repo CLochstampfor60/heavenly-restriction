@@ -7,6 +7,8 @@ change how things work.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-23
+
 ### Added
 - Set logging is a pager: one page per exercise of today (warm-up, main lifts, core, forearm,
   cardio, cool-down) in Today's order. Swipe the page sideways, or use the small arrows, to move
@@ -251,7 +253,8 @@ change how things work.
 - A FastAPI server that serves the app and its API from one origin, with secret scanning, linting
   and tests set up from the start.
 
-[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/CLochstampfor60/heavenly-restriction/releases/tag/v0.4.1
 [0.4.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.2.0...v0.3.0
