@@ -579,6 +579,8 @@ test('Lift tab: lifts grouped by region with counts; PR regions and the most rec
   await page.goto(`${BASE}/#/progress`);
   await page.getByRole('tab', { name: 'Lift' }).click();
   await page.getByRole('button', { name: 'Year', exact: true }).click();
+  // One summary line for the period, in words.
+  assert.match(await page.locator('.lift-summary').innerText(), /^\d+ PRs? · \d+ improving · \d+ flat( · \d+ down)?$/);
   const heads = page.locator('.chart-panel .region-head');
   assert.deepEqual(await heads.locator('.region-head__name').allInnerTexts(), ['Back · 4', 'Arms · 1', 'Hips · 1']); // Library order
   const head = (name) => heads.filter({ hasText: name });

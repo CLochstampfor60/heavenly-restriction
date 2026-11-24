@@ -447,3 +447,22 @@ export function openRegions(rows) {
   if (rows.length) open.add(REGIONS.includes(rows[0].region) ? rows[0].region : 'Other');
   return open;
 }
+
+// The Lift tab's summary for the period, in words: "3 PRs · 5 improving · 2 flat", plus
+// "· 1 down" only when a lift got worse. Improving / flat / down compare first to last (for
+// assisted lifts less assistance is better); a lift with one session is in none of them.
+// rows: [{ assisted, row: { pr, change } }]
+export function liftSummary(rows) {
+  const n = { prs: 0, improving: 0, flat: 0, down: 0 };
+  for (const r of rows) {
+    if (r.row.pr) n.prs += 1;
+    if (r.row.change == null) continue;
+    const better = r.assisted ? -r.row.change : r.row.change;
+    if (Math.abs(better) < 0.05) n.flat += 1;
+    else if (better > 0) n.improving += 1;
+    else n.down += 1;
+  }
+  const parts = [`${n.prs} PR${n.prs === 1 ? '' : 's'}`, `${n.improving} improving`, `${n.flat} flat`];
+  if (n.down) parts.push(`${n.down} down`);
+  return { ...n, text: parts.join(' · ') };
+}

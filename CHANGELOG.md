@@ -11,6 +11,8 @@ change how things work.
 - Progress › Lift groups "Your lifts" by body region, in the Library's order, under headers you
   tap to open or close ("Back · 6"). Regions with a PR, and the one you trained most recently,
   start open; the rest start closed. Only lifts logged in the chosen period are listed.
+- Progress › Lift opens with one summary line for the period, in words: "3 PRs · 5 improving ·
+  2 flat" (and "· 1 down" when a lift went backwards).
 
 ### Removed
 - Progress › Lift no longer has the Pounds / % gain switch or its chart: it was crowded and the

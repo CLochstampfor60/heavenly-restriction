@@ -15,6 +15,7 @@ import {
   pageList,
   axisDomain,
   canRemoveSet,
+  liftSummary,
   groupByRegion,
   openRegions,
   REGIONS,
@@ -395,4 +396,16 @@ test('Lift tab regions: Library order, Other for unknown ones; open the PR ones 
   assert.deepEqual(groupByRegion(rows).map((g) => [g.name, g.rows.length]), [['Back', 1], ['Arms', 1], ['Legs', 1], ['Other', 1]]);
   assert.deepEqual([...openRegions(rows)].sort(), ['Arms', 'Back']);
   assert.equal(REGIONS[0], 'Back');
+});
+
+test('Lift tab summary: PRs, improving, flat in words; down only when there is one; assisted inverted', () => {
+  const rows = [
+    { row: { pr: true, change: 12 } }, // PR and improving
+    { row: { pr: false, change: 0 } }, // flat
+    { assisted: true, row: { pr: false, change: -5 } }, // less assistance: improving
+    { row: { pr: false, change: null } }, // one session: none
+  ];
+  assert.equal(liftSummary(rows).text, '1 PR · 2 improving · 1 flat');
+  assert.equal(liftSummary([...rows, { row: { pr: false, change: -3 } }]).text, '1 PR · 2 improving · 1 flat · 1 down');
+  assert.equal(liftSummary([]).text, '0 PRs · 0 improving · 0 flat');
 });

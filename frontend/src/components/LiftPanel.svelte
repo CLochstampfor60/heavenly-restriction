@@ -7,7 +7,7 @@
   import { fmt1 } from './LineChart.svelte';
   import Sparkline from './Sparkline.svelte';
   import { dateKey } from '../db.js';
-  import { chooseLifts, groupByRegion, liftRow, openRegions, sortLifts } from '../logic.js';
+  import { chooseLifts, groupByRegion, liftRow, liftSummary, openRegions, sortLifts } from '../logic.js';
   import { allLifts } from '../stores/lifts.svelte.js';
 
   let { api = null } = $props();
@@ -38,6 +38,7 @@
   const rows = $derived(rowsFor(shownRange));
 
   const groups = $derived(groupByRegion(rows));
+  const summary = $derived(liftSummary(rows));
   // Taps open or close a region; until then it follows the default for the period.
   let toggled = $state({}); // `${range}/${region}` -> open
   const isOpen = (name) => toggled[`${shownRange}/${name}`] ?? openRegions(rows).has(name);
@@ -78,6 +79,7 @@
     <span class="hr-eyebrow">Your lifts</span>
     <p class="body muted hint">Nothing logged in this period yet.</p>
   {:else}
+    <p class="body-strong hr-num lift-summary">{summary.text}</p>
     <section class="stack-tight" aria-labelledby="lifts-h">
       <h3 id="lifts-h" class="hr-eyebrow">Your lifts · {rows.length}</h3>
       {#each groups as g (g.name)}
