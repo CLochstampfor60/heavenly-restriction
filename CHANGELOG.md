@@ -7,6 +7,8 @@ change how things work.
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-23
+
 ### Changed
 - Progress › Lift groups "Your lifts" by body region, in the Library's order, under headers you
   tap to open or close ("Back · 6"). Regions with a PR, and the one you trained most recently,
@@ -338,7 +340,8 @@ change how things work.
 - A FastAPI server that serves the app and its API from one origin, with secret scanning, linting
   and tests set up from the start.
 
-[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.0...v0.5.1
