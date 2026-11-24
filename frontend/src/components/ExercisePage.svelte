@@ -23,6 +23,8 @@
     plannedSets,
     priorFor,
     removeSet,
+    skipSlot,
+    undoSkip,
     rest,
     restFor,
     restMode,
@@ -155,6 +157,16 @@
       {#if !slot.doneAs}
         <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" onclick={() => openSwap(slotId)}>
           <Icon name="swap" />Swap
+        </button>
+      {/if}
+      <!-- Skip, not Stop: no dialog, no stop event. Mid-page, away from Stop (top) and Log set (bottom). -->
+      {#if slot.status === 'todo' || slot.status === 'active'}
+        <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" aria-label="Skip exercise" onclick={() => skipSlot(slotId)}>
+          <Icon name="skip" />Skip
+        </button>
+      {:else if slot.status === 'skipped'}
+        <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" aria-label="Undo skip exercise" onclick={() => undoSkip(slotId)}>
+          Undo skip
         </button>
       {/if}
     </div>

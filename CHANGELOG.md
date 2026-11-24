@@ -7,6 +7,11 @@ change how things work.
 
 ## [Unreleased]
 
+### Added
+- Skip on every exercise page: one tap marks the exercise Skipped for today, with no dialog. It
+  is not a Stop: it records no stop event and nothing in the exercise's history, and sets already
+  logged stay. Undo skip, or logging a set, opens it again. Today's row says "Skipped".
+
 ## [0.5.1] - 2026-11-23
 
 ### Added

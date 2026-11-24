@@ -288,9 +288,69 @@ test('a Swapped exercise logs under the exercise actually done', async () => {
   assert.deepEqual(errors, []);
 });
 
-// ---------- Today's set count: + Add set / Remove set (all offline) ----------
+// ---------- Skip (not Stop) ----------
 
 const setsText = (p) => p.locator('.page-status .hr-num').innerText();
+
+// Rows in an IndexedDB store of the demo database ('heavenly-restriction').
+async function idbCount(page, store) {
+  return page.evaluate(
+    (name) =>
+      new Promise((resolve, reject) => {
+        const open = indexedDB.open('heavenly-restriction');
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const req = open.result.transaction(name).objectStore(name).count();
+          req.onsuccess = () => {
+            resolve(req.result);
+            open.result.close();
+          };
+        };
+      }),
+    store,
+  );
+}
+
+test('Skip marks the exercise Skipped for today with no dialog and no stop event; Today says Skipped', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  const p = visible(page);
+  const stopsBefore = await idbCount(page, 'stops');
+  await p.getByRole('button', { name: 'Skip exercise' }).click();
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  await p.locator('.hr-chip', { hasText: 'Skipped' }).waitFor();
+  assert.equal(await p.locator('.hr-set--skipped').count(), 3);
+  assert.equal(await idbCount(page, 'stops'), stopsBefore); // never a stop event
+  await page.reload(); // saved at once, offline
+  await page.waitForSelector('.pager-count');
+  await visible(page).locator('.hr-chip', { hasText: 'Skipped' }).waitFor();
+  await page.getByRole('link', { name: 'Today' }).click();
+  const row = page.locator('.hr-exrow', { hasText: 'Seated Cable Row' });
+  assert.match(await row.innerText(), /Skipped/);
+  assert.doesNotMatch(await row.innerText(), /Stopped/);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('a Skipped exercise reopens by logging a set, or by Undo skip; logged sets stay through a skip', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s2`); // two of four logged in the demo
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Skip exercise' }).click();
+  assert.equal(await p.locator('.hr-set--done, .hr-set--pr').count(), 2);
+  assert.equal(await p.locator('.hr-set--skipped').count(), 2);
+  await p.getByRole('button', { name: 'Undo skip exercise' }).click();
+  assert.equal(await p.locator('.hr-set--skipped').count(), 0);
+  assert.equal(await setsText(p), '2 of 4 sets');
+  await p.getByRole('button', { name: 'Skip exercise' }).click();
+  await p.getByRole('button', { name: 'Log set 3', exact: true }).click(); // the existing rule
+  assert.equal(await p.locator('.hr-chip', { hasText: 'Skipped' }).count(), 0);
+  assert.equal(await setsText(p), '3 of 4 sets');
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+// ---------- Today's set count: + Add set / Remove set (all offline) ----------
 
 test('+ Add set adds a prefilled set for today: one tap to add, one tap to log', async () => {
   const { context, page, errors } = await phone();
@@ -472,7 +532,7 @@ test('rest length: the program rest when given, else Default rest (15 s steps), 
   await p6.getByRole('button', { name: 'Log set 1', exact: true }).click();
   assert.match(await p6.locator('.hr-timer__label').innerText(), /2:00/);
   await p6.getByRole('button', { name: 'Add 15 seconds' }).click();
-  await p6.getByRole('button', { name: 'Skip' }).click();
+  await p6.getByRole('button', { name: 'Skip', exact: true }).click();
   assert.equal(await timerShown(page), 0);
   await page.goto(`${BASE}/#/log/s3`);
   assert.match(await visible(page).locator('.hr-exh__meta').innerText(), /rest 1:30/);

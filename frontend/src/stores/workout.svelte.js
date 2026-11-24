@@ -403,6 +403,7 @@ export function loggedCount(slot) {
 export function slotNote(slot) {
   const stop = slot.status === 'stopped' && slot.sets.find((set) => set.status === 'stopped');
   if (stop) return { kind: 'plain', text: `Stopped · ${stop.symptom}` };
+  if (slot.status === 'skipped' && slot.plan.loggable) return { kind: 'plain', text: 'Skipped' };
   const ex = exerciseFor(slot);
   const planned = CATALOG[slot.exerciseId];
   if (ex.id !== planned.id && ex.id !== slot.plan.alt) {
@@ -665,6 +666,21 @@ export function removeSet(slotId, k) {
 export { canRemoveSet };
 
 // Ends an exercise with a set range early ("2–3 sets" after the second): the rest are skipped.
+// Skip (not Stop): the exercise is Skipped for today, its sets still to do are skipped, and
+// that is all. No stop event, no symptom, nothing in the exercise's history; logged sets stay.
+// Logging a set reopens it (logSet); Undo skip puts it back as it was.
+export function skipSlot(slotId) {
+  const slot = day.slots[slotId];
+  slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
+  slot.status = 'skipped';
+}
+
+export function undoSkip(slotId) {
+  const slot = day.slots[slotId];
+  slot.sets = slot.sets.map((set) => (set.status === 'skipped' ? { status: 'todo' } : set));
+  slot.status = slot.doneAs ? statusAfterLog(slot.sets) : 'todo';
+}
+
 export function finishSlot(slotId) {
   const slot = day.slots[slotId];
   slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
