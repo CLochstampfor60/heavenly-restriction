@@ -569,6 +569,35 @@ test('Lift tab: no chart and no view toggle, just Your lifts, most recent first,
   assert.deepEqual(errors, []);
 });
 
+test('Lift tab: lifts grouped by region with counts; PR regions and the most recent start open; others collapsed', async () => {
+  const { context, page, errors } = await phone();
+  // Today: a Hips lift (no PR, one session), then a Back lift last, so Back is the most recent.
+  for (const id of ['s6', 's4']) {
+    await page.goto(`${BASE}/#/log/${id}`);
+    await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  }
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  const heads = page.locator('.chart-panel .region-head');
+  assert.deepEqual(await heads.locator('.region-head__name').allInnerTexts(), ['Back · 4', 'Arms · 1', 'Hips · 1']); // Library order
+  const head = (name) => heads.filter({ hasText: name });
+  assert.equal(await head('Back').getAttribute('aria-expanded'), 'true'); // PR and most recent
+  assert.equal(await head('Arms').getAttribute('aria-expanded'), 'true'); // Hammer Curl has a PR
+  assert.equal(await head('Hips').getAttribute('aria-expanded'), 'false');
+  assert.equal(await page.locator('.lift-row', { hasText: 'Cable Hip Abduction' }).count(), 0);
+  await head('Hips').click();
+  assert.equal(await head('Hips').getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.locator('.lift-row', { hasText: 'Cable Hip Abduction' }).count(), 1);
+  await head('Back').click();
+  assert.equal(await page.locator('.lift-row', { hasText: 'Lat Pulldown' }).count(), 0);
+  // Month: only this month's lifts (all logged today).
+  await page.getByRole('button', { name: 'Month', exact: true }).click();
+  assert.equal(await page.locator('.lift-row', { hasText: 'Hammer Curl' }).count(), 0);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Delete a logged set from history ----------
 
 test('delete a set from history: no dialog, an Undo toast brings it back', async () => {

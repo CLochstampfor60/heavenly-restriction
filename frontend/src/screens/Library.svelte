@@ -4,7 +4,7 @@
   import { loadLibrary } from '../stores/source.svelte.js';
   import { lastText } from '../stores/workout.svelte.js';
 
-  const REGIONS = ['Back', 'Core', 'Chest', 'Shoulders', 'Arms', 'Legs', 'Hips', 'Other'];
+  import { REGIONS } from '../logic.js';
   const FILTERS = [
     { id: 'all', label: 'All' },
     { id: 'program', label: 'In my program' },

@@ -428,3 +428,22 @@ export function chooseLifts(saved, listedIds, max) {
   const keep = (saved ?? []).map(String).filter((id) => listedIds.map(String).includes(id));
   return (keep.length ? keep : listedIds.map(String)).slice(0, max);
 }
+
+// ---------- Body regions (the Library and Progress › Lift, same order) ----------
+
+export const REGIONS = ['Back', 'Core', 'Chest', 'Shoulders', 'Arms', 'Legs', 'Hips', 'Other'];
+
+// Rows grouped by region in REGIONS order (an unknown region counts as Other); rows keep their
+// order. rows: [{ region, ... }] -> [{ name, rows }]
+export function groupByRegion(rows) {
+  const known = (r) => (REGIONS.includes(r) ? r : 'Other');
+  return REGIONS.map((name) => ({ name, rows: rows.filter((r) => known(r.region) === name) })).filter((g) => g.rows.length);
+}
+
+// Regions open at first: every region holding a PR in the period, and the region of the most
+// recently logged lift. rows: most recent first, each { region, row: { pr } }.
+export function openRegions(rows) {
+  const open = new Set(rows.filter((r) => r.row.pr).map((r) => (REGIONS.includes(r.region) ? r.region : 'Other')));
+  if (rows.length) open.add(REGIONS.includes(rows[0].region) ? rows[0].region : 'Other');
+  return open;
+}

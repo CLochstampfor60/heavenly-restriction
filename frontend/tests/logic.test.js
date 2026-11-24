@@ -15,6 +15,9 @@ import {
   pageList,
   axisDomain,
   canRemoveSet,
+  groupByRegion,
+  openRegions,
+  REGIONS,
   chooseLifts,
   inPeriod,
   liftRow,
@@ -380,4 +383,16 @@ test('chart choice: the saved lifts that are still listed, else the most recent,
   assert.deepEqual(chooseLifts(['3', 9], ['1', '2', '3'], 5), ['3']);
   assert.deepEqual(chooseLifts([9], ['1', '2', '3', '4', '5', '6'], 5), ['1', '2', '3', '4', '5']);
   assert.deepEqual(chooseLifts(null, [7, 8], 1), ['7']);
+});
+
+test('Lift tab regions: Library order, Other for unknown ones; open the PR ones and the most recent', () => {
+  const rows = [
+    { name: 'Curl', region: 'Arms', row: { pr: false } }, // most recent
+    { name: 'Row', region: 'Back', row: { pr: true } },
+    { name: 'Squat', region: 'Legs', row: { pr: false } },
+    { name: 'Odd', region: 'Neck', row: { pr: false } },
+  ];
+  assert.deepEqual(groupByRegion(rows).map((g) => [g.name, g.rows.length]), [['Back', 1], ['Arms', 1], ['Legs', 1], ['Other', 1]]);
+  assert.deepEqual([...openRegions(rows)].sort(), ['Arms', 'Back']);
+  assert.equal(REGIONS[0], 'Back');
 });

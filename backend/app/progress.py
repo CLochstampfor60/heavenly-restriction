@@ -254,6 +254,7 @@ def progress(date: Date, db: DB) -> dict:
             {
                 "exercise_id": ex.id,
                 "name": ex.name,
+                "region": ex.region or "Other",
                 "assisted": ex.is_assisted,
                 "measure": ex.measure,
                 "per_side": ex.per_side,

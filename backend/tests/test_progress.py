@@ -119,6 +119,7 @@ def test_lifts_carry_every_exercise_set_by_set(client) -> None:
     lifts = progress(client, MON)["lifts"]
     lift = next(x for x in lifts if x["exercise_id"] == pulldown)
     assert lift["name"] == "Demo Pulldown — wide grip"
+    assert lift["region"]  # the Lift tab groups by it
     assert lift["sessions"] == [
         {
             "date": MON.isoformat(),

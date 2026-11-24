@@ -10,7 +10,14 @@ function fromApi(lifts, todayKey) {
   const history = {};
   const catalog = {};
   for (const l of lifts) {
-    catalog[l.exercise_id] = { id: l.exercise_id, name: l.name, assisted: l.assisted, measure: l.measure, perSide: l.per_side };
+    catalog[l.exercise_id] = {
+      id: l.exercise_id,
+      name: l.name,
+      region: l.region ?? 'Other',
+      assisted: l.assisted,
+      measure: l.measure,
+      perSide: l.per_side,
+    };
     history[l.exercise_id] = l.sessions
       .filter((s) => s.date !== todayKey) // today comes from this phone's live copy
       .map((s) => {
@@ -48,7 +55,9 @@ export function allLifts(api) {
     .map((id) => {
       const ex = catalog[id];
       const sessions = sessionsFor(id, history, catalog, true);
-      return { id, name: ex.name, assisted: !!ex.assisted, measure: ex.measure ?? 'reps', ...describe(ex, sessions), sessions };
+      // The catalog's region reads "Back › Lats"; the API's lifts carry just "Back".
+      const region = (ex.region ?? 'Other').split(' › ')[0];
+      return { id, name: ex.name, region, assisted: !!ex.assisted, measure: ex.measure ?? 'reps', ...describe(ex, sessions), sessions };
     })
     .filter((l) => l.sessions.length);
 }
