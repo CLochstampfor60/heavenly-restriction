@@ -91,7 +91,7 @@ Progress charts follow the bundled chart method: one job per chart, color last, 
 
 - **One series and one y-axis per chart, no exceptions.** Bodyweight, waist and a lift's estimated 1RM are filled lines; cardio minutes are teal bars. Never two measures on two scales; split them into two charts.
 - **Line:** 2 px `accent`, area fill `accent-soft`, points 5 px radius with a `card` center; the selected point grows to 7 px. **Bars:** `recover`, 4 px rounded tops, a planned bar is `recover-soft` with a dashed edge.
-- **Y-axis:** the data's range plus about 10% on each side (the goal line included), never below 0 for weights, reps, seconds and minutes; two to four gridlines on round numbers inside that range. Only a % change chart may go below 0.
+- **Y-axis:** the data's range plus about 10% on each side (the goal line included), never below 0 for weights, reps, seconds and minutes; two to four gridlines on round numbers inside that range.
 - **Goal or target:** a dashed 2 px `grade` line labeled at its right end ("Goal 185", "Grade 1 · 190", "Target 345").
 - **Labels:** every point when there are 6 or fewer, otherwise first, last, highest and lowest. Values in `text`, axes in `text-2`, never in the series color.
 - **Signals on charts:** personal-record points `flash` (the PR dot), stop events as an amber octagon on the axis with the line skipping that session.
