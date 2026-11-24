@@ -162,7 +162,11 @@
   );
   const isBars = $derived(metric === 'cardio');
   const goal = $derived(r.goal === false || m.goal == null ? null : { value: m.goal, label: m.goalLabel });
-  const sel = $derived(picked !== null && picked < r.pts.length ? picked : r.pts.length - 1);
+  // The headline is the latest value in the period (a stopped session is not a value); a tap on a
+  // point shows that point instead. The change line always compares first to last.
+  const latestIdx = $derived(r.pts.findLastIndex((p) => p[2] !== 'stop'));
+  const tapped = $derived(picked !== null && picked < r.pts.length);
+  const sel = $derived(tapped ? picked : latestIdx >= 0 ? latestIdx : r.pts.length - 1);
   const cur = $derived(r.pts[sel]);
   const live = $derived(r.pts.filter((p) => p[2] !== 'stop'));
   const first = $derived(live[0]?.[1] ?? 0);
@@ -198,8 +202,16 @@
       return `${range === 'year' ? (cur[3] ?? yearMonth(sel)) : `week of ${cur[0]}`} · target ${m.goal} a week`;
     }
     if (cur[2] === 'stop') return `${cur[0]} · stop event`;
-    const change = Math.abs(delta) < 0.05 ? 'no change' : `${delta < 0 ? '−' : '+'}${fmt1(Math.abs(delta))} ${m.unit}`;
-    return `${range === 'year' ? (cur[3] ?? yearMonth(sel)) : cur[0]} · ${change} over the period`;
+    return `${tapped ? 'Selected' : 'Latest'} · ${range === 'year' ? (cur[3] ?? yearMonth(sel)) : cur[0]}`;
+  });
+  // First to last in the period, with an arrow and a word (never color alone).
+  const changeLine = $derived.by(() => {
+    if (isBars || live.length < 2) return '';
+    const lowerBetter = m.unit.includes('assist');
+    const tail = lowerBetter ? ' (lower is better)' : '';
+    if (Math.abs(delta) < 0.05) return `No change from first to last${tail}`;
+    const [arrow, word] = delta > 0 ? ['▲', 'Up'] : ['▼', 'Down'];
+    return `${arrow} ${word} ${fmt1(Math.abs(delta))} ${m.unit} from first to last${tail}`;
   });
 
   // Year views hold one point per month, ending with YEAR_END; the axis shows only initials.
@@ -393,7 +405,8 @@
         <span class="hr-eyebrow">{m.name}</span>
         <span class="readout">
           <span class="readout__value hr-num">{readValue}</span>
-          <span class="small muted">{readDetail}</span>
+          <span class="small muted readout__detail">{readDetail}</span>
+          {#if changeLine}<span class="small readout__change">{changeLine}</span>{/if}
           {#if cur?.[2] === 'stop'}<span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>{/if}
         </span>
       </div>

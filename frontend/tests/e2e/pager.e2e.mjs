@@ -527,6 +527,26 @@ test('cardio: Skip and Undo skip, with no dialog', async () => {
 
 // ---------- Progress charts ----------
 
+test('chart headline: the latest value until a point is tapped; the change line compares first to last', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Weight' }).click();
+  const value = page.locator('.readout__value');
+  const detail = page.locator('.readout__detail');
+  const change = page.locator('.readout__change');
+  assert.match(await detail.innerText(), /^Latest · /);
+  const latest = await value.innerText();
+  const before = await change.innerText();
+  assert.match(before, /^(▲ Up|▼ Down|No change)/);
+  assert.match(before, /from first to last/);
+  await page.locator('svg.hr-chart circle.chart-hit').first().click({ force: true });
+  assert.match(await detail.innerText(), /^Selected · /);
+  assert.notEqual(await value.innerText(), latest);
+  assert.equal(await change.innerText(), before); // still first to last
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 test('chart y-axes never go below 0', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/progress`);

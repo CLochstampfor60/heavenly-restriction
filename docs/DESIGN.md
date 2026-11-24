@@ -64,6 +64,7 @@ Set logging is a pager, one page per item of today in Today's order (Later order
 - This week: sessions N of 5 (segmented meter), cardio minutes vs 345 target (teal meter).
 - **Workout time · this week**: one row per day with a session ("Today 52 min", "Mon 11/16 48 min"), shown only when there is a time. The calendar day's label carries it too. Timing is automatic (see Today).
 - Measurement switch (Weight, Waist, Lift, Cardio) + Week / Month / Year (only the ranges that make sense per measurement), period arrows, readout, chart with dashed `grade` goal line. Cardio is teal bars; a planned bar is dashed.
+- **Readout:** the big number is the latest value in the period ("Latest · Nov 23"); tapping a point shows that point instead ("Selected · Nov 16"). Under it, a change line always compares the period's first and last values with an arrow and a word ("▲ Up 12.3 lb from first to last"; "(lower is better)" for assistance).
 - Sets per muscle group this week: one `cursed` bar per muscle with a `grade` tick at the target.
 - Month calendar (`hr-cal` / `hr-day`) with legend; PR days get a red dot; today is outlined.
 - Recent records with `hr-grade` badges and the plain "Level N of 5" line.

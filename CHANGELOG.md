@@ -7,6 +7,10 @@ change how things work.
 
 ## [Unreleased]
 
+### Changed
+- Progress charts: the big number is now the latest value in the period (a tapped point only
+  after a tap), and a separate line gives the change from first to last with an arrow and a word.
+
 ### Fixed
 - Line charts no longer show a y-axis below 0 (one very light set could push the lift chart's
   axis negative). The axis now spans the data with about 10% to spare on each side, with round

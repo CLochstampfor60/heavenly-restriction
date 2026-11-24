@@ -160,6 +160,7 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .readout { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-2); min-height: var(--tap-min); }
 .readout__value { font-weight: 700; font-size: 32px; line-height: 36px; }
+.readout__change { flex-basis: 100%; }
 .readout .hr-pr, .readout .hr-chip { align-self: center; }
 .chart-card { padding: var(--space-3) var(--space-2) var(--space-1) var(--space-1); border-radius: var(--radius-lg); background: var(--card); border: 1px solid var(--card-edge); }
 .chart-stop { fill: var(--stop-soft); stroke: var(--stop); stroke-width: 2; }
