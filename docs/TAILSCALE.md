@@ -75,6 +75,22 @@ APP_ORIGINS=https://hr.<tailnet>.ts.net
 Passkeys are bound to the hostname, so do the first-run setup at `https://hr.<tailnet>.ts.net`,
 not on localhost.
 
+## VPNs on the host
+Another VPN on the host can cut the host itself off from the app while the phone still reaches it.
+Tested with ProtonVPN (WireGuard, Windows app) on 2026-11-23:
+
+- Routing was fine: the service address still routed to the Tailscale adapter.
+- Every connection from this PC into the Tailscale adapter was refused within milliseconds, the
+  HTTPS port and Tailscale's DNS resolver (`100.100.100.100`) alike. That is a firewall filter,
+  not routing or DNS; the failing name lookups were a symptom.
+- Excluding `100.64.0.0/10` and `fd7a:115c:a1e0::/48` in ProtonVPN's split tunneling did not
+  change it, so a hosts-file entry would not help either: the address is right, the connection
+  is blocked.
+
+`server.ps1 doctor` names the failing layer (route, DNS, TCP or HTTPS). With ProtonVPN, disconnect
+it while using the app on the host, or test with its kill switch off and then split tunneling off
+to find which feature blocks the adapter.
+
 ## Moving to another host (the NAS)
 Advertise the same service on the new host (`tailscale up --advertise-tags=tag:hr-host`, then
 the same `tailscale serve --service=svc:hr ...` line), confirm it is approved and serving, then

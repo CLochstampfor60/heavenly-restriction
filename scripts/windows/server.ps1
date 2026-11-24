@@ -137,6 +137,50 @@ function Get-LiveBuild {
     $b.Groups[1].Value
 }
 
+# When /api/health over the tailnet fails: which layer, tested in order on this PC.
+#   route  the service address must route to the Tailscale adapter
+#   dns    the hostname must resolve through Tailscale's resolver (100.100.100.100)
+#   tcp    port 443 on the service address must accept a connection
+#   https  if TCP works, the problem is above it (serve, certificate, or the app)
+# DNS failing while TCP also fails is a symptom (the resolver sits behind the same adapter), so
+# the network layer is named then, not DNS.
+function Get-TailnetLayer([string]$rp, [bool]$protonUp) {
+    $ip = $null
+    try {
+        $ts = & tailscale status --json 2>$null | ConvertFrom-Json
+        $ip = @($ts.Self.CapMap.'service-host' | ForEach-Object { $_.'svc:hr' } | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' })[0]
+    } catch { }
+    if (-not $ip) {
+        return @{ Layer = 'Tailscale'; Detail = 'This PC has no address for svc:hr (not its approved host, or Tailscale is down).'; Fix = 'See the Tailscale lines below; then tailscale serve status' }
+    }
+    $route = Find-NetRoute -RemoteIPAddress $ip -ErrorAction SilentlyContinue | Where-Object { $_.DestinationPrefix } | Select-Object -First 1
+    $routeOk = $route -and $route.InterfaceAlias -like '*Tailscale*'
+    $dnsOk = $false
+    try { $dnsOk = [bool](Resolve-DnsName $rp -Server 100.100.100.100 -DnsOnly -QuickTimeout -Type A -ErrorAction Stop | Where-Object { $_.IPAddress }) } catch { }
+    $tcpOk = $false
+    $client = New-Object Net.Sockets.TcpClient
+    try { $tcpOk = $client.ConnectAsync($ip, 443).Wait(3000) -and $client.Connected } catch { } finally { $client.Dispose() }
+    $parts = @(
+        $(if ($routeOk) { 'route OK (Tailscale adapter)' } else { "route goes through '$($route.InterfaceAlias)', not Tailscale" }),
+        $(if ($dnsOk) { 'DNS OK' } else { 'DNS through 100.100.100.100 failed' }),
+        $(if ($tcpOk) { 'TCP 443 OK' } else { 'TCP 443 to the service address failed' })
+    )
+    $detail = ($parts -join ', ') + '.'
+    $vpn = 'ProtonVPN is connected and blocks this PC''s traffic into the Tailscale adapter (a firewall filter; the route is fine). Disconnect it while using the app on this PC. Excluding the Tailscale ranges in its split tunneling did not fix this in testing; see docs\TAILSCALE.md'
+    if (-not $routeOk) {
+        $fix = if ($protonUp) { 'ProtonVPN routes the tailnet addresses itself: disconnect it' } else { 'Another VPN or a static route takes the tailnet addresses: route print, then remove it; or restart Tailscale' }
+        return @{ Layer = 'route'; Detail = $detail; Fix = $fix }
+    }
+    if (-not $tcpOk) {
+        $fix = if ($protonUp) { $vpn } else { 'A firewall or VPN blocks this PC from the Tailscale adapter; check that Tailscale is connected (below) and that the phone can reach the app' }
+        return @{ Layer = 'network (firewall)'; Detail = $detail; Fix = $fix }
+    }
+    if (-not $dnsOk) {
+        return @{ Layer = 'DNS'; Detail = $detail; Fix = 'Tailscale DNS (MagicDNS) does not answer on this PC: tailscale set --accept-dns=true, or ask before adding a hosts-file entry for the service hostname (docs\TAILSCALE.md)' }
+    }
+    return @{ Layer = 'HTTPS (above TCP)'; Detail = $detail; Fix = 'tailscale serve status, then .\scripts\windows\server.ps1 status' }
+}
+
 # Backs up the database to HR_BACKUP_DIR (off this machine) with scripts\windows\backup_db.py.
 # Throws if it fails, so callers (deploy, migrate) stop before changing anything.
 function Invoke-Backup([string]$reason) {
@@ -204,9 +248,8 @@ function Invoke-Doctor {
             if ($h.status -eq 'ok') { Report PASS 'Health over the tailnet: https://<service hostname>/api/health is ok' }
             else { Report FAIL "Health over the tailnet answered: $h" '.\scripts\windows\server.ps1 status' }
         } catch {
-            $fix = 'Check the Tailscale lines below; then tailscale serve status'
-            if ($proton.Count) { $fix = 'ProtonVPN is connected and blocks this PC from the tailnet: disconnect it, or in ProtonVPN Settings > Split tunneling (Exclude) add 100.64.0.0/10 and fd7a:115c:a1e0::/48' }
-            Report FAIL "Health over the tailnet: no answer ($($_.Exception.Message))" $fix
+            $l = Get-TailnetLayer $rp ($proton.Count -gt 0)
+            Report FAIL ("Health over the tailnet: no answer. Failing layer: {0}. {1}" -f $l.Layer, $l.Detail) $l.Fix
         }
     }
 
@@ -238,7 +281,7 @@ function Invoke-Doctor {
         Report FAIL 'Tailscale serve: no svc:hr config pointing at 127.0.0.1:8000' 'In an elevated PowerShell: tailscale serve --service=svc:hr --https=443 127.0.0.1:8000'
     }
     if ($proton.Count) {
-        Report WARN 'ProtonVPN is connected. It can block this PC (not the phone) from reaching the app over the tailnet' 'ProtonVPN Settings > Split tunneling (Exclude): add 100.64.0.0/10 and fd7a:115c:a1e0::/48'
+        Report WARN 'ProtonVPN is connected. It can block this PC (not the phone) from reaching the app over the tailnet' 'Disconnect it while using the app on this PC (excluding the Tailscale ranges in its split tunneling was not enough in testing; see docs\TAILSCALE.md)'
     }
 
     # 4. The live build: clean, pushed, and what origin/main would build.

@@ -90,6 +90,9 @@ change how things work.
   and all four accents.
 
 ### Fixed
+- When `doctor` cannot reach the app over the tailnet, it now says which layer fails (route,
+  DNS, TCP or HTTPS) with the fix for that layer. It no longer suggests ProtonVPN split
+  tunneling, which did not help in testing; disconnecting ProtonVPN does.
 - `server.ps1 migrate` stopped with the server down: Windows PowerShell treated alembic's normal
   progress lines as errors. It now runs alembic through cmd and decides by the exit code.
 - The phone could be served a half-finished build: the end-to-end tests and screenshots built into
