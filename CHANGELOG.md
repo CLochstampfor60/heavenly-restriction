@@ -19,9 +19,16 @@ change how things work.
   Start workout and Continue open it at the first exercise not yet done.
 - An exercise marks itself Done when its last planned set is logged, and takes extra sets after
   that.
-- Settings › Workout › Rest timer, on or off. On by default. Off means no automatic start and no
-  timer pill, ring or countdown anywhere. The choice is saved to your account on the server and
-  kept on the phone, so every device matches and it works with no signal.
+- Settings › Workout › Rest timer is a choice: Off, After every set (the default for a new
+  account) or After each exercise (once its last planned set is logged). Off means no automatic
+  start and no timer pill, ring or countdown anywhere. Below it, Default rest (15 s steps, 90 s to
+  start) sets the rest for exercises the program gives none. Both are saved to your account on the
+  server and kept on the phone, so every device matches and they work with no signal. An account
+  whose rest timer was off stays Off. **Needs a database migration:** `server.ps1 migrate`.
+- A timer button near the top of each exercise page ("Timer on" / "Timer off") turns the rest
+  timer on or off for the rest of today, on every page, without changing Settings. It is saved
+  with today's session, so it survives a reload and reaches the other devices. Choosing in
+  Settings again replaces it.
 - `scripts\windows\server.ps1 deploy` builds the app from the current commit and restarts the
   server, and refuses unless that commit is clean and already pushed. Building into the folder the
   live server serves also refuses a tree with uncommitted changes.
@@ -63,6 +70,11 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Changed
+- The rest length is the exercise's rest from the program when it has one, otherwise Default rest.
+  Before, it was a fixed 90 s for main lifts and 60 s for core and forearm, whatever the program
+  said; the imported program gives no rest times, so every exercise now rests for Default rest.
+- After every set now also counts down after an exercise's last set (the rest before the next
+  exercise); before, that one was skipped.
 - FastAPI updated to 0.165.0.
 - The design system's color notes give each contrast figure for both themes ("5.4:1 Dark, 4.7:1
   Light"), rounded down, instead of one theme's figure. No color changed.

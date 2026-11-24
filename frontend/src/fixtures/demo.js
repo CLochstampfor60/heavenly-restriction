@@ -108,7 +108,7 @@ export const CATALOG = Object.fromEntries(
   Object.entries(exercises).map(([id, ex]) => [id, { id, ...ex }]),
 );
 
-// rest is in seconds.
+// rest is in seconds; s6 has none, so it uses Settings > Workout > Default rest.
 export const PROGRAM = {
   name: 'Pull A',
   version: 'v1',
@@ -118,7 +118,7 @@ export const PROGRAM = {
     { id: 's3', exercise: 'row', sets: 3, reps: '10–12', rest: 90 },
     { id: 's4', exercise: 'bandFace', sets: 3, reps: '15', rest: 60 },
     { id: 's5', exercise: 'hammer', sets: 3, reps: '10–12', rest: 60 },
-    { id: 's6', exercise: 'lateralWalk', sets: 3, reps: '12', rest: 60 },
+    { id: 's6', exercise: 'lateralWalk', sets: 3, reps: '12' },
   ],
 };
 

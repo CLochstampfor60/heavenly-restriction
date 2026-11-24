@@ -2,9 +2,10 @@
   import Icon from '../components/Icon.svelte';
   import Nav from '../components/Nav.svelte';
   import Passkeys from '../components/Passkeys.svelte';
+  import Stepper from '../components/Stepper.svelte';
   import { setAccent, setTheme, settings } from '../settings.svelte.js';
   import { DEMO_ONLY, setDemo } from '../mode.js';
-  import { prefs, setRestTimer } from '../stores/prefs.svelte.js';
+  import { prefs, REST_MAX, REST_MIN, setDefaultRest, setRestMode } from '../stores/prefs.svelte.js';
   import { source } from '../stores/source.svelte.js';
   import { requestPersistence, storage } from '../stores/storage.svelte.js';
   import { auth, checkAuth, explain, signOut } from '../stores/auth.svelte.js';
@@ -51,7 +52,7 @@
     }
   });
   const grouped = (secret) => secret.match(/.{1,4}/g).join(' ');
-  import { resetToday, skipRest } from '../stores/workout.svelte.js';
+  import { clock, day, resetToday, restMode, skipRest } from '../stores/workout.svelte.js';
 
   const THEMES = [
     { id: 'system', label: 'System' },
@@ -65,9 +66,17 @@
     { id: 'gold', label: 'Gold', jjk: 'Super Saiyan' },
   ];
 
-  function toggleRestTimer() {
-    setRestTimer(!prefs.restTimer);
-    if (!prefs.restTimer) skipRest(); // off means no countdown anywhere, now included
+  const REST_MODES = [
+    { id: 'off', label: 'Off', meta: 'No countdown anywhere.' },
+    { id: 'set', label: 'After every set', meta: 'Counts down after each logged set.' },
+    { id: 'exercise', label: 'After each exercise', meta: "Counts down once an exercise's last planned set is logged." },
+  ];
+
+  // A choice made here is the newest one, so it also replaces today's on/off from the pager.
+  function chooseRestMode(id) {
+    setRestMode(id);
+    day.restToday = null;
+    if (restMode() === 'off') skipRest(); // off means no countdown anywhere, now included
   }
 
   // Two taps, so a stray touch can't wipe the session.
@@ -82,13 +91,34 @@
 
   <section class="stack" aria-labelledby="workout-label">
     <span id="workout-label" class="hr-eyebrow">Workout</span>
-    <button class="hr-toggle" role="switch" aria-checked={prefs.restTimer} onclick={toggleRestTimer}>
-      <span class="option-text">
-        <span>Rest timer</span>
-        <span class="meta">Counts down after each logged set. Saved to your account, so every device matches.</span>
-      </span>
-      <span class="hr-toggle__switch"></span>
-    </button>
+    <span id="rest-label" class="heading">Rest timer</span>
+    <div class="stack" role="radiogroup" aria-labelledby="rest-label">
+      {#each REST_MODES as r (r.id)}
+        <button class="choice" role="radio" aria-checked={prefs.restMode === r.id} onclick={() => chooseRestMode(r.id)}>
+          <span class="option-text">
+            <span class="option-name">{r.label}</span>
+            <span class="meta">{r.meta}</span>
+          </span>
+          {#if prefs.restMode === r.id}<span class="choice-check"><Icon name="check" /></span>{/if}
+        </button>
+      {/each}
+    </div>
+    <Stepper
+      label="Default rest · seconds"
+      value={prefs.defaultRest}
+      placeholder={90}
+      step={15}
+      inputmode="numeric"
+      ariaLabel="Default rest in seconds, now {clock(prefs.defaultRest)}"
+      decLabel="Shorter default rest, 15 seconds less"
+      incLabel="Longer default rest, 15 seconds more"
+      onchange={(v) => setDefaultRest(v ?? 90)}
+    />
+    <span class="meta">
+      Used when the program gives no rest for an exercise ({REST_MIN} s to {REST_MAX / 60} min). The timer
+      button on each exercise page turns the timer on or off for today only. Saved to your account, so every
+      device matches.
+    </span>
   </section>
 
   <section class="stack" aria-labelledby="theme-label">

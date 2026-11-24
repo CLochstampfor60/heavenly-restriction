@@ -287,6 +287,9 @@ class WorkoutSession(Base):
     # Cardio Done / Skip ticks, keyed cardio1.. in the day's cardio_entry position order.
     cardio: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     finished: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Rest timer for this session only (the pager's toggle): "on", "off", or None to follow
+    # the account setting.
+    rest_timer: Mapped[str | None] = mapped_column(String(8))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
@@ -367,7 +370,7 @@ class BodyMetric(Base):
 
 
 class AccountSetting(Base):
-    """Account-wide settings, so every signed-in device agrees (e.g. rest_timer -> true).
+    """Account-wide settings, so every signed-in device agrees (e.g. rest_timer_mode -> "set").
 
     A setting with no row has its default, defined in api.SETTINGS.
     """

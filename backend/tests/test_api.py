@@ -148,6 +148,29 @@ def test_put_session_state(client) -> None:
     assert client.put(f"/api/sessions/{MON}", json=bad).status_code == 422
 
 
+def test_rest_timer_toggle_is_for_this_session_only(client) -> None:
+    plan(client)
+    assert client.put(f"/api/sessions/{MON}", json={}).json()["rest_timer"] is None  # the setting
+    r = client.put(f"/api/sessions/{MON}", json={"rest_timer": "off"})
+    assert r.json()["rest_timer"] == "off"
+    # An older app copy sends no rest_timer: today's choice stays.
+    assert (
+        client.put(f"/api/sessions/{MON}", json={"finished": False}).json()["rest_timer"] == "off"
+    )
+    assert plan(client)["session"]["rest_timer"] == "off"
+    # Another day, and the account setting, are untouched.
+    assert client.get("/api/settings").json()["rest_timer_mode"] == "set"
+    assert client.put(f"/api/sessions/{WED}", json={}).json()["rest_timer"] is None
+    assert (
+        client.put(f"/api/sessions/{MON}", json={"rest_timer": None}).json()["rest_timer"] is None
+    )
+    assert client.put(f"/api/sessions/{MON}", json={"rest_timer": "maybe"}).status_code == 422
+
+
+def test_slots_carry_the_programs_rest(client) -> None:
+    assert all("rest_s" in s for s in plan(client)["slots"])
+
+
 def test_notes(client) -> None:
     pulldown = ex_id(plan(client), "Demo Pulldown — wide grip")
     r = client.post("/api/notes", json={"kind": "cue", "text": "My cue", "exercise_id": pulldown})

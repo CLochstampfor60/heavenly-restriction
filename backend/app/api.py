@@ -6,7 +6,7 @@ Writes are idempotent where the phone may retry them: sets and stops carry a cli
 
 from collections import defaultdict
 from datetime import date as Date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
@@ -236,6 +236,7 @@ def slot_dict(slot: ProgramSlot, notes: list[Note]) -> dict:
         "per_side": slot.per_side,
         "optional": slot.optional,
         "loggable": slot.loggable,
+        "rest_s": slot.rest_s,  # the program's rest, when it gives one
         "notes": [{"kind": n.kind, "text": n.text, "cap_lb": n.cap_lb} for n in notes],
     }
 
@@ -251,6 +252,7 @@ def session_dict(db: Session, session: WorkoutSession) -> dict:
         "gear": session.gear,
         "cardio": session.cardio or {},
         "finished": session.finished,
+        "rest_timer": session.rest_timer,  # today's override: on | off | None (the setting)
         "order": [s.slot_key for s in session.slots],
         "slots": {
             s.slot_key: {
@@ -378,6 +380,9 @@ class SessionState(BaseModel):
     finished: bool = False
     order: list[str] = Field(default_factory=list)
     slots: dict[str, SlotState] = Field(default_factory=dict)
+    # Today's rest timer, overriding the setting for this session only. Left out (older app
+    # copies): unchanged. null: follow the setting.
+    rest_timer: Literal["on", "off"] | None = None
 
 
 @router.put("/sessions/{date}")
@@ -386,6 +391,8 @@ def put_session(date: Date, body: SessionState, db: DB) -> dict:
     session = get_session(db, date)
     session.gear = {g: bool(body.gear.get(g, session.gear.get(g, False))) for g in GEAR}
     session.finished = body.finished
+    if "rest_timer" in body.model_fields_set:
+        session.rest_timer = body.rest_timer
     if body.cardio:
         bad = {v for v in body.cardio.values()} - {"todo", "done", "skipped"}
         if bad:
@@ -649,7 +656,11 @@ def delete_note(note_id: int, db: DB) -> Response:
 # ---------------------------------------------------------------- account settings
 
 # Every setting and its default for a new account.
-SETTINGS = {"rest_timer": True}
+#   rest_timer_mode: off | set (after every set) | exercise (once the exercise's last planned
+#                    set is logged)
+#   rest_default_s:  rest length when the program gives none; 15 s steps
+SETTINGS = {"rest_timer_mode": "set", "rest_default_s": 90}
+REST_MODES = ("off", "set", "exercise")
 
 
 def settings_dict(db: Session) -> dict:
@@ -657,12 +668,25 @@ def settings_dict(db: Session) -> dict:
     for row in db.scalars(select(AccountSetting)):
         if row.key in SETTINGS:
             out[row.key] = row.value.get("v", SETTINGS[row.key])
+    # Older app copies (still cached on a phone until it updates) read an on/off flag.
+    out["rest_timer"] = out["rest_timer_mode"] != "off"
     return out
 
 
 class SettingsIn(BaseModel):
     # A field left out is unchanged.
+    rest_timer_mode: Literal["off", "set", "exercise"] | None = None
+    rest_default_s: int | None = Field(default=None, ge=15, le=600, multiple_of=15)
+    # Sent by older app copies: off, or on (after every set unless a mode is already chosen).
     rest_timer: bool | None = None
+
+
+def save_setting(db: Session, key: str, value) -> None:
+    row = db.get(AccountSetting, key)
+    if row is None:
+        db.add(AccountSetting(key=key, value={"v": value}))
+    else:
+        row.value = {"v": value}
 
 
 @router.get("/settings")
@@ -672,15 +696,14 @@ def get_settings(db: DB) -> dict:
 
 @router.put("/settings")
 def put_settings(body: SettingsIn, db: DB) -> dict:
-    for key in body.model_fields_set:
+    if body.rest_timer is not None and body.rest_timer_mode is None:
+        current = settings_dict(db)["rest_timer_mode"]
+        mode = "off" if not body.rest_timer else (current if current != "off" else "set")
+        save_setting(db, "rest_timer_mode", mode)
+    for key in ("rest_timer_mode", "rest_default_s"):
         value = getattr(body, key)
-        if value is None:
-            continue
-        row = db.get(AccountSetting, key)
-        if row is None:
-            db.add(AccountSetting(key=key, value={"v": value}))
-        else:
-            row.value = {"v": value}
+        if value is not None:
+            save_setting(db, key, value)
     db.commit()
     return settings_dict(db)
 

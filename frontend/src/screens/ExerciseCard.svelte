@@ -3,6 +3,7 @@
   import LineChart, { fmt1 } from '../components/LineChart.svelte';
   import { go } from '../router.svelte.js';
   import { chartRule, longDate, sessionsFor, shortDate } from '../stores/history.js';
+  import { prefs } from '../stores/prefs.svelte.js';
   import { CATALOG, PROGRAM } from '../stores/source.svelte.js';
   import { clock, lastText, setText, targetText } from '../stores/workout.svelte.js';
 
@@ -109,7 +110,7 @@
           <span class="hr-stat__sub">{ex.plan.map((p) => p.day).join(' · ')}</span>
         {:else if slot}
           <span class="hr-stat__value">{slot.setsText} × {targetText(slot)}</span>
-          <span class="hr-stat__sub">Rest {clock(slot.rest)}</span>
+          <span class="hr-stat__sub">Rest {clock(slot.rest ?? prefs.defaultRest)}</span>
         {:else}
           <span class="hr-stat__value">—</span>
           <span class="hr-stat__sub">{ex.excluded ? 'Excluded' : ex.day ? `On ${ex.day}` : 'Not in program'}</span>

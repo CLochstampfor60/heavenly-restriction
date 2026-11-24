@@ -288,26 +288,37 @@ test('a Swapped exercise logs under the exercise actually done', async () => {
   assert.deepEqual(errors, []);
 });
 
-// ---------- Rest timer setting ----------
+// ---------- Rest timer: Settings choice, Default rest, today's toggle (all offline) ----------
 
-test('rest timer on (the default): logging a set starts the countdown', async () => {
+const timerShown = (page) => page.locator('.hr-timer, [role="timer"]').count();
+const restMode = (page, name) => page.getByRole('radio', { name: new RegExp(`^${name}`) });
+
+async function chooseRestMode(page, name) {
+  await page.goto(`${BASE}/#/settings`);
+  await restMode(page, name).click();
+  assert.equal(await restMode(page, name).getAttribute('aria-checked'), 'true');
+}
+
+test('rest timer default is After every set: each set starts the countdown, the last one too', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/settings`);
-  assert.equal(await page.getByRole('switch', { name: /Rest timer/ }).getAttribute('aria-checked'), 'true');
-  await page.goto(`${BASE}/#/log/s3`);
-  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
-  await visible(page).getByRole('timer').waitFor();
+  assert.equal(await restMode(page, 'After every set').getAttribute('aria-checked'), 'true');
+  await page.goto(`${BASE}/#/log/s4`);
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await p.getByRole('timer').waitFor();
+  await p.getByRole('button', { name: 'Log set 2', exact: true }).click();
+  await p.getByRole('button', { name: 'Log set 3', exact: true }).click(); // the last planned set
+  await p.locator('.hr-chip--done').waitFor();
+  await p.getByRole('timer').waitFor();
   await context.close();
   assert.deepEqual(errors, []);
 });
 
-test('rest timer off: no countdown, pill or ring anywhere, and it stays off after a reload', async () => {
+test('rest timer Off: no countdown, pill or ring anywhere, and it stays off after a reload', async () => {
   const { context, page, errors } = await phone();
-  // The demo starts mid-rest; turning the timer off ends that countdown too.
-  await page.goto(`${BASE}/#/settings`);
-  const toggle = page.getByRole('switch', { name: /Rest timer/ });
-  await toggle.click();
-  assert.equal(await toggle.getAttribute('aria-checked'), 'false');
+  // The demo starts mid-rest; choosing Off ends that countdown too.
+  await chooseRestMode(page, 'Off');
   await page.goto(`${BASE}/#/log/s2`);
   await page.waitForSelector('.pager-count');
   assert.equal(await page.locator('.hr-timer').count(), 0);
@@ -315,13 +326,105 @@ test('rest timer off: no countdown, pill or ring anywhere, and it stays off afte
   await swipe(page, 300, 60);
   await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
   await page.waitForTimeout(300);
-  assert.equal(await page.locator('.hr-timer, [role="timer"]').count(), 0);
+  assert.equal(await timerShown(page), 0);
+  assert.ok(await visible(page).getByRole('button', { name: 'Rest timer off' }).isVisible());
   await page.reload();
   await page.waitForSelector('.pager-count');
   await visible(page).getByRole('button', { name: 'Log set 2', exact: true }).click();
   assert.equal(await page.locator('.hr-timer').count(), 0);
   await page.goto(`${BASE}/#/settings`);
-  assert.equal(await page.getByRole('switch', { name: /Rest timer/ }).getAttribute('aria-checked'), 'false');
+  assert.equal(await restMode(page, 'Off').getAttribute('aria-checked'), 'true');
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('rest timer After each exercise: no countdown between sets, one after the last planned set', async () => {
+  const { context, page, errors } = await phone();
+  await chooseRestMode(page, 'After each exercise');
+  await page.goto(`${BASE}/#/log/s4`);
+  const p = visible(page);
+  for (const k of [1, 2]) {
+    await p.getByRole('button', { name: `Log set ${k}`, exact: true }).click();
+    await page.waitForTimeout(200);
+    assert.equal(await timerShown(page), 0, `no countdown after set ${k}`);
+  }
+  await p.getByRole('button', { name: 'Log set 3', exact: true }).click();
+  await p.locator('.hr-chip--done').waitFor();
+  await p.getByRole('timer').waitFor();
+  assert.match(await p.locator('.hr-timer__label').innerText(), /1:00/); // s4's own rest from the program
+  // Logging on the next exercise means the rest is over.
+  await swipe(page, 300, 60);
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await page.waitForTimeout(200);
+  assert.equal(await timerShown(page), 0);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('rest length: the program rest when given, else Default rest (15 s steps), kept after a reload', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/settings`);
+  await page.getByRole('button', { name: /^Longer default rest/ }).click();
+  await page.getByRole('button', { name: /^Longer default rest/ }).click(); // 90 -> 120 s
+  assert.equal(await page.getByRole('textbox', { name: /^Default rest/ }).inputValue(), '120');
+  await page.reload();
+  await page.getByRole('textbox', { name: /^Default rest/ }).waitFor();
+  assert.equal(await page.getByRole('textbox', { name: /^Default rest/ }).inputValue(), '120');
+  // s6 has no rest in the program: Default rest. s3 has 90 s in the program: that.
+  await page.goto(`${BASE}/#/log/s6`);
+  const p6 = visible(page);
+  assert.match(await p6.locator('.hr-exh__meta').innerText(), /rest 2:00/);
+  await p6.getByRole('button', { name: 'Log set 1', exact: true }).click();
+  assert.match(await p6.locator('.hr-timer__label').innerText(), /2:00/);
+  await p6.getByRole('button', { name: 'Add 15 seconds' }).click();
+  await p6.getByRole('button', { name: 'Skip' }).click();
+  assert.equal(await timerShown(page), 0);
+  await page.goto(`${BASE}/#/log/s3`);
+  assert.match(await visible(page).locator('.hr-exh__meta').innerText(), /rest 1:30/);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test("the pager's timer button turns rest off for today only, without changing Settings", async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  const toggle = visible(page).getByRole('button', { name: 'Rest timer on' });
+  assert.match(await toggle.innerText(), /Timer on/);
+  const box = await toggle.boundingBox();
+  assert.ok(box.height >= 44 && box.width >= 44, '44 px target');
+  await toggle.click(); // the demo's running countdown ends with it
+  const off = visible(page).getByRole('button', { name: 'Rest timer off' });
+  assert.match(await off.innerText(), /Timer off/);
+  assert.equal(await timerShown(page), 0);
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await page.waitForTimeout(200);
+  assert.equal(await timerShown(page), 0);
+  // Every page shows today's state; Settings keeps its default.
+  await swipe(page, 300, 60);
+  assert.ok(await visible(page).getByRole('button', { name: 'Rest timer off' }).isVisible());
+  await page.goto(`${BASE}/#/settings`);
+  assert.equal(await restMode(page, 'After every set').getAttribute('aria-checked'), 'true');
+  // Still off after a reload (offline): it is saved with today's session.
+  await page.goto(`${BASE}/#/log/s3`);
+  await page.reload();
+  await page.waitForSelector('.pager-count');
+  await visible(page).getByRole('button', { name: 'Rest timer off' }).click();
+  await visible(page).getByRole('button', { name: 'Log set 2', exact: true }).click();
+  await visible(page).getByRole('timer').waitFor();
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('the timer button turns rest on for today when Settings says Off; choosing in Settings again resets today', async () => {
+  const { context, page, errors } = await phone();
+  await chooseRestMode(page, 'Off');
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Rest timer off' }).click();
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await visible(page).getByRole('timer').waitFor(); // on today runs after every set
+  await chooseRestMode(page, 'Off');
+  await page.goto(`${BASE}/#/log/s3`);
+  assert.ok(await visible(page).getByRole('button', { name: 'Rest timer off' }).isVisible());
   await context.close();
   assert.deepEqual(errors, []);
 });

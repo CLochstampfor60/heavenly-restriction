@@ -20,8 +20,11 @@
     planText,
     priorFor,
     rest,
+    restFor,
+    restMode,
     stopSlot,
     targetText,
+    toggleRestToday,
     ui,
     undoSet,
     undoStop,
@@ -69,6 +72,7 @@
   });
   const banner = $derived(ui.banner?.slotId === slotId ? ui.banner : null);
   const stopped = $derived(slot.sets.find((s) => s.status === 'stopped'));
+  const restOn = $derived(restMode() !== 'off');
 
   // Edited values for the next set; null means "use last time's value".
   let w = $state(null);
@@ -121,7 +125,17 @@
     </div>
     <div class="exh-meta-row">
       <span class="hr-tag">{ex.region}</span>
-      <span class="hr-exh__meta">{planText(slot)} · rest {clock(slot.plan.rest)}</span>
+      <span class="hr-exh__meta">{planText(slot)} · rest {clock(restFor(slot))}</span>
+      <!-- Today only; Settings > Workout keeps the default. The word says the state, not the color. -->
+      <button
+        class="hr-btn hr-btn--compact exh-action rest-toggle"
+        class:hr-btn--secondary={restOn}
+        class:hr-btn--ghost={!restOn}
+        aria-label="Rest timer {restOn ? 'on' : 'off'}"
+        onclick={toggleRestToday}
+      >
+        <Icon name="timer" />Timer {restOn ? 'on' : 'off'}
+      </button>
     </div>
     <SaveStatus />
     <div class="exh-meta-row page-status">

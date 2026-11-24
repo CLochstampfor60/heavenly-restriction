@@ -6,7 +6,8 @@
 //                lastText?, subs: [id], same: [id], media?, plan?, excluded?, grade? }
 // PROGRAM:     { name, version, live, slots: [slot], cardio: [cardio], notes }
 //   slot:      { id, exercise, alt, block, code, optional, loggable, sets, setsMin, setsText,
-//                target: { measure, min, max, perSide, text }, rest, notes, displayName }
+//                target: { measure, min, max, perSide, text }, rest (s or null), notes,
+//              displayName }
 // HISTORY[id]: past sessions, oldest first: { date, sets: [[w, r, s]], stop?, note? }
 import { dateKey } from '../db.js';
 import * as demo from '../fixtures/demo.js';
@@ -18,9 +19,6 @@ export const CATALOG = {};
 export const HISTORY = {};
 export const PROGRAM = { name: '', version: '', live: false, slots: [], cardio: [], notes: [] };
 export const source = $state({ demo: isDemo(), status: 'loading', cached: false, error: '' });
-
-// Rest after a set, in seconds, when the program does not say.
-const REST = { main: 90, core: 60, forearm: 60 };
 
 export const BLOCKS = {
   warmup: 'Warm-up',
@@ -67,7 +65,7 @@ function slotFromApi(s) {
       perSide: s.per_side,
       text: s.target_text,
     },
-    rest: REST[s.block] ?? 60,
+    rest: s.rest_s ?? null, // the program's rest; null means Settings > Workout > Default rest
     notes: s.notes ?? [],
     displayName: s.display_name,
   };
@@ -96,7 +94,7 @@ function loadDemo() {
       setsMin: p.sets,
       setsText: String(p.sets),
       target: { measure: 'reps', min: null, max: null, perSide: false, text: p.reps },
-      rest: p.rest,
+      rest: p.rest ?? null,
       notes: [],
       displayName: demo.CATALOG[p.exercise].name,
     })),

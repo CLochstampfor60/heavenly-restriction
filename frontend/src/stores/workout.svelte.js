@@ -25,7 +25,9 @@ export { e1rm };
 const today = dateKey();
 const ENDED = ['done', 'stopped', 'skipped'];
 
-export const day = $state({ order: [], slots: {}, cardio: [], gear: {}, gearOpen: false, finished: false });
+// restToday: the pager's rest timer toggle for today only ('on' | 'off'), or null to follow
+// Settings > Workout > Rest timer.
+export const day = $state({ order: [], slots: {}, cardio: [], gear: {}, gearOpen: false, finished: false, restToday: null });
 export const rest = $state({ running: false, endsAt: 0, total: 0, now: Date.now(), buzzed: false });
 export const ui = $state({ swapFor: null, banner: null });
 
@@ -54,6 +56,7 @@ function blankDay() {
     gear: Object.fromEntries(GEAR.map((g) => [g, false])),
     gearOpen: false,
     finished: false,
+    restToday: null,
   };
 }
 
@@ -70,7 +73,7 @@ function applyDemoSeed() {
   Object.assign(day.gear, DEMO_SESSION.gear);
   const resting = Object.keys(DEMO_SESSION.status).find((id) => DEMO_SESSION.status[id] === 'active');
   if (resting && DEMO_SESSION.restLeft) {
-    startRest(day.slots[resting].plan.rest);
+    startRest(restFor(day.slots[resting]));
     rest.endsAt = Date.now() + DEMO_SESSION.restLeft * 1000;
   }
 }
@@ -91,6 +94,7 @@ function sessionRow() {
     order: day.order,
     gear: day.gear,
     finished: day.finished,
+    restToday: day.restToday,
     cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
     slots: Object.fromEntries(
       Object.values(day.slots).map((s) => [
@@ -108,6 +112,7 @@ function serverState() {
     gear: { ...day.gear },
     cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
     finished: day.finished,
+    rest_timer: day.restToday,
     order: [...day.order],
     slots: Object.fromEntries(
       Object.values(day.slots).map((s) => [
@@ -166,7 +171,12 @@ onResult('set', (reply) => {
 });
 
 function restore(session, sets, stops) {
-  Object.assign(day, { order: session.order, gear: session.gear, finished: session.finished });
+  Object.assign(day, {
+    order: session.order,
+    gear: session.gear,
+    finished: session.finished,
+    restToday: session.restToday ?? null,
+  });
   for (const [id, meta] of Object.entries(session.slots)) {
     if (day.slots[id]) Object.assign(day.slots[id], meta);
   }
@@ -192,7 +202,7 @@ function restore(session, sets, stops) {
       slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
     }
   }
-  if (session.rest?.running && prefs.restTimer) {
+  if (session.rest?.running && restMode() !== 'off') {
     Object.assign(rest, session.rest, { now: Date.now(), buzzed: session.rest.endsAt <= Date.now() });
   }
 }
@@ -228,7 +238,11 @@ function fromServer(s) {
   }));
   const order = s.order.filter((k) => day.slots[k]);
   for (const k of day.order) if (!order.includes(k)) order.push(k);
-  return { session: { order, gear: s.gear, finished: s.finished, slots, cardio: s.cardio ?? {} }, sets, stops };
+  return {
+    session: { order, gear: s.gear, finished: s.finished, restToday: s.rest_timer ?? null, slots, cardio: s.cardio ?? {} },
+    sets,
+    stops,
+  };
 }
 
 // Call once before the first render.
@@ -247,7 +261,11 @@ export async function loadToday() {
       restore(session, sets, stops);
     } else if (
       server &&
-      (server.sets.length || server.stops.length || server.finished || Object.keys(server.cardio ?? {}).length)
+      (server.sets.length ||
+        server.stops.length ||
+        server.finished ||
+        server.rest_timer ||
+        Object.keys(server.cardio ?? {}).length)
     ) {
       const copy = fromServer(server);
       restore(copy.session, copy.sets, copy.stops);
@@ -572,8 +590,12 @@ export function logSet(slotId, { w, r, s, rir }) {
     ? { slotId, text: setText(ex, value, m.perSide), e1: !m.assisted && m.measure === 'reps' && w ? Math.round(e1rm(w, r)) : null }
     : null;
   slot.status = wasDone ? 'done' : statusAfterLog(slot.sets);
-  if (slot.status === 'done' && !wasDone) skipRest();
-  else startRest(slot.plan.rest);
+  // After every set: each logged set, the last one too (that is the rest before the next
+  // exercise). After each exercise: only when this set completes the plan; any other set means
+  // the rest is over.
+  const finishedNow = slot.status === 'done' && !wasDone;
+  if (restMode() === 'set' || (restMode() === 'exercise' && finishedNow)) startRest(restFor(slot));
+  else skipRest();
 }
 
 // Only the most recent set can be undone. An undone extra set is removed; a planned one goes
@@ -601,7 +623,9 @@ export function finishSlot(slotId) {
   const slot = day.slots[slotId];
   slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
   slot.status = 'done';
-  skipRest();
+  // The exercise is over: its rest starts now in After each exercise mode. After every set,
+  // the rest from the set just logged keeps running.
+  if (restMode() === 'exercise') startRest(restFor(slot));
 }
 
 // Ends the exercise: the current set is saved as stopped, the rest as skipped.
@@ -660,9 +684,29 @@ export function undoStop(slotId) {
 
 // ---------- Rest timer ----------
 
-// Starts after a logged set, unless the rest timer is off in Settings > Workout.
+// The rest timer in force now: Settings > Workout > Rest timer, unless the pager's toggle turned
+// it on or off for today. Turned on for today while the setting is Off, it runs after every set.
+export function restMode() {
+  if (day.restToday === 'off') return 'off';
+  if (day.restToday === 'on') return prefs.restMode === 'off' ? 'set' : prefs.restMode;
+  return prefs.restMode;
+}
+
+// Rest length: the exercise's rest from the program when it has one, else Default rest.
+export function restFor(slot) {
+  return slot.plan.rest ?? prefs.defaultRest;
+}
+
+// The pager's toggle: on or off for the rest of today, without changing Settings. Turning it
+// off ends a running countdown.
+export function toggleRestToday() {
+  day.restToday = restMode() === 'off' ? 'on' : 'off';
+  if (day.restToday === 'off') skipRest();
+}
+
+// Starts a countdown, unless the rest timer is off (in Settings or for today).
 export function startRest(seconds) {
-  if (!prefs.restTimer) return;
+  if (restMode() === 'off') return;
   rest.total = seconds;
   rest.now = Date.now();
   rest.endsAt = rest.now + seconds * 1000;
