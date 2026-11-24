@@ -350,6 +350,70 @@ test('a Skipped exercise reopens by logging a set, or by Undo skip; logged sets 
   assert.deepEqual(errors, []);
 });
 
+// ---------- Swap sheet: no duplicates, All exercises ----------
+
+const sheetNames = (page) => page.getByRole('dialog').locator('.option-name').allInnerTexts();
+
+test('the swap sheet lists each exercise once, in its highest section', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`); // Single-Arm Cable Row is a substitution AND same muscle
+  await visible(page).getByRole('button', { name: 'Swap' }).click();
+  await page.getByRole('dialog').waitFor();
+  const names = await sheetNames(page);
+  assert.equal(names.filter((n) => n === 'Single-Arm Cable Row').length, 1);
+  assert.equal(new Set(names).size, names.length, 'no name twice');
+  // Kept in the highest section: under Your substitutions, before Same muscle.
+  const text = (await page.getByRole('dialog').innerText()).toLowerCase();
+  const at = text.indexOf('single-arm cable row');
+  assert.ok(text.indexOf('your substitutions') < at && at < text.indexOf('same muscle'));
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('All exercises: regions collapsed, search opens matches, excluded stay hidden, nothing listed twice', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Swap' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('button', { name: /^Core/ }).waitFor();
+  assert.equal(await sheet.getByRole('button', { name: /^Core/ }).getAttribute('aria-expanded'), 'false');
+  await sheet.getByRole('button', { name: /^Core/ }).click();
+  assert.match(await sheet.innerText(), /Dead Bug/);
+  const names = await sheetNames(page);
+  assert.equal(new Set(names).size, names.length, 'no name twice across all sections');
+  assert.ok(!names.includes('Seated Cable Row'), 'not the exercise being swapped out');
+  for (const hidden of ['upright', 'behind']) {
+    await sheet.getByRole('searchbox', { name: 'Search all exercises' }).fill(hidden);
+    assert.match(await sheet.innerText(), /No exercise matches/);
+  }
+  await sheet.getByRole('searchbox', { name: 'Search all exercises' }).fill('pallof');
+  assert.deepEqual(await sheet.locator('section .option-name').allInnerTexts(), ['Pallof Press']);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('picking from All exercises swaps it in for today, logs under it, and survives a reload offline', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Swap' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('searchbox', { name: 'Search all exercises' }).fill('pushdown');
+  await sheet.getByRole('button', { name: /Rope Pushdown/ }).click();
+  await sheet.waitFor({ state: 'detached' });
+  const p = visible(page);
+  assert.match(await p.locator('h1').innerText(), /Rope Pushdown/);
+  await p.getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await page.reload();
+  await page.waitForSelector('.pager-count');
+  assert.match(await visible(page).locator('h1').innerText(), /Rope Pushdown/);
+  await page.getByRole('link', { name: 'Today' }).click();
+  const row = page.locator('.hr-exrow', { hasText: 'Rope Pushdown' });
+  assert.match(await row.innerText(), /Swapped from Seated Cable Row/);
+  assert.match(await row.innerText(), /1 of 3 sets/);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Today's set count: + Add set / Remove set (all offline) ----------
 
 test('+ Add set adds a prefilled set for today: one tap to add, one tap to log', async () => {

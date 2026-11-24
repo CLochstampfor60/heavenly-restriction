@@ -11,6 +11,15 @@ change how things work.
 - Skip on every exercise page: one tap marks the exercise Skipped for today, with no dialog. It
   is not a Stop: it records no stop event and nothing in the exercise's history, and sets already
   logged stay. Undo skip, or logging a set, opens it again. Today's row says "Skipped".
+- The swap sheet has an "All exercises" section below your substitutions and same-muscle options:
+  the whole library by body region (tap a region to open it), with a search field. Picking one
+  swaps it in for today like any other swap. It works with no signal once the app has loaded
+  the library.
+
+### Fixed
+- The swap sheet listed an exercise twice when it was both a substitution and a same-muscle
+  option. Each exercise now appears once, in the highest section it belongs to; excluded
+  exercises stay hidden.
 
 ## [0.5.1] - 2026-11-23
 

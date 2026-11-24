@@ -6,6 +6,7 @@ import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
 import {
   canRemoveSet,
+  dedupeSwapGroups,
   firstUnfinished,
   fitSets,
   isLogged,
@@ -19,7 +20,17 @@ import {
 } from '../logic.js';
 import { e1rm, isPr } from '../prs.js';
 import { prefs } from './prefs.svelte.js';
-import { BLOCKS, CATALOG, HISTORY, loadSource, PROGRAM, source } from './source.svelte.js';
+import {
+  BLOCKS,
+  CATALOG,
+  catalogFromLibrary,
+  ensureExercise,
+  HISTORY,
+  loadLibrary,
+  loadSource,
+  PROGRAM,
+  source,
+} from './source.svelte.js';
 import { enqueue, onResult, startSync, syncNow } from './sync.svelte.js';
 
 export { e1rm };
@@ -295,6 +306,9 @@ export async function loadToday() {
     warn(error);
     if (source.demo) applyDemoSeed();
   }
+  await fillMissingExercises();
+  // The full library, cached for the swap sheet's "All exercises" (so it works with no signal).
+  if (!source.demo) loadLibrary(lastText).catch(() => {});
   // From here on, every change to session-level state is written through.
   let sent = JSON.stringify(serverState());
   $effect.root(() => {
@@ -457,6 +471,8 @@ function stoppedToday(exerciseId) {
 }
 
 // Ranked substitutions first (plus the either/or option), then other exercises for the muscle.
+// Each exercise appears once, in the highest section it belongs to; excluded ones never.
+// "All exercises" (the swap sheet) lists the rest of the library below these.
 export function swapGroups(slot) {
   const planned = CATALOG[slot.exerciseId];
   const current = exerciseFor(slot).id;
@@ -467,9 +483,34 @@ export function swapGroups(slot) {
     { label: 'Same muscle', ids: planned.same ?? [] },
   ];
   if (current !== planned.id) groups.unshift({ label: 'In the program', ids: [planned.id] });
-  return groups
-    .map((g) => ({ label: g.label, options: g.ids.filter((id) => id !== current && CATALOG[id]).map(option) }))
-    .filter((g) => g.options.length);
+  return dedupeSwapGroups(groups, current, (id) => CATALOG[id]).map((g) => ({ label: g.label, options: g.ids.map(option) }));
+}
+
+// "All exercises" in the swap sheet: swaps in any library exercise for today, exactly like the
+// other sections (sets log under the exercise actually done). An exercise today's program does
+// not carry is added to the catalog from its library row, then completed in the background.
+export function pickFromLibrary(row) {
+  CATALOG[row.id] ??= catalogFromLibrary(row);
+  pickSwap(row.id);
+  if (!source.demo) ensureExercise(row.id).catch(() => {});
+}
+
+// Exercises the session uses but the catalog lacks: picked from the library, then reloaded with
+// no signal (the cached program predates the pick). Filled from the cached library; failing
+// that, a placeholder, so the page still opens and its logged sets still show.
+async function fillMissingExercises() {
+  const missing = Object.values(day.slots)
+    .flatMap((s) => [s.swappedTo, s.doneAs])
+    .filter((id) => id != null && !CATALOG[id]);
+  if (!missing.length) return;
+  try {
+    for (const row of await loadLibrary(lastText)) {
+      if (missing.some((id) => String(id) === String(row.id))) CATALOG[row.id] ??= catalogFromLibrary(row);
+    }
+  } catch {
+    // no cached library either
+  }
+  for (const id of missing) CATALOG[id] ??= catalogFromLibrary({ id, name: 'Exercise not loaded yet', regionName: 'Other' });
 }
 
 // ---------- Pager ----------

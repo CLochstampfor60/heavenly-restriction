@@ -14,6 +14,8 @@ import {
   outboxDisposition,
   pageList,
   canRemoveSet,
+  dedupeSwapGroups,
+  libraryRegions,
   fitSets,
   MIN_SETS,
   placeholderFor,
@@ -268,4 +270,32 @@ test('Undo stop: the stopped set and the skipped ones after it are to do again',
   assert.deepEqual(unstopSets([{ status: 'stopped' }, { status: 'skipped' }], 2).map((s) => s.status), ['todo', 'todo']);
   // A stop on an extra set: the extra row goes away.
   assert.deepEqual(unstopSets(S('done', 'done', 'stopped'), 2).map((s) => s.status), ['done', 'done']);
+});
+
+test('swap sheet: each exercise once, in its highest section; the current and excluded ones never', () => {
+  const lib = { 1: {}, 2: {}, 3: {}, 4: { excluded: { kind: 'goal' } }, 5: {} };
+  const known = (id) => lib[id];
+  const groups = [
+    { label: 'Your substitutions', ids: [2, 3] },
+    { label: 'Same muscle', ids: [3, 4, 1, 5, 9] }, // 3 is a substitution already (the Side Plank case)
+  ];
+  assert.deepEqual(dedupeSwapGroups(groups, 1, known), [
+    { label: 'Your substitutions', ids: [2, 3] },
+    { label: 'Same muscle', ids: [5] },
+  ]);
+  assert.deepEqual(dedupeSwapGroups([{ label: 'Same muscle', ids: [1] }], 1, known), []); // empty sections go
+});
+
+test('All exercises: by region, minus listed and excluded, every search word must match', () => {
+  const rows = [
+    { id: 1, name: 'Side Plank', regionName: 'Core' },
+    { id: 2, name: 'Dead Bug', regionName: 'Core' },
+    { id: 3, name: 'Machine Row', regionName: 'Back' },
+    { id: 4, name: 'Upright Row', regionName: 'Shoulders', excluded: { kind: 'joint' } },
+    { id: 5, name: 'Cable Row', regionName: 'Back' },
+  ];
+  const all = libraryRegions(rows, new Set(['1']));
+  assert.deepEqual(all.map((r) => [r.name, r.rows.map((x) => x.id)]), [['Back', [5, 3]], ['Core', [2]]]);
+  assert.deepEqual(libraryRegions(rows, new Set(), 'row ca').map((r) => r.rows.map((x) => x.id)), [[5]]);
+  assert.deepEqual(libraryRegions(rows, new Set(), 'upright'), []); // excluded stays hidden
 });

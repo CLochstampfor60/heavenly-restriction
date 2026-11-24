@@ -173,6 +173,25 @@ export async function ensureExercise(id) {
   return CATALOG[id];
 }
 
+// A catalog entry built from a library row, for an exercise picked from "All exercises" in the
+// swap sheet that today's program does not carry. ensureExercise fills in the rest when online.
+export function catalogFromLibrary(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    region: `${row.regionName ?? 'Other'} › ${row.muscle ?? 'Other'}`,
+    equip: row.equip ?? 'Not set',
+    assisted: !!row.assisted,
+    measure: row.measure ?? 'reps',
+    perSide: !!row.perSide,
+    routine: false,
+    pinned: [],
+    last: row.last ?? [],
+    subs: [],
+    same: [],
+  };
+}
+
 // Library rows: { id, name, regionName, muscle, equip, lastText, programDay, hasVideo,
 //                 excluded, sub, grade }
 export async function loadLibrary(lastText) {

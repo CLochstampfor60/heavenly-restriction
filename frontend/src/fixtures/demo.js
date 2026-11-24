@@ -27,7 +27,7 @@ const exercises = {
     name: 'Seated Cable Row', region: 'Back › Mid-back', equip: 'Cable', also: 'biceps, rear delts', grade: 'Grade 2',
     pinned: [{ kind: 'cue', text: 'Sit tall, ribs down. Squeeze for a one-count at the end of each rep.' }],
     last: [{ w: 120, r: 12 }, { w: 120, r: 11 }, { w: 120, r: 10 }],
-    subs: ['chestRow', 'oneArmRow'], same: ['machineRow'],
+    subs: ['chestRow', 'oneArmRow'], same: ['machineRow', 'oneArmRow'], // listed twice on purpose: the sheet shows it once
   },
   chestRow: {
     name: 'Chest-Supported Row', region: 'Back › Mid-back', equip: 'Dumbbells', grade: 'Grade 3',

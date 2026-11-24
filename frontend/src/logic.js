@@ -233,3 +233,44 @@ export function lastUsedText(iso, now = new Date()) {
   if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
   return `Last used ${d.toLocaleDateString('en-US', opts)}`;
 }
+
+// ---------- Swap sheet ----------
+
+// Sections in order (highest first). An exercise is listed once, in the first section it belongs
+// to; the exercise being swapped out, excluded ones and unknown ones are never listed.
+// groups: [{ label, ids }]; known(id) -> the exercise or undefined.
+export function dedupeSwapGroups(groups, current, known) {
+  const seen = new Set([String(current)]);
+  const out = [];
+  for (const g of groups) {
+    const ids = [];
+    for (const id of g.ids) {
+      const key = String(id);
+      const ex = known(id);
+      if (seen.has(key) || !ex || ex.excluded) continue;
+      seen.add(key);
+      ids.push(id);
+    }
+    if (ids.length) out.push({ label: g.label, ids });
+  }
+  return out;
+}
+
+// "All exercises": the library minus excluded ones and anything already listed, matched by every
+// word of the query (case-insensitive), grouped by region in name order.
+// rows: [{ id, name, regionName, excluded }]; listed: Set of ids as strings.
+export function libraryRegions(rows, listed, query = '') {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const byRegion = new Map();
+  for (const r of rows) {
+    if (r.excluded || listed.has(String(r.id))) continue;
+    const name = r.name.toLowerCase();
+    if (!words.every((w) => name.includes(w))) continue;
+    const region = r.regionName || 'Other';
+    if (!byRegion.has(region)) byRegion.set(region, []);
+    byRegion.get(region).push(r);
+  }
+  return [...byRegion.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, list]) => ({ name, rows: list.sort((a, b) => a.name.localeCompare(b.name)) }));
+}
