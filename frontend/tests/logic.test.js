@@ -13,6 +13,9 @@ import {
   openAtFinish,
   outboxDisposition,
   pageList,
+  canRemoveSet,
+  fitSets,
+  MIN_SETS,
   placeholderFor,
   queueCounts,
   readyToLog,
@@ -52,6 +55,32 @@ test('last session wins, by set number, last row repeated', () => {
   const last = [{ w: 100, r: 10 }, { w: 105, r: 9 }];
   assert.deepEqual(placeholderFor(last, 1, { w: 1, r: 1 }, 6), { w: 105, r: 9 });
   assert.deepEqual(placeholderFor(last, 3, null, 6), { w: 105, r: 9 });
+});
+
+test('an added set past last time carries the set just before it today', () => {
+  const last = [{ w: 100, r: 10 }, { w: 105, r: 9 }];
+  assert.deepEqual(placeholderFor(last, 2, { w: 110, r: 8, s: null }, 6), { w: 110, r: 8, s: null });
+  assert.deepEqual(placeholderFor(last, 1, { w: 110, r: 8, s: null }, 6), { w: 105, r: 9 }); // same set number wins
+});
+
+const D = { status: 'done', w: 50, r: 10 };
+const T = { status: 'todo' };
+
+test('a set row can be removed only when unrecorded, nothing recorded after it, and one stays', () => {
+  assert.equal(canRemoveSet([D, T, T], 1), true);
+  assert.equal(canRemoveSet([D, T, T], 0), false); // logged: use undo
+  assert.equal(canRemoveSet([T, D], 0), false); // a logged set after it would be renumbered
+  assert.equal(canRemoveSet([{ status: 'stopped' }, T], 0), false);
+  assert.equal(canRemoveSet([{ status: 'skipped' }, T], 1), true);
+  assert.equal(canRemoveSet([T], 0), false);
+  assert.equal(MIN_SETS, 1);
+});
+
+test("fitSets pads to today's count and drops only unrecorded rows past it", () => {
+  assert.deepEqual(fitSets([D, T, T], 4), [D, T, T, T]);
+  assert.deepEqual(fitSets([D, T, T], 2), [D, T]);
+  assert.deepEqual(fitSets([D, D, D], 2), [D, D, D]); // logged extras stay
+  assert.deepEqual(fitSets([D, T, T], 3), [D, T, T]);
 });
 
 test('queue counts split logged sets from other changes', () => {

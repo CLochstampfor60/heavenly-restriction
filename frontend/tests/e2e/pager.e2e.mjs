@@ -288,6 +288,101 @@ test('a Swapped exercise logs under the exercise actually done', async () => {
   assert.deepEqual(errors, []);
 });
 
+// ---------- Today's set count: + Add set / Remove set (all offline) ----------
+
+const setsText = (p) => p.locator('.page-status .hr-num').innerText();
+
+test('+ Add set adds a prefilled set for today: one tap to add, one tap to log', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  const p = visible(page);
+  for (const k of [1, 2, 3]) await p.getByRole('button', { name: `Log set ${k}`, exact: true }).click();
+  await p.locator('.hr-chip--done').waitFor();
+  const add = p.getByRole('button', { name: 'Add set' });
+  const box = await add.boundingBox();
+  const row = await p.locator('.hr-set').first().boundingBox();
+  assert.ok(box.height >= 44 && Math.abs(box.width - row.width) < 2, '44 px tall, full width');
+  await add.click();
+  assert.equal(await setsText(p), '3 of 4 sets');
+  assert.equal(await p.locator('.hr-chip--done').count(), 0); // open again until it is logged
+  // Prefilled from the set before it: the one-tap Log is ready, not "Enter weight".
+  const log = p.getByRole('button', { name: 'Log set 4', exact: true });
+  const set3 = await p.locator('.hr-set').nth(2).locator('.hr-set__v').first().innerText();
+  assert.equal(await p.locator('.hr-set').nth(3).locator('.hr-set__v').first().innerText(), set3);
+  await log.click();
+  assert.equal(await setsText(p), '4 of 4 sets');
+  await p.locator('.hr-chip--done').waitFor();
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('Remove set N takes an unlogged set off today; logged sets have no remove; one set always stays', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s3`);
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Log set 1', exact: true }).click();
+  assert.equal(await p.getByRole('button', { name: 'Remove set 1' }).count(), 0); // logged: use undo
+  await p.getByRole('button', { name: 'Remove set 3' }).click();
+  assert.equal(await setsText(p), '1 of 2 sets');
+  assert.equal(await p.locator('.hr-set').count(), 2);
+  // Removing the last set still to do completes the exercise.
+  await p.getByRole('button', { name: 'Remove set 2' }).click();
+  assert.equal(await setsText(p), '1 of 1 sets');
+  await p.locator('.hr-chip--done').waitFor();
+  // Undo the logged set: one unlogged set is left, and it cannot be removed.
+  await p.getByRole('button', { name: /^Set 1 done, tap to undo/ }).click();
+  assert.equal(await p.locator('.hr-set').count(), 1);
+  assert.equal(await p.getByRole('button', { name: /^Remove set/ }).count(), 0);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test("today's set count shows on Today and the jump sheet, and survives a reload offline", async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s2`); // two of four sets logged in the demo
+  const p = visible(page);
+  await p.getByRole('button', { name: 'Remove set 4' }).click();
+  await p.getByRole('button', { name: 'Remove set 3' }).click();
+  await p.locator('.hr-chip--done').waitFor();
+  await page.goto(`${BASE}/#/log/s5`);
+  await visible(page).getByRole('button', { name: 'Add set' }).click();
+  await page.reload(); // offline: from this device's copy
+  await page.waitForSelector('.pager-count');
+  assert.equal(await setsText(visible(page)), '0 of 4 sets');
+  await page.getByRole('button', { name: /Show all exercises/ }).click();
+  assert.match(await page.getByRole('dialog').innerText(), /0 of 4 sets|Not started/);
+  await page.getByRole('link', { name: 'Today' }).click();
+  const row = page.locator('.hr-exrow', { hasText: 'Lat Pulldown' });
+  assert.match(await row.innerText(), /2 of 2 sets/);
+  await row.locator('.exrow-open').click();
+  await visible(page).locator('.hr-chip--done').waitFor();
+  assert.equal(await page.locator('.pager-page:not([inert]) .hr-set').count(), 2);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test("Finish workout uses today's count: an added set reopens a Done exercise, removed sets complete one", async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/log/s1`); // all four sets logged in the demo
+  const p = visible(page);
+  await p.locator('.hr-chip--done').waitFor();
+  await p.getByRole('button', { name: 'Add set' }).click();
+  assert.equal(await setsText(p), '4 of 5 sets');
+  await p.getByRole('button', { name: 'Log set 5', exact: true }).waitFor(); // a planned set, not "extra"
+  await page.goto(`${BASE}/#/log/s2`); // two of four logged
+  await visible(page).getByRole('button', { name: 'Remove set 4' }).click();
+  await visible(page).getByRole('button', { name: 'Remove set 3' }).click();
+  await page.getByRole('link', { name: 'Today' }).click();
+  const pull = (await page.locator('.hr-exrow').first().innerText()).split('\n')[0];
+  assert.match(await page.locator('.hr-exrow').first().innerText(), /4 of 5 sets/);
+  await page.getByRole('button', { name: 'Finish workout' }).click();
+  const sheet = await page.getByRole('dialog').innerText();
+  assert.ok(sheet.includes(pull), `${pull} is started and not done`);
+  assert.doesNotMatch(sheet, /Lat Pulldown/); // done by its two remaining sets
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Rest timer: Settings choice, Default rest, today's toggle (all offline) ----------
 
 const timerShown = (page) => page.locator('.hr-timer, [role="timer"]').count();

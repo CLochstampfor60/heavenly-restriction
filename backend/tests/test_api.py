@@ -167,6 +167,28 @@ def test_rest_timer_toggle_is_for_this_session_only(client) -> None:
     assert client.put(f"/api/sessions/{MON}", json={"rest_timer": "maybe"}).status_code == 422
 
 
+def test_todays_set_count_is_saved_per_session_and_leaves_the_program_alone(client) -> None:
+    data = plan(client)
+    key = data["slots"][0]["key"]
+    program_sets = data["slots"][0]["sets_max"]
+
+    def planned(on=MON, **slot):
+        body = {"slots": {key: {"status": "active", **slot}}}
+        return client.put(f"/api/sessions/{on}", json=body).json()["slots"][key]["planned_sets"]
+
+    assert planned() is None  # the program's count
+    assert planned(planned_sets=5) == 5
+    assert planned() == 5  # an older app copy leaves it out: unchanged
+    assert plan(client)["session"]["slots"][key]["planned_sets"] == 5
+    assert plan(client)["slots"][0]["sets_max"] == program_sets  # the program is unchanged
+    wed = client.put(f"/api/sessions/{WED}", json={}).json()["slots"]
+    assert all(s["planned_sets"] is None for s in wed.values())  # another day
+    for bad in (0, 31, "many"):
+        body = {"slots": {key: {"status": "active", "planned_sets": bad}}}
+        assert client.put(f"/api/sessions/{MON}", json=body).status_code == 422
+    assert planned(planned_sets=None) is None  # back to the program's
+
+
 def test_slots_carry_the_programs_rest(client) -> None:
     assert all("rest_s" in s for s in plan(client)["slots"])
 

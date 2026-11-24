@@ -22,6 +22,7 @@
     openSwap,
     planText,
     requiredIds,
+    plannedSets,
     slotNote,
     toggleGear,
     undoStop,
@@ -205,7 +206,7 @@
                 <span class="hr-exrow__name">{ex.name}</span>
                 {#if !checklist}<span class="hr-tag exrow-tag">{ex.region}</span>{/if}
                 <span class="hr-exrow__meta">
-                  {slot.plan.optional ? 'Optional · ' : ''}{planText(slot)}{#if !checklist}{' · '}{sets ? `${sets} of ${slot.plan.sets} sets` : lastText(ex)}{/if}
+                  {slot.plan.optional ? 'Optional · ' : ''}{planText(slot)}{#if !checklist}{' · '}{sets ? `${sets} of ${plannedSets(slot)} sets` : lastText(ex)}{/if}
                 </span>
                 {#if note}
                   <span class={note.kind === 'info' ? 'hr-exrow__note' : 'hr-exrow__meta'}>{note.text}</span>

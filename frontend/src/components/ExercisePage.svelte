@@ -7,7 +7,9 @@
   import Stepper from './Stepper.svelte';
   import { readyToLog } from '../logic.js';
   import {
+    addSet,
     blockLabel,
+    canRemoveSet,
     clock,
     day,
     exerciseFor,
@@ -18,7 +20,9 @@
     measureFor,
     openSwap,
     planText,
+    plannedSets,
     priorFor,
+    removeSet,
     rest,
     restFor,
     restMode,
@@ -51,7 +55,8 @@
     const k = slot.sets.findIndex((s) => s.status === 'todo' || s.status === 'skipped');
     return k === -1 ? slot.sets.length : k;
   });
-  const extra = $derived(active >= slot.plan.sets);
+  const planned = $derived(plannedSets(slot));
+  const extra = $derived(active >= planned);
   const lastLogged = $derived(slot.sets.findLastIndex((s) => s.status === 'done' || s.status === 'pr'));
   const prior = $derived(priorFor(ex, active, slot));
   const m = $derived(measureFor(slot));
@@ -61,7 +66,7 @@
   const nUnit = $derived(`${timed ? 's' : 'reps'}${side}`);
   const logged = $derived(loggedCount(slot));
   const canFinish = $derived(
-    slot.status === 'active' && logged >= slot.plan.setsMin && logged > 0 && logged < slot.plan.sets,
+    slot.status === 'active' && logged >= slot.plan.setsMin && logged > 0 && logged < planned,
   );
   const isPlanned = $derived(ex.id === slot.exerciseId || ex.id === slot.plan.alt);
   // The program's cue for this slot (and any load cap) when doing the planned exercise.
@@ -146,7 +151,7 @@
       {:else if slot.status === 'skipped'}
         <span class="hr-chip"><Icon name="skip" />Skipped</span>
       {/if}
-      <span class="small muted hr-num">{logged} of {slot.plan.sets} sets</span>
+      <span class="small muted hr-num">{logged} of {planned} sets</span>
       {#if !slot.doneAs}
         <button class="hr-btn hr-btn--secondary hr-btn--compact exh-action" onclick={() => openSwap(slotId)}>
           <Icon name="swap" />Swap
@@ -188,9 +193,11 @@
       {@const p = priorFor(ex, k, slot)}
       {@const pN = (timed ? p.s : p.r) ?? slot.plan.target.min}
       {@const isLog = set.status === 'done' || set.status === 'pr'}
+      {@const removable = slot.plan.loggable && canRemoveSet(slot.sets, k)}
       <div
         role="listitem"
         class="hr-set"
+        class:set-removable={removable}
         class:hr-set--active={isActive}
         class:hr-set--done={set.status === 'done'}
         class:hr-set--pr={set.status === 'pr'}
@@ -202,6 +209,12 @@
             <span role="img" aria-label="Stopped"><Icon name="stop" /></span>
           {:else}{k + 1}{/if}
         </span>
+        {#if removable}
+          <!-- Today only; left of the values, away from the one-tap Log check. -->
+          <button class="hr-icon-btn set-remove" aria-label="Remove set {k + 1}" onclick={() => removeSet(slotId, k)}>
+            <span class="set-remove__dot"><Icon name="minus" /></span>
+          </button>
+        {/if}
         {#if todo}
           <span class="hr-set__v hr-set__v--faded">{fmt(p.w)}<small>{wUnit}</small></span>
           <span class="hr-set__v hr-set__v--faded">{fmt(pN)}<small>{nUnit}</small></span>
@@ -245,6 +258,12 @@
       </div>
     {/each}
   </div>
+  {#if slot.plan.loggable}
+    <!-- Today only: the program is unchanged. The new set is prefilled like any other. -->
+    <button class="hr-btn hr-btn--secondary hr-btn--compact add-set" onclick={() => addSet(slotId)}>
+      <Icon name="plus" />Add set
+    </button>
+  {/if}
 </div>
 
 <div class="app__bar app__bar--log">

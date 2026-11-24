@@ -1,11 +1,13 @@
 // Pure set-logging rules, kept free of Svelte so `npm test` (node --test) can check them.
 
 // What a set row offers before you touch it: last session's values for the same set number;
-// on the first ever log, the set just logged today in this slot; failing both, no weight at
-// all (it must be entered) and the low end of the plan's range for reps or seconds.
+// for a set number last time did not reach (an added or extra set) or on the first ever log,
+// the set just logged before it today in this slot, else last time's final set; failing all,
+// no weight at all (it must be entered) and the low end of the plan's range for reps or seconds.
 export function placeholderFor(last, k, earlier, targetMin) {
-  if (last?.length) return last[Math.min(k, last.length - 1)];
+  if (last?.length && k < last.length) return last[k];
   if (earlier) return { w: earlier.w, r: earlier.r, s: earlier.s };
+  if (last?.length) return last[last.length - 1];
   return { w: null, r: targetMin ?? null, s: targetMin ?? null };
 }
 
@@ -48,6 +50,28 @@ export function unstopSets(sets, planned) {
 }
 
 // An exercise is Done once no planned set is left to do; extra sets after that keep it Done.
+// ---------- Today's set count: "+ Add set" and "Remove set" ----------
+
+export const MIN_SETS = 1;
+const RECORDED = ['done', 'pr', 'stopped'];
+
+// A set row can be removed when nothing is recorded on it (to do, or skipped), nothing recorded
+// comes after it (so no logged set changes its number), and at least MIN_SETS rows stay.
+export function canRemoveSet(sets, k) {
+  if (sets.length <= MIN_SETS) return false;
+  if (RECORDED.includes(sets[k]?.status)) return false;
+  return !sets.slice(k + 1).some((s) => RECORDED.includes(s.status));
+}
+
+// The set rows for today's planned count: to-do rows added up to it, and unrecorded rows past it
+// dropped (recorded rows always stay, as extra sets).
+export function fitSets(sets, planned) {
+  const out = [...sets];
+  while (out.length > planned && !RECORDED.includes(out[out.length - 1].status)) out.pop();
+  while (out.length < planned) out.push({ status: 'todo' });
+  return out;
+}
+
 export function statusAfterLog(sets) {
   return sets.some((s) => s.status === 'todo') ? 'active' : 'done';
 }

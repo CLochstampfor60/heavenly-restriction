@@ -314,6 +314,8 @@ class SessionSlot(Base):
     swapped_to_id: Mapped[int | None] = mapped_column(ForeignKey("exercise.id"))
     done_as_id: Mapped[int | None] = mapped_column(ForeignKey("exercise.id"))
     later: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Sets planned for today after "+ Add set" / "Remove set"; None = the program's count.
+    planned_sets: Mapped[int | None] = mapped_column(Integer)
 
     session: Mapped[WorkoutSession] = relationship(back_populates="slots")
 

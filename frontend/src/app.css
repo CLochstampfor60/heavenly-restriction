@@ -88,6 +88,13 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .exh-action { padding: 0 var(--space-3); }
 /* The pager's today-only rest timer toggle sits at the end of the plan line. */
 .rest-toggle { margin-left: auto; }
+/* Today's set count: "+ Add set" under the rows, and a remove button on rows that can go. */
+.add-set { width: 100%; }
+.hr-set.set-removable { grid-template-columns: 32px var(--tap-min) 1fr 1fr var(--tap-row); }
+.set-remove { color: var(--text-2); }
+/* A small outlined circle inside the 44 px target, so it reads as a control, not as a dash. */
+.set-remove__dot { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 1px solid var(--border-strong); }
+.set-remove__dot .hr-icon { width: 16px; height: 16px; }
 .note-toggle { grid-template-columns: var(--icon) 1fr auto; align-items: center; color: var(--text); text-align: left; font-size: 14px; line-height: 20px; cursor: pointer; }
 .note-toggle b { font-weight: 600; }
 .note-text--clamped { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

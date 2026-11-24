@@ -5,7 +5,9 @@ import { tick } from 'svelte';
 import { db, dateKey } from '../db.js';
 import { DEMO_SESSION, GEAR } from '../fixtures/demo.js';
 import {
+  canRemoveSet,
   firstUnfinished,
+  fitSets,
   isLogged,
   nextSetIndex,
   openAtFinish,
@@ -43,6 +45,8 @@ function blankDay() {
       // The exercise actually done; fixed once the first set is logged.
       doneAs: null,
       later: false,
+      // Today's planned set count after "+ Add set" / "Remove set"; null = the program's.
+      planned: null,
       sets: Array.from({ length: p.loggable ? p.sets : 0 }, () => ({ status: 'todo' })),
     };
   }
@@ -99,7 +103,7 @@ function sessionRow() {
     slots: Object.fromEntries(
       Object.values(day.slots).map((s) => [
         s.id,
-        { status: s.status, swappedTo: s.swappedTo, doneAs: s.doneAs, later: s.later },
+        { status: s.status, swappedTo: s.swappedTo, doneAs: s.doneAs, later: s.later, planned: s.planned },
       ]),
     ),
     rest: { running: rest.running, endsAt: rest.endsAt, total: rest.total },
@@ -117,7 +121,7 @@ function serverState() {
     slots: Object.fromEntries(
       Object.values(day.slots).map((s) => [
         s.id,
-        { status: s.status, swapped_to: s.swappedTo, done_as: s.doneAs, later: s.later },
+        { status: s.status, swapped_to: s.swappedTo, done_as: s.doneAs, later: s.later, planned_sets: s.planned },
       ]),
     ),
   };
@@ -196,7 +200,11 @@ function restore(session, sets, stops) {
       slot.sets[row.set] = { w: row.w, status: 'stopped', symptom: row.symptom, note: row.note };
     }
   }
-  // Sets left to do on an ended exercise show as skipped, as they did before the reload.
+  // Today's set count (added or removed sets), then: sets left to do on an ended exercise show
+  // as skipped, as they did before the reload.
+  for (const slot of Object.values(day.slots)) {
+    if (slot.planned != null) slot.sets = fitSets(slot.sets, slot.planned);
+  }
   for (const slot of Object.values(day.slots)) {
     if (ENDED.includes(slot.status)) {
       slot.sets = slot.sets.map((set) => (set.status === 'todo' ? { status: 'skipped' } : set));
@@ -212,7 +220,13 @@ function restore(session, sets, stops) {
 function fromServer(s) {
   const slots = {};
   for (const [key, v] of Object.entries(s.slots)) {
-    slots[key] = { status: v.status, swappedTo: v.swapped_to, doneAs: v.done_as, later: v.later };
+    slots[key] = {
+      status: v.status,
+      swappedTo: v.swapped_to,
+      doneAs: v.done_as,
+      later: v.later,
+      planned: v.planned_sets ?? null,
+    };
   }
   const sets = s.sets.map((x) => ({
     id: x.client_id,
@@ -602,7 +616,7 @@ export function logSet(slotId, { w, r, s, rir }) {
 // back to to-do.
 export function undoSet(slotId, k) {
   const slot = day.slots[slotId];
-  if (k >= slot.plan.sets && k === slot.sets.length - 1) slot.sets.splice(k, 1);
+  if (k >= plannedSets(slot) && k === slot.sets.length - 1) slot.sets.splice(k, 1);
   else slot.sets[k] = { status: 'todo' };
   db.sets.delete(setId(slotId, k)).catch(warn);
   enqueue({ kind: 'undo', method: 'DELETE', path: path(`/sets/${setId(slotId, k)}`) });
@@ -617,6 +631,38 @@ export function undoSet(slotId, k) {
   ui.banner = null;
   skipRest();
 }
+
+// ---------- Today's set count ----------
+
+// Sets planned for this exercise today: the program's count, or today's after Add / Remove set.
+export function plannedSets(slot) {
+  return slot.planned ?? slot.plan.sets;
+}
+
+// "+ Add set": one more planned set for today, at the end (after any extra sets, which then count
+// as planned). A Done exercise is open again until it is logged; nothing else changes until then.
+// The program is unchanged.
+export function addSet(slotId) {
+  const slot = day.slots[slotId];
+  slot.sets.push({ status: 'todo' });
+  slot.planned = slot.sets.length;
+  if (slot.status === 'done') slot.status = 'active';
+}
+
+// "Remove set N": drops an unrecorded planned set for today (see canRemoveSet: never a logged
+// or stopped one, and at least one set stays). Removing the last set still to do completes a
+// started exercise, as logging it would have.
+export function removeSet(slotId, k) {
+  const slot = day.slots[slotId];
+  if (!canRemoveSet(slot.sets, k)) return;
+  const planned = plannedSets(slot);
+  slot.sets.splice(k, 1);
+  slot.planned = Math.max(1, k < planned ? planned - 1 : planned);
+  if (slot.status === 'active' || slot.status === 'done') slot.status = statusAfterLog(slot.sets);
+  else if (slot.status === 'todo' && slot.doneAs && !slot.sets.some((x) => x.status === 'todo')) slot.status = 'done';
+}
+
+export { canRemoveSet };
 
 // Ends an exercise with a set range early ("2–3 sets" after the second): the rest are skipped.
 export function finishSlot(slotId) {
@@ -674,7 +720,7 @@ export function stopSlot(slotId, { w, symptom, note }) {
 export function undoStop(slotId) {
   const slot = day.slots[slotId];
   const id = `${today}/${slotId}`;
-  slot.sets = unstopSets(slot.sets, slot.plan.sets);
+  slot.sets = unstopSets(slot.sets, plannedSets(slot));
   if (!loggedCount(slot)) slot.doneAs = null;
   slot.status = slot.doneAs ? statusAfterLog(slot.sets) : 'todo';
   day.finished = false;

@@ -10,6 +10,13 @@ change how things work.
 ## [0.5.0] - 2026-11-23
 
 ### Added
+- Add or remove sets on an exercise page, for today only. "+ Add set" under the last set adds a
+  planned set, already filled in like the others, so it is one tap to add and one to log. Each
+  set with nothing logged on it has a remove button ("Remove set N"); at least one set always
+  stays, and a logged set is taken back with undo as before. Today's progress ("2 of 4 sets"),
+  Done, Finish workout and the exercise list follow the new count, which is saved with today's
+  session on the phone and the server (it works offline and survives a reload). The program
+  itself is unchanged. **Needs a database migration:** `server.ps1 migrate`.
 - Set logging is a pager: one page per exercise of today (warm-up, main lifts, core, forearm,
   cardio, cool-down) in Today's order. Swipe the page sideways, or use the small arrows, to move
   between exercises in any order; moving changes nothing. The "4 of 10" label opens a list of all
@@ -72,6 +79,8 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Changed
+- A set number last time did not reach (an added or extra set) is now filled in from the set
+  just before it today, instead of from last time's final set.
 - The rest length is the exercise's rest from the program when it has one, otherwise Default rest.
   Before, it was a fixed 90 s for main lifts and 60 s for core and forearm, whatever the program
   said; the imported program gives no rest times, so every exercise now rests for Default rest.

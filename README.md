@@ -1,7 +1,7 @@
 # heavenly-restriction
 A self-hosted workout tracker for training hard within injury limits. FastAPI + PWA, offline logging, passkey login, private by design.
 
-**Status:** early build. Program import, today's session, set logging (with a rest timer you set to off, after every set or after each exercise), the library, exercise cards, progress and passkey sign-in work on real data; program editing and media upload are not built yet.
+**Status:** early build. Program import, today's session, set logging (add or remove sets for today; a rest timer you set to off, after every set or after each exercise), the library, exercise cards, progress and passkey sign-in work on real data; program editing and media upload are not built yet.
 
 <table>
   <tr>

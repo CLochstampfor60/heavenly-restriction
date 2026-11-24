@@ -10,7 +10,7 @@
   import Sheet from '../components/Sheet.svelte';
   import { dragAxis, swipeMayStart, swipeTarget } from '../logic.js';
   import { replace } from '../router.svelte.js';
-  import { loggedCount, pageInfo, pages } from '../stores/workout.svelte.js';
+  import { loggedCount, pageInfo, pages, plannedSets } from '../stores/workout.svelte.js';
 
   let { id } = $props();
 
@@ -124,7 +124,7 @@
     if (info.status === 'skipped') return 'Skipped';
     if (info.slot && !info.item) {
       const n = loggedCount(info.slot);
-      return n ? `${n} of ${info.slot.plan.sets} sets` : 'Not started';
+      return n ? `${n} of ${plannedSets(info.slot)} sets` : 'Not started';
     }
     return 'Not ticked yet';
   }

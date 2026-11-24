@@ -260,6 +260,7 @@ def session_dict(db: Session, session: WorkoutSession) -> dict:
                 "swapped_to": s.swapped_to_id,
                 "done_as": s.done_as_id,
                 "later": s.later,
+                "planned_sets": s.planned_sets,  # today's set count, None = the program's
             }
             for s in session.slots
         },
@@ -372,6 +373,9 @@ class SlotState(BaseModel):
     swapped_to: int | None = None
     done_as: int | None = None
     later: bool = False
+    # Today's planned set count (Add set / Remove set); null = the program's. Left out (older
+    # app copies): unchanged.
+    planned_sets: int | None = Field(default=None, ge=1, le=30)
 
 
 class SessionState(BaseModel):
@@ -414,6 +418,8 @@ def put_session(date: Date, body: SessionState, db: DB) -> dict:
             state.done_as,
             state.later,
         )
+        if "planned_sets" in state.model_fields_set:
+            s.planned_sets = state.planned_sets
     if body.order and set(body.order) == set(by_key):
         for k, key in enumerate(body.order):
             by_key[key].position = k
