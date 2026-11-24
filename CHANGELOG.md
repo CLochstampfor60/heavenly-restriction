@@ -13,6 +13,8 @@ change how things work.
   start open; the rest start closed. Only lifts logged in the chosen period are listed.
 - Progress › Lift opens with one summary line for the period, in words: "3 PRs · 5 improving ·
   2 flat" (and "· 1 down" when a lift went backwards).
+- Tapping a lift on Progress › Lift opens that exercise's card, with its history chart. The
+  phone no longer remembers a chosen lift for the Lift tab.
 
 ### Removed
 - Progress › Lift no longer has the Pounds / % gain switch or its chart: it was crowded and the

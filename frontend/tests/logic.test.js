@@ -19,7 +19,6 @@ import {
   groupByRegion,
   openRegions,
   REGIONS,
-  chooseLifts,
   inPeriod,
   liftRow,
   sortLifts,
@@ -380,11 +379,6 @@ test('a Your lifts row: latest, first-to-last change, PR, last logged; a stop is
   assert.deepEqual(rows.map((r) => r.name), ['A', 'C', 'B']);
 });
 
-test('chart choice: the saved lifts that are still listed, else the most recent, at most max', () => {
-  assert.deepEqual(chooseLifts(['3', 9], ['1', '2', '3'], 5), ['3']);
-  assert.deepEqual(chooseLifts([9], ['1', '2', '3', '4', '5', '6'], 5), ['1', '2', '3', '4', '5']);
-  assert.deepEqual(chooseLifts(null, [7, 8], 1), ['7']);
-});
 
 test('Lift tab regions: Library order, Other for unknown ones; open the PR ones and the most recent', () => {
   const rows = [

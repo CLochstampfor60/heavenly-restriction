@@ -2,12 +2,12 @@
   // Progress › Lift: "Your lifts", every exercise logged in the period, grouped by body region
   // (the Library's regions and order), most recently logged first in each. Regions are collapsible
   // ("Back · 6"); the ones with a PR and the one with the most recent session start open. No chart
-  // here: each exercise's history chart is on its card.
+  // here: a row opens the exercise's card, where its history chart is.
   import Icon from './Icon.svelte';
   import { fmt1 } from './LineChart.svelte';
   import Sparkline from './Sparkline.svelte';
   import { dateKey } from '../db.js';
-  import { chooseLifts, groupByRegion, liftRow, liftSummary, openRegions, sortLifts } from '../logic.js';
+  import { groupByRegion, liftRow, liftSummary, openRegions, sortLifts } from '../logic.js';
   import { allLifts } from '../stores/lifts.svelte.js';
 
   let { api = null } = $props();
@@ -17,14 +17,8 @@
     { id: 'month', label: 'Month' },
     { id: 'year', label: 'Year' },
   ];
-  const store = (key, fallback) => {
-    try {
-      return JSON.parse(localStorage.getItem(key)) ?? fallback;
-    } catch {
-      return fallback;
-    }
-  };
-  const keep = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  // Choices kept by the earlier Lift chart (one lift, % gain lines, the view): no longer used.
+  for (const key of ['hr-lift-one', 'hr-lift-many', 'hr-lift-view']) localStorage.removeItem(key);
 
   const lifts = $derived(allLifts(api));
   const rowsFor = (range) =>
@@ -43,13 +37,6 @@
   let toggled = $state({}); // `${range}/${region}` -> open
   const isOpen = (name) => toggled[`${shownRange}/${name}`] ?? openRegions(rows).has(name);
 
-  let one = $state(store('hr-lift-one', null));
-  const chosen = $derived(chooseLifts(one ? [one] : [], rows.map((r) => r.id), 1)[0]);
-
-  function pick(id) {
-    one = id;
-    keep('hr-lift-one', id);
-  }
 
   const word = (delta, unit) => {
     if (delta == null) return '';
@@ -62,6 +49,7 @@
     if (r.assisted) parts.push('lower is better');
     parts.push(r.row.change == null ? 'one session' : `${word(r.row.change, r.unit).replace(/^[▲▼] /, '')} over the period`);
     if (r.row.pr) parts.push('new personal record');
+    parts.push('opens its card');
     return parts.join(', ');
   }
 </script>
@@ -92,7 +80,7 @@
           {#if open}
             <div class="stack-tight lift-list">
               {#each g.rows as r (r.id)}
-                <button class="lift-row" aria-pressed={r.id === chosen} aria-label={rowLabel(r)} onclick={() => pick(r.id)}>
+                <a class="lift-row" href="#/exercise/{r.id}" aria-label={rowLabel(r)}>
                   <span class="lift-row__text">
                     <span class="option-name">{r.name}</span>
                     <span class="meta hr-num">
@@ -107,7 +95,7 @@
                     values={r.row.points.map((p) => p.value)}
                     label="{r.name}: {r.row.points.length} session{r.row.points.length === 1 ? '' : 's'}, from {fmt1(r.row.first ?? 0)} to {fmt1(r.row.latest ?? 0)} {r.unit}"
                   />
-                </button>
+                </a>
               {/each}
             </div>
           {/if}

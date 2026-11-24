@@ -600,6 +600,20 @@ test('Lift tab: lifts grouped by region with counts; PR regions and the most rec
   assert.deepEqual(errors, []);
 });
 
+test('Lift tab: tapping a lift opens its card, where its history chart is', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  await page.locator('.lift-row', { hasText: 'Lat Pulldown' }).click();
+  assert.equal(await page.evaluate(() => location.hash), '#/exercise/lat');
+  assert.match(await page.locator('h1').first().innerText(), /Lat Pulldown/);
+  assert.equal(await page.locator('svg.hr-chart').count(), 1); // the history chart lives here
+  assert.equal(await page.evaluate(() => localStorage.getItem('hr-lift-one')), null); // no per-device choice
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Delete a logged set from history ----------
 
 test('delete a set from history: no dialog, an Undo toast brings it back', async () => {

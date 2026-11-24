@@ -422,12 +422,6 @@ export function sortLifts(rows) {
   return [...rows].sort((a, b) => (a.lastDate === b.lastDate ? a.name.localeCompare(b.name) : a.lastDate < b.lastDate ? 1 : -1));
 }
 
-// Which lifts a chart shows: the saved choice where still listed, else the defaults (the most
-// recently logged first), at most `max`.
-export function chooseLifts(saved, listedIds, max) {
-  const keep = (saved ?? []).map(String).filter((id) => listedIds.map(String).includes(id));
-  return (keep.length ? keep : listedIds.map(String)).slice(0, max);
-}
 
 // ---------- Body regions (the Library and Progress › Lift, same order) ----------
 
