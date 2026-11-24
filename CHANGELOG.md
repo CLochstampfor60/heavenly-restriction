@@ -7,6 +7,8 @@ change how things work.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-23
+
 ### Added
 - Progress › Lift lists "Your lifts": every exercise logged in the period, most recently logged
   first, each with its latest est. 1RM (or assistance, "lower is better"), the change over the
@@ -319,7 +321,8 @@ change how things work.
 - A FastAPI server that serves the app and its API from one origin, with secret scanning, linting
   and tests set up from the start.
 
-[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.4.1...v0.5.0

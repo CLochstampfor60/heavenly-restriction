@@ -1,7 +1,7 @@
 # heavenly-restriction
 A self-hosted workout tracker for training hard within injury limits. FastAPI + PWA, offline logging, passkey login, private by design.
 
-**Status:** early build. Program import, today's session, set logging (add or remove sets for today, Skip, swap in any library exercise, cardio logged as done, automatic workout timing, and a rest timer you set to off, after every set or after each exercise), the library, exercise cards, progress and passkey sign-in work on real data; program editing and media upload are not built yet.
+**Status:** early build. Program import, today's session, set logging (add or remove sets for today, Skip, swap in any library exercise, cardio logged as done, automatic workout timing, and a rest timer you set to off, after every set or after each exercise), the library, exercise cards (delete a set from history, with Undo), progress (a Lift tab listing every lift, in pounds or as a % gain comparison of up to five) and passkey sign-in work on real data; program editing and media upload are not built yet.
 
 <table>
   <tr>
@@ -16,7 +16,7 @@ A self-hosted workout tracker for training hard within injury limits. FastAPI + 
   </tr>
   <tr>
     <td align="center" width="33%"><a href="docs/screenshots/progress.webp"><img src="docs/screenshots/progress.webp" width="240" alt="Progress: 1 of 5 sessions this week, 150 of 345 cardio minutes, and the bodyweight chart"></a><br><b>Progress</b><br><sub>Sessions, cardio and bodyweight</sub></td>
-    <td align="center" width="33%"><a href="docs/screenshots/progress-chart.webp"><img src="docs/screenshots/progress-chart.webp" width="240" alt="Bodyweight chart for October with a dashed goal line at 185, and sets per muscle group this week"></a><br><b>Bodyweight and sets</b><br><sub>Goal line, sets per muscle group</sub></td>
+    <td align="center" width="33%"><a href="docs/screenshots/progress-chart.webp"><img src="docs/screenshots/progress-chart.webp" width="240" alt="Bodyweight chart for October: the latest weight as the headline, its change from first to last, a dashed goal line at 185, and sets per muscle group this week"></a><br><b>Bodyweight and sets</b><br><sub>Goal line, sets per muscle group</sub></td>
     <td align="center" width="33%"><a href="docs/screenshots/progress-calendar.webp"><img src="docs/screenshots/progress-calendar.webp" width="240" alt="November calendar with done, cardio and recovery days, the legend, and a recent personal record"></a><br><b>Calendar and records</b><br><sub>Done, cardio, recovery and PRs</sub></td>
   </tr>
 </table>
