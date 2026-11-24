@@ -614,6 +614,28 @@ test('Lift tab: tapping a lift opens its card, where its history chart is', asyn
   assert.deepEqual(errors, []);
 });
 
+test('Progress order: This week (tiles, then Sets per muscle group), Calendar, the measurement tabs, Records last', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/progress`);
+  const y = async (locator) => (await locator.first().boundingBox()).y;
+  const order = [
+    await y(page.locator('.week-cards')),
+    await y(page.locator('#muscles-h')),
+    await y(page.locator('#cal-h')),
+    await y(page.getByRole('tablist', { name: 'Measurement' })),
+    await y(page.locator('#records-h')),
+  ];
+  assert.deepEqual([...order].sort((a, b) => a - b), order, `top to bottom: ${order.join(', ')}`);
+  // Sets per muscle group sits directly under the tiles: nothing else between them.
+  const between = await page.evaluate(() => {
+    const tiles = document.querySelector('.week-cards');
+    return tiles.nextElementSibling?.querySelector('#muscles-h') ? 'muscles' : tiles.nextElementSibling?.outerHTML.slice(0, 60);
+  });
+  assert.equal(between, 'muscles');
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Delete a logged set from history ----------
 
 test('delete a set from history: no dialog, an Undo toast brings it back', async () => {

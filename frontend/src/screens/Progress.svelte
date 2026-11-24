@@ -329,6 +329,7 @@
     {/if}
   </header>
 
+  <!-- (1) This week: Sessions and Cardio, Sets per muscle group, Workout time -->
   <section class="week-cards" aria-label="This week">
     <div class="week-card">
       <span class="hr-eyebrow">Sessions</span>
@@ -357,6 +358,26 @@
     </div>
   </section>
 
+  <section class="stack" aria-labelledby="muscles-h">
+    <div class="section-head">
+      <h2 id="muscles-h" class="heading screen-title">Sets per muscle group</h2>
+      <span class="meta">This week</span>
+    </div>
+    {#each muscleSets as [name, sets] (name)}
+      <div class="muscle-row">
+        <span class="small muscle-row__name">{name}</span>
+        <span class="muscle-bar" role="img" aria-label="{name}: {sets} sets, target {SETS_TARGET}">
+          <span class="muscle-bar__fill" style:width="{Math.min(100, (sets / (SETS_TARGET * 2)) * 100)}%"></span>
+          <span class="muscle-bar__tick"></span>
+        </span>
+        <span class="muscle-row__n hr-num">{sets}</span>
+      </div>
+    {:else}
+      <p class="body muted hint">No sets logged this week yet.</p>
+    {/each}
+    <span class="meta eyebrow-icon"><span class="tick-key"></span>Target: at least {SETS_TARGET} sets</span>
+  </section>
+
   {#if weekTimes.length}
     <section class="stack-tight" aria-labelledby="time-h">
       <span id="time-h" class="hr-eyebrow">Workout time · this week</span>
@@ -368,6 +389,46 @@
     </section>
   {/if}
 
+  <!-- (2) Calendar -->
+  <section class="stack" aria-labelledby="cal-h">
+    <div class="section-head">
+      <h2 id="cal-h" class="heading screen-title">{monthName}</h2>
+      <span class="meta">{monthAttended} of {sessionDays.length} sessions</span>
+    </div>
+    <div class="hr-cal">
+      {#each WEEKDAYS as wd, k (k)}<span class="hr-eyebrow cal-head">{wd}</span>{/each}
+      {#each days as d, k (k)}
+        {#if d}
+          <span
+            class="hr-day"
+            class:hr-day--done={d.status === 'done'}
+            class:hr-day--partial={d.status === 'partial'}
+            class:hr-day--skip={d.status === 'skip'}
+            class:hr-day--stop={d.status === 'stop'}
+            class:hr-day--cardio={d.status === 'cardio'}
+            class:hr-day--rest={d.status === 'rest'}
+            class:hr-day--today={d.today}
+            role="img"
+            aria-label="{monthName} {d.n}{d.today ? ', today' : ''}{d.status ? `, ${STATUS[d.status].word}` : ''}{durations[d.key] ? `, workout time ${formatDuration(durations[d.key])}` : ''}{d.pr ? ', personal record' : ''}"
+          >
+            <span class="hr-day__n">{d.n}</span>
+            {#if d.status}<Icon name={STATUS[d.status].icon} />{/if}
+            {#if d.pr}<span class="hr-day__pr"></span>{/if}
+          </span>
+        {:else}
+          <span></span>
+        {/if}
+      {/each}
+    </div>
+    <div class="cal-legend meta">
+      {#each Object.entries(STATUS) as [id, s] (id)}
+        <span class="eyebrow-icon cal-legend__item cal-legend__item--{id}"><Icon name={s.icon} />{s.word[0].toUpperCase() + s.word.slice(1)}</span>
+      {/each}
+      <span class="eyebrow-icon"><span class="key-dot key-dot--pr"></span>Personal record</span>
+    </div>
+  </section>
+
+  <!-- (3) Weight / Waist / Lift / Cardio -->
   <section class="stack" aria-label="Measurements">
     <div class="metric-tabs" role="tablist" aria-label="Measurement">
       {#each Object.entries(S) as [id, s] (id)}
@@ -428,64 +489,7 @@
     </div>
   </section>
 
-  <section class="stack" aria-labelledby="muscles-h">
-    <div class="section-head">
-      <h2 id="muscles-h" class="heading screen-title">Sets per muscle group</h2>
-      <span class="meta">This week</span>
-    </div>
-    {#each muscleSets as [name, sets] (name)}
-      <div class="muscle-row">
-        <span class="small muscle-row__name">{name}</span>
-        <span class="muscle-bar" role="img" aria-label="{name}: {sets} sets, target {SETS_TARGET}">
-          <span class="muscle-bar__fill" style:width="{Math.min(100, (sets / (SETS_TARGET * 2)) * 100)}%"></span>
-          <span class="muscle-bar__tick"></span>
-        </span>
-        <span class="muscle-row__n hr-num">{sets}</span>
-      </div>
-    {:else}
-      <p class="body muted hint">No sets logged this week yet.</p>
-    {/each}
-    <span class="meta eyebrow-icon"><span class="tick-key"></span>Target: at least {SETS_TARGET} sets</span>
-  </section>
-
-  <section class="stack" aria-labelledby="cal-h">
-    <div class="section-head">
-      <h2 id="cal-h" class="heading screen-title">{monthName}</h2>
-      <span class="meta">{monthAttended} of {sessionDays.length} sessions</span>
-    </div>
-    <div class="hr-cal">
-      {#each WEEKDAYS as wd, k (k)}<span class="hr-eyebrow cal-head">{wd}</span>{/each}
-      {#each days as d, k (k)}
-        {#if d}
-          <span
-            class="hr-day"
-            class:hr-day--done={d.status === 'done'}
-            class:hr-day--partial={d.status === 'partial'}
-            class:hr-day--skip={d.status === 'skip'}
-            class:hr-day--stop={d.status === 'stop'}
-            class:hr-day--cardio={d.status === 'cardio'}
-            class:hr-day--rest={d.status === 'rest'}
-            class:hr-day--today={d.today}
-            role="img"
-            aria-label="{monthName} {d.n}{d.today ? ', today' : ''}{d.status ? `, ${STATUS[d.status].word}` : ''}{durations[d.key] ? `, workout time ${formatDuration(durations[d.key])}` : ''}{d.pr ? ', personal record' : ''}"
-          >
-            <span class="hr-day__n">{d.n}</span>
-            {#if d.status}<Icon name={STATUS[d.status].icon} />{/if}
-            {#if d.pr}<span class="hr-day__pr"></span>{/if}
-          </span>
-        {:else}
-          <span></span>
-        {/if}
-      {/each}
-    </div>
-    <div class="cal-legend meta">
-      {#each Object.entries(STATUS) as [id, s] (id)}
-        <span class="eyebrow-icon cal-legend__item cal-legend__item--{id}"><Icon name={s.icon} />{s.word[0].toUpperCase() + s.word.slice(1)}</span>
-      {/each}
-      <span class="eyebrow-icon"><span class="key-dot key-dot--pr"></span>Personal record</span>
-    </div>
-  </section>
-
+  <!-- (4) Records, last -->
   <section class="stack" aria-labelledby="records-h">
     <div class="option-text">
       <h2 id="records-h" class="heading screen-title">Recent records</h2>
