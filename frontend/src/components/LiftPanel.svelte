@@ -1,12 +1,15 @@
 <script>
-  // Progress › Lift: a chart for one lift (est. 1RM in lb) and "Your lifts", every exercise logged
-  // in the period, most recently logged first. Tapping a row charts that lift; the choice is
-  // remembered on this device.
+  // Progress › Lift: "Pounds" charts one lift (est. 1RM in lb); "% gain" charts up to five, each
+  // as % change from its first session in the period (assisted lifts inverted, so up is better).
+  // Under the chart, "Your lifts": every exercise logged in the period, most recently logged
+  // first. Tapping a row charts it (Pounds) or adds / removes its line (% gain, at most five).
+  // The view and the choices are remembered on this device.
   import Icon from './Icon.svelte';
   import LineChart, { fmt1 } from './LineChart.svelte';
+  import MultiLineChart from './MultiLineChart.svelte';
   import Sparkline from './Sparkline.svelte';
   import { dateKey } from '../db.js';
-  import { chooseLifts, inPeriod, liftRow, sortLifts } from '../logic.js';
+  import { chooseLifts, gainPoints, inPeriod, liftRow, sortLifts } from '../logic.js';
   import { shortDate, longDate } from '../stores/history.js';
   import { allLifts } from '../stores/lifts.svelte.js';
 
@@ -39,11 +42,60 @@
   const chosen = $derived(chooseLifts(one ? [one] : [], rows.map((r) => r.id), 1)[0]);
   const lift = $derived(rows.find((r) => r.id === chosen));
 
+  // ---------- View: Pounds (one lift) or % gain (up to five) ----------
+  const MAX_LINES = 5;
+  let view = $state(store('hr-lift-view', 'pounds'));
+  let many = $state(store('hr-lift-many', null));
+  let hint = $state('');
+  const chosenMany = $derived(chooseLifts(many, rows.map((r) => r.id), MAX_LINES));
+  const lineOf = (id) => chosenMany.indexOf(String(id)); // its color slot, -1 when not charted
+
+  function setView(v) {
+    view = v;
+    keep('hr-lift-view', v);
+    hint = '';
+  }
+
   function pick(id) {
+    if (view === 'gain') return toggleLine(String(id));
     one = id;
     keep('hr-lift-one', id);
     picked = null;
   }
+
+  function toggleLine(id) {
+    hint = '';
+    let next = [...chosenMany];
+    if (next.includes(id)) {
+      if (next.length === 1) {
+        hint = 'At least one lift stays on the chart.';
+        return;
+      }
+      next = next.filter((x) => x !== id);
+    } else if (next.length >= MAX_LINES) {
+      hint = `Up to ${MAX_LINES} lines: tap a charted lift to remove it first.`;
+      return;
+    } else {
+      next.push(id);
+    }
+    many = next;
+    keep('hr-lift-many', next);
+  }
+
+  const series = $derived(
+    chosenMany
+      .map((id) => rows.find((r) => r.id === id))
+      .filter(Boolean)
+      .map((r) => ({ id: r.id, name: r.name, assisted: r.assisted, points: gainPoints(r.row.points, r.assisted) })),
+  );
+  const best = $derived(
+    series.filter((s) => s.points.length).sort((a, b) => b.points.at(-1).value - a.points.at(-1).value)[0],
+  );
+  const signed = (v) => `${v >= 0.05 ? '+' : v <= -0.05 ? '−' : ''}${fmt1(Math.abs(v))}%`;
+  const gainAria = $derived(
+    `% change in est. 1RM from each lift's first session, ${shownRange === 'month' ? 'this month' : 'the last 12 months'}: ` +
+      series.map((s) => `${s.name}${s.assisted ? ' (assistance, inverted)' : ''} ${signed(s.points.at(-1)?.value ?? 0)}`).join(', '),
+  );
 
   // ---------- Pounds chart and readout ----------
   let picked = $state(null);
@@ -77,12 +129,16 @@
     if (r.assisted) parts.push('lower is better');
     parts.push(r.row.change == null ? 'one session' : `${word(r.row.change, r.unit).replace(/^[▲▼] /, '')} over the period`);
     if (r.row.pr) parts.push('new personal record');
-    if (r.id === chosen) parts.push('shown in the chart');
+    if (view === 'gain' ? lineOf(r.id) >= 0 : r.id === chosen) parts.push('shown in the chart');
     return parts.join(', ');
   }
 </script>
 
 <div class="stack">
+  <div class="hr-seg" role="group" aria-label="Chart view">
+    <button class="hr-seg__btn" aria-pressed={view === 'pounds'} onclick={() => setView('pounds')}>Pounds</button>
+    <button class="hr-seg__btn" aria-pressed={view === 'gain'} onclick={() => setView('gain')}>% gain</button>
+  </div>
   {#if offered.length > 1}
     <div class="hr-seg" role="group" aria-label="Time range">
       {#each offered as r (r.id)}
@@ -94,6 +150,23 @@
   {#if !lift}
     <span class="hr-eyebrow">Lift</span>
     <p class="body muted hint">Nothing logged in this period yet.</p>
+  {:else if view === 'gain'}
+    <div class="stack-tight">
+      <span class="hr-eyebrow">% change in est. 1RM · {series.length} lift{series.length === 1 ? '' : 's'}</span>
+      {#if best}
+        <span class="readout">
+          <span class="readout__value hr-num">{signed(best.points.at(-1).value)}</span>
+          <span class="small muted readout__detail">Best gain · {best.name}</span>
+          <span class="small readout__change">From each lift's first session in the period</span>
+        </span>
+      {/if}
+    </div>
+    <MultiLineChart {series} aria={gainAria} xLabel={shortDate} />
+    <span class="meta">
+      Assisted lifts are inverted: less assistance shows as a gain (marked "assist"). Tap lifts below to add or
+      remove lines, up to {MAX_LINES}.
+    </span>
+    {#if hint}<span class="small" role="status">{hint}</span>{/if}
   {:else}
     <div class="stack-tight">
       <span class="hr-eyebrow">{lift.name} · {lift.label}</span>
@@ -115,9 +188,17 @@
       <h3 id="lifts-h" class="hr-eyebrow">Your lifts · {rows.length}</h3>
       <div class="stack-tight lift-list">
         {#each rows as r (r.id)}
-          <button class="lift-row" aria-pressed={r.id === chosen} aria-label={rowLabel(r)} onclick={() => pick(r.id)}>
+          {@const line = view === 'gain' ? lineOf(r.id) : -1}
+          <button
+            class="lift-row"
+            aria-pressed={view === 'gain' ? line >= 0 : r.id === chosen}
+            aria-label={rowLabel(r)}
+            onclick={() => pick(r.id)}
+          >
             <span class="lift-row__text">
-              <span class="option-name">{r.name}</span>
+              <span class="option-name">
+                {#if line >= 0}<svg class="ml-swatch" viewBox="0 0 16 4" aria-hidden="true"><line class="ml-tick ml-c{line}" x1="0" x2="16" y1="2" y2="2"></line></svg>{/if}{r.name}
+              </span>
               <span class="meta hr-num">
                 {fmt1(r.row.latest ?? 0)} {r.unit} · {r.label}{r.assisted ? ' · lower is better' : ''}
               </span>

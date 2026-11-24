@@ -12,6 +12,10 @@ change how things work.
   first, each with its latest est. 1RM (or assistance, "lower is better"), the change over the
   period in words, a PR mark for a new best, and a small trend line. Tapping a row charts that
   lift, and the phone remembers it. The chart now covers any lift, not only the most-logged one.
+- Progress › Lift has a Pounds / % gain switch. % gain puts up to five lifts on one chart, each as
+  the % change in est. 1RM from its first session in the period, labeled at the end of its line;
+  assisted lifts are turned around so less assistance counts as a gain. Tapping lifts in the list
+  adds or removes lines. The phone remembers the view and the lifts.
 
 ### Changed
 - Progress charts: the big number is now the latest value in the period (a tapped point only

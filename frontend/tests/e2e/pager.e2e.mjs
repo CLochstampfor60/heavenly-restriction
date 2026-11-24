@@ -575,6 +575,66 @@ test('Your lifts: every lift in the period, most recent first; a row charts it a
   assert.deepEqual(errors, []);
 });
 
+test('% gain: up to five lines, labeled at their ends, rows add and remove them, kept after a reload', async () => {
+  const { context, page, errors } = await phone();
+  // Two more lifts today, so six are on record: one more than the chart can hold.
+  for (const id of ['s4', 's6']) {
+    await page.goto(`${BASE}/#/log/${id}`);
+    await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  }
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: '% gain' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  const lines = page.locator('svg.hr-chart path.ml-line');
+  assert.equal(await page.locator('.lift-row').count(), 6);
+  assert.equal(await lines.count(), 5); // the five most recently logged
+  const labels = await page.locator('svg.hr-chart text.ml-name').allTextContents();
+  assert.equal(labels.length, 5);
+  assert.match((await page.locator('svg.hr-chart text.ml-value').allTextContents()).join(' '), /assist/); // inverted, labeled
+  assert.equal(await page.locator('.legend').count(), 0);
+  // The sixth cannot be added until one is removed.
+  const off = page.locator('.lift-row[aria-pressed="false"]');
+  assert.equal(await off.count(), 1);
+  await off.click();
+  assert.match(await page.getByRole('status').innerText(), /Up to 5 lines/);
+  assert.equal(await lines.count(), 5);
+  const first = page.locator('.lift-row[aria-pressed="true"]').first();
+  const removed = await first.locator('.option-name').innerText();
+  await first.click(); // remove
+  assert.equal(await lines.count(), 4);
+  await page.locator('.lift-row[aria-pressed="false"]').filter({ hasNotText: removed }).click(); // add the sixth
+  assert.equal(await lines.count(), 5);
+  await page.reload();
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: '% gain' }).getAttribute('aria-pressed'), 'true'); // view kept
+  assert.equal(await lines.count(), 5);
+  const kept = await page.locator('.lift-row', { hasText: removed }).getAttribute('aria-pressed');
+  assert.equal(kept, 'false'); // the choice kept too
+  // Back to Pounds: one lift, the row tap charts it.
+  await page.getByRole('button', { name: 'Pounds' }).click();
+  assert.equal(await lines.count(), 0);
+  assert.equal(await page.locator('svg.hr-chart path.hr-line').count(), 1);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('% gain: the last line cannot be removed', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: '% gain' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  const on = page.locator('.lift-row[aria-pressed="true"]');
+  while ((await on.count()) > 1) await on.first().click();
+  await on.first().click();
+  assert.match(await page.getByRole('status').innerText(), /At least one lift/);
+  assert.equal(await page.locator('svg.hr-chart path.ml-line').count(), 1);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 test('chart y-axes never go below 0', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/progress`);

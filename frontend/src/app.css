@@ -96,6 +96,19 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .lift-row__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .lift-row__change { display: flex; align-items: center; gap: var(--space-2); }
 .sparkline { flex: none; }
+/* % gain chart: up to five lines in distinct tokens (never the only cue: each has a direct label). */
+.ml-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ml-tick { stroke-width: 3; stroke-linecap: round; }
+.ml-dot { stroke: var(--card); stroke-width: 1.5; }
+.ml-c0 { stroke: var(--accent); } .ml-dot.ml-c0 { fill: var(--accent); }
+.ml-c1 { stroke: var(--cursed); } .ml-dot.ml-c1 { fill: var(--cursed); }
+.ml-c2 { stroke: var(--recover); } .ml-dot.ml-c2 { fill: var(--recover); }
+.ml-c3 { stroke: var(--grade); } .ml-dot.ml-c3 { fill: var(--grade); }
+.ml-c4 { stroke: var(--text-2); } .ml-dot.ml-c4 { fill: var(--text-2); }
+.ml-name { fill: var(--text); font-family: var(--font-body); font-size: 11px; font-weight: 600; }
+.ml-value { fill: var(--text); font-family: var(--font-body); font-size: 11px; }
+.ml-zero { stroke: var(--border-strong); }
+.ml-swatch { width: 16px; height: 4px; margin-right: var(--space-2); vertical-align: middle; }
 .sparkline path, .sparkline line { fill: none; stroke: var(--text-2); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 /* Cardio type switch: four choices fit 360 px when a label may wrap to two lines. */
 .cardio-type .hr-seg__btn { white-space: normal; line-height: 18px; padding: var(--space-1) var(--space-2); }
