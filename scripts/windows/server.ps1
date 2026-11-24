@@ -398,7 +398,12 @@ switch ($Command) {
         # server stopped, and start it again.
         Invoke-Backup 'migrate'
         Stop-Server
-        & (Join-Path $repo '.venv\Scripts\alembic.exe') -c (Join-Path $repo 'backend\alembic.ini') upgrade head
+        # Through cmd, so alembic's INFO lines on stderr are plain text, not PowerShell errors that
+        # would abort the script with the server stopped. The exit code decides.
+        $alembic = Join-Path $repo '.venv\Scripts\alembic.exe'
+        $ini = Join-Path $repo 'backend\alembic.ini'
+        # The outer quotes are for cmd /c, which strips the first and last one.
+        & cmd.exe /d /c "`"`"$alembic`" -c `"$ini`" upgrade head 2>&1`""
         $migrated = $LASTEXITCODE
         Enable-ScheduledTask -TaskName $TaskName | Out-Null
         Start-ScheduledTask -TaskName $TaskName

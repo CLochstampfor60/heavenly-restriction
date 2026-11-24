@@ -90,6 +90,8 @@ change how things work.
   and all four accents.
 
 ### Fixed
+- `server.ps1 migrate` stopped with the server down: Windows PowerShell treated alembic's normal
+  progress lines as errors. It now runs alembic through cmd and decides by the exit code.
 - The phone could be served a half-finished build: the end-to-end tests and screenshots built into
   the folder the live server serves. They now build into their own folder.
 - A new version found on an earlier run, but never applied with Reload, now takes over the next
