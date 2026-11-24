@@ -549,6 +549,57 @@ def undo_set(date: Date, client_id: str, db: DB) -> Response:
     return Response(status_code=204)  # already gone is fine: the phone may retry
 
 
+def recompute_prs(db: Session, exercise_id: int) -> None:
+    """Every set of one exercise, oldest first, re-marked PR or not by the same rule as when it
+    was logged (log_set): better than every earlier set, never in a session with a stop for it."""
+    ex = db.get(Exercise, exercise_id)
+    if ex is None:
+        return
+    rows = db.execute(
+        select(SetLog, WorkoutSession.date)
+        .join(WorkoutSession, WorkoutSession.id == SetLog.session_id)
+        .where(SetLog.exercise_id == exercise_id)
+        .order_by(WorkoutSession.date, SetLog.logged_at, SetLog.set_index)
+    ).all()
+    stopped = set(
+        db.scalars(select(StopEvent.session_id).where(StopEvent.exercise_id == exercise_id))
+    )
+    floors: dict[tuple[int, str], int | None] = {}
+    prior: list[SetValue] = []
+    for s, _ in rows:
+        key = (s.session_id, s.slot_key)
+        if key not in floors:
+            slot = db.scalar(
+                select(SessionSlot).where(
+                    SessionSlot.session_id == s.session_id, SessionSlot.slot_key == s.slot_key
+                )
+            )
+            program_slot = (
+                db.get(ProgramSlot, slot.program_slot_id) if slot and slot.program_slot_id else None
+            )
+            floors[key] = program_slot.target_min if program_slot else None
+        value = SetValue(s.weight_lb, s.reps, s.seconds)
+        s.is_pr = s.session_id not in stopped and is_pr(
+            value, prior, assisted=ex.is_assisted, measure=ex.measure, rep_floor=floors[key]
+        )
+        prior.append(value)
+
+
+@router.delete("/sets/{client_id:path}", status_code=204)
+def delete_set(client_id: str, db: DB) -> Response:
+    """Deletes a logged set from history (the exercise card), on any date. The session's state
+    (Done, Skipped, ...) is left as it was; the exercise's PRs are worked out again, so records
+    and charts follow. Already gone is fine: the phone may send it twice."""
+    row = db.scalar(select(SetLog).where(SetLog.client_id == client_id))
+    if row is not None:
+        exercise_id = row.exercise_id
+        db.delete(row)
+        db.flush()
+        recompute_prs(db, exercise_id)
+        db.commit()
+    return Response(status_code=204)
+
+
 class StopIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=80)
     slot_key: str

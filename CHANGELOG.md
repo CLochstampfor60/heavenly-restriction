@@ -17,6 +17,11 @@ change how things work.
   assisted lifts are turned around so less assistance counts as a gain. Tapping lifts in the list
   adds or removes lines. The phone remembers the view and the lifts.
 
+- Delete a logged set from history: on an exercise's card, each set in its recent sessions has a
+  delete button. There is no confirmation; an Undo button shows for 5 seconds. PRs, records and
+  charts are worked out again without the set, on the phone at once (offline too) and on the
+  server.
+
 ### Changed
 - Progress charts: the big number is now the latest value in the period (a tapped point only
   after a tap), and a separate line gives the change from first to last with an arrow and a word.

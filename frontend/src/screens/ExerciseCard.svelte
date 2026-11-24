@@ -3,6 +3,7 @@
   import LineChart, { fmt1 } from '../components/LineChart.svelte';
   import { formatDuration } from '../logic.js';
   import { go } from '../router.svelte.js';
+  import { deleteSet, undoDelete } from '../stores/deleted.svelte.js';
   import { chartRule, longDate, sessionsFor, shortDate } from '../stores/history.js';
   import { prefs } from '../stores/prefs.svelte.js';
   import { CATALOG, PROGRAM } from '../stores/source.svelte.js';
@@ -52,6 +53,22 @@
     ...(ex.subs ?? []).map((sid, k) => ({ id: sid, rank: String(k + 1), kind: 'Your pick' })),
     ...(ex.same ?? []).map((sid) => ({ id: sid, rank: '—', kind: 'Same muscle' })),
   ].filter((sub, k, all) => CATALOG[sub.id] && all.findIndex((x) => x.id === sub.id) === k));
+
+  // Deleting a logged set from history: gone from every view at once (PRs, chart, records are
+  // worked out again), no dialog; an Undo toast for 5 s, after which the server is told.
+  let toast = $state(null); // { id, text }
+  let toastTimer;
+  function remove(s, x, k) {
+    deleteSet(x.id, s.date);
+    toast = { id: x.id, text: `Set ${k + 1} deleted · ${setText(ex, x)}, ${longDate(s.date)}` };
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (toast = null), 5000);
+  }
+  function undo() {
+    if (toast) undoDelete(toast.id);
+    toast = null;
+    clearTimeout(toastTimer);
+  }
 
   function setsText(s) {
     return s.sets.map((x) => (x.stopped ? `${fmt1(x.w)} lb stopped` : setText(ex, x))).join(' · ');
@@ -222,7 +239,27 @@
             {#if s.pr}<span class="hr-pr hr-pr--quiet"><Icon name="bolt" />PR</span>{/if}
             {#if s.stop}<span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>{/if}
           </div>
-          <span class="option-name hr-num">{setsText(s)}</span>
+          {#if s.today}
+            <span class="option-name hr-num">{setsText(s)}</span>
+            <span class="meta">Today's sets: undo the latest one on the exercise page.</span>
+          {:else}
+            <ul class="set-list" aria-label="Sets, {longDate(s.date)}">
+              {#each s.sets as x, k (x.id)}
+                <li class="set-list__row">
+                  <span class="option-name hr-num">{x.stopped ? `${fmt1(x.w)} lb stopped` : setText(ex, x)}</span>
+                  {#if !x.stopped}
+                    <button
+                      class="hr-icon-btn set-remove"
+                      aria-label="Delete set {k + 1}: {setText(ex, x)}, {longDate(s.date)}"
+                      onclick={() => remove(s, x, k)}
+                    >
+                      <span class="set-remove__dot"><Icon name="minus" /></span>
+                    </button>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
           {#if s.stop}<span class="meta">{stopText(s)}</span>
           {:else if s.note}<span class="meta">{s.note}</span>{/if}
         </div>
@@ -249,3 +286,10 @@
     </section>
   {/if}
 </div>
+
+{#if toast}
+  <div class="toast" role="status">
+    <span class="small">{toast.text}</span>
+    <button class="hr-btn hr-btn--secondary hr-btn--compact" onclick={undo}>Undo</button>
+  </div>
+{/if}

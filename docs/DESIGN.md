@@ -58,7 +58,7 @@ Set logging is a pager, one page per item of today in Today's order (Later order
 - Form media: privacy-enhanced YouTube player area plus a row of own clips (teal Offline badge), photos and external links ("Opens in Brave").
 - Notes: pinned cue, pinned load cap (`hr-jjk` "Binding Vow"), last session note.
 - History chart (see README › Charts): Top set / Est. 1RM toggle, PR points in `flash`, stop events as an amber octagon on the axis, tap a point for the readout.
-- Recent sessions (stop session tinted `stop-soft`), ranked substitutions. Each session shows the time spent on this exercise (first to last logged set, e.g. "12 min") beside its date when it has two or more sets.
+- Recent sessions (stop session tinted `stop-soft`), ranked substitutions. Each session shows the time spent on this exercise (first to last logged set, e.g. "12 min") beside its date when it has two or more sets. **Delete a set from history:** each past session lists its sets one per row, each with a delete control (the outlined minus of "Remove set", 44 px, `aria-label` "Delete set N: 140 lb × 10, Sat, Oct 17"). No dialog: the set is gone from every view at once (the card, its chart and PRs, Progress and the Lift tab), and a toast ("Set 2 deleted · 140 × 9, Sat, Oct 17", `role="status"`, above the nav) offers **Undo** for 5 seconds; the server is told when the toast ends. Today's sets are taken back with undo on the exercise page instead.
 
 ### 4. Progress (`Progress.dc.html`)
 - This week: sessions N of 5 (segmented meter), cardio minutes vs 345 target (teal meter).

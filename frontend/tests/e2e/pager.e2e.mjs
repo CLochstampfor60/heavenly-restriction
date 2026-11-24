@@ -635,6 +635,61 @@ test('% gain: the last line cannot be removed', async () => {
   assert.deepEqual(errors, []);
 });
 
+// ---------- Delete a logged set from history ----------
+
+test('delete a set from history: no dialog, an Undo toast brings it back', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/exercise/lat`);
+  const past = page.locator('.session-row').filter({ hasNot: page.getByText('today') }).first();
+  const before = await past.locator('.set-list__row').count();
+  await past.getByRole('button', { name: /^Delete set 1:/ }).click();
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  const toast = page.locator('.toast');
+  assert.match(await toast.innerText(), /Set 1 deleted/);
+  assert.equal(await past.locator('.set-list__row').count(), before - 1);
+  await toast.getByRole('button', { name: 'Undo' }).click();
+  assert.equal(await page.locator('.toast').count(), 0);
+  assert.equal(await past.locator('.set-list__row').count(), before);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test("deleting a session's sets removes it everywhere and PRs are worked out again, offline and after a reload", async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/exercise/lat`);
+  // The most recent past session that holds a PR.
+  const withPr = page.locator('.session-row').filter({ has: page.locator('.hr-pr') }).filter({ hasNot: page.getByText('today') }).first();
+  const date = (await withPr.locator('.hr-eyebrow').first().textContent()).split(' · ')[0];
+  const prRow = page.locator('.session-row').filter({ hasText: date }); // pinned by date: its PR mark goes as sets go
+  const prDates = async () => (await page.locator('.session-row').filter({ has: page.locator('.hr-pr') }).locator('.hr-eyebrow').allTextContents()).join('|');
+  const prsBefore = await prDates();
+  while ((await prRow.getByRole('button', { name: /^Delete set/ }).count()) > 0) {
+    await prRow.getByRole('button', { name: /^Delete set/ }).first().click();
+  }
+  const dates = async () => (await page.locator('.session-row .hr-eyebrow').allTextContents()).join('|');
+  assert.ok(!(await dates()).includes(date), `${date} is gone`);
+  assert.notEqual(await prDates(), prsBefore); // the PR mark moved or went
+  await page.reload();
+  await page.waitForSelector('.session-row');
+  assert.ok(!(await dates()).includes(date), `${date} is still gone after a reload`);
+  // The Lift tab follows: Lat Pulldown's year no longer has that session.
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  const spark = await page.locator('.lift-row', { hasText: 'Lat Pulldown' }).locator('svg.sparkline').getAttribute('aria-label');
+  const n = Number(spark.match(/: (\d+) session/)[1]);
+  await context.close();
+  const fresh = await phone();
+  await fresh.page.goto(`${BASE}/#/progress`);
+  await fresh.page.getByRole('tab', { name: 'Lift' }).click();
+  await fresh.page.getByRole('button', { name: 'Year', exact: true }).click();
+  const full = await fresh.page.locator('.lift-row', { hasText: 'Lat Pulldown' }).locator('svg.sparkline').getAttribute('aria-label');
+  assert.equal(n, Number(full.match(/: (\d+) session/)[1]) - 1); // a fresh phone still has it
+  await fresh.context.close();
+  assert.deepEqual(errors, []);
+  assert.deepEqual(fresh.errors, []);
+});
+
 test('chart y-axes never go below 0', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/progress`);
