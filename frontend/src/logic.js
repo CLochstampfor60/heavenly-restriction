@@ -353,3 +353,30 @@ export function cardioText(log) {
   if (type.fields.includes('level') && log.level != null) parts.push(`level ${log.level}`);
   return parts.join(' · ');
 }
+
+// ---------- Chart axis ----------
+
+// A line chart's y domain: the data's range with ~10% padding on each side, never below 0 when
+// floor0 (weights, reps, seconds); ticks on round numbers inside the domain (two to four).
+export function axisDomain(values, { floor0 = true, pad = 0.1 } = {}) {
+  const vals = values.filter((v) => Number.isFinite(v));
+  if (!vals.length) return { lo: 0, hi: 1, ticks: [0, 1] };
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  const span = hi - lo;
+  const p = span ? span * pad : Math.max(Math.abs(hi) * pad, 1);
+  lo -= p;
+  hi += p;
+  if (floor0 && lo < 0) lo = 0;
+  let step = 0;
+  let ticks = [];
+  for (const parts of [3, 6]) {
+    const raw = (hi - lo) / parts;
+    const mag = 10 ** Math.floor(Math.log10(raw));
+    step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= raw);
+    ticks = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Number(v.toFixed(6)));
+    if (ticks.length >= 2) break;
+  }
+  return { lo, hi, ticks };
+}

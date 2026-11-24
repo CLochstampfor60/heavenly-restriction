@@ -7,6 +7,11 @@ change how things work.
 
 ## [Unreleased]
 
+### Fixed
+- Line charts no longer show a y-axis below 0 (one very light set could push the lift chart's
+  axis negative). The axis now spans the data with about 10% to spare on each side, with round
+  gridlines inside it.
+
 ## [0.6.0] - 2026-11-23
 
 ### Added

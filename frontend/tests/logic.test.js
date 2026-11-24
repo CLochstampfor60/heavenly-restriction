@@ -13,6 +13,7 @@ import {
   openAtFinish,
   outboxDisposition,
   pageList,
+  axisDomain,
   canRemoveSet,
   cardioDefaults,
   cardioText,
@@ -333,4 +334,16 @@ test('cardio: type from the program wording, prefilled from the program, one lin
   assert.equal(cardioText(walk), '20 min · incline 8 · 3 mph');
   // A bike shows its level, not the walk's incline and speed.
   assert.equal(cardioText({ ...walk, type: 'air_bike', level: 7 }), '20 min · level 7');
+});
+
+test('chart axis: data range plus ~10%, never below 0, two to four round ticks inside', () => {
+  const a = axisDomain([150, 186.7]);
+  assert.ok(Math.abs(a.lo - (150 - 3.67)) < 0.01 && Math.abs(a.hi - (186.7 + 3.67)) < 0.01);
+  assert.ok(a.ticks.length >= 2 && a.ticks.length <= 4);
+  assert.ok(a.ticks.every((t) => t >= a.lo && t <= a.hi));
+  assert.equal(axisDomain([0, 10]).lo, 0); // padding never goes below 0
+  assert.equal(axisDomain([9.5, 196.3]).lo, 0);
+  assert.ok(axisDomain([-12, 8], { floor0: false }).lo < -12); // % change may go negative
+  const flat = axisDomain([100, 100]);
+  assert.ok(flat.lo < 100 && flat.hi > 100);
 });

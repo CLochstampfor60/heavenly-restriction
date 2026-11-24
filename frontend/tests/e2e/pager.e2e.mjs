@@ -525,6 +525,21 @@ test('cardio: Skip and Undo skip, with no dialog', async () => {
   assert.deepEqual(errors, []);
 });
 
+// ---------- Progress charts ----------
+
+test('chart y-axes never go below 0', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/progress`);
+  for (const tab of ['Weight', 'Lift']) {
+    await page.getByRole('tab', { name: tab }).click();
+    const yTicks = await page.locator('svg.hr-chart text.hr-axis[text-anchor="end"]').allTextContents();
+    assert.ok(yTicks.length >= 2, `${tab}: has y ticks`);
+    assert.ok(yTicks.every((t) => Number(t) >= 0), `${tab}: ${yTicks.join(', ')}`);
+  }
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Today's set count: + Add set / Remove set (all offline) ----------
 
 test('+ Add set adds a prefilled set for today: one tap to add, one tap to log', async () => {

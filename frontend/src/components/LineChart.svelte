@@ -16,7 +16,10 @@
 <script>
   // One series as a line (optionally filled). Stopped sessions sit on the axis as an amber
   // octagon and the line skips them. points: [{ x, value, pr?, stopped? }]
-  let { points, selected, onselect, goal = null, area = false, aria, format = fmt1 } = $props();
+  import { axisDomain } from '../logic.js';
+
+  // floor0: the axis never goes below 0 (weights, reps, seconds); off for % change.
+  let { points, selected, onselect, goal = null, area = false, aria, format = fmt1, floor0 = true } = $props();
 
   const X0 = 44;
   const X1 = 296;
@@ -24,15 +27,9 @@
   const BASE = 170;
 
   const live = $derived(points.map((p, i) => ({ ...p, i })).filter((p) => !p.stopped));
-  const scale = $derived.by(() => {
-    const vals = live.map((p) => p.value).concat(goal ? [goal.value] : []);
-    return niceScale(Math.min(...vals), Math.max(...vals));
-  });
-  const ticks = $derived.by(() => {
-    const out = [];
-    for (let v = scale.lo; v <= scale.hi + 1e-9; v += scale.step) out.push(v);
-    return out;
-  });
+  // The data's range plus ~10%, never below 0 (see logic.js axisDomain).
+  const scale = $derived(axisDomain(live.map((p) => p.value).concat(goal ? [goal.value] : []), { floor0 }));
+  const ticks = $derived(scale.ticks);
 
   const sx = (i) => (points.length === 1 ? (X0 + X1) / 2 : X0 + ((X1 - X0) * i) / (points.length - 1));
   const sy = (v) => BASE - ((BASE - TOP) * (v - scale.lo)) / (scale.hi - scale.lo);
