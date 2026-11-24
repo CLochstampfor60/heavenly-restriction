@@ -1,7 +1,7 @@
 # heavenly-restriction
 A self-hosted workout tracker for training hard within injury limits. FastAPI + PWA, offline logging, passkey login, private by design.
 
-**Status:** early build. Program import, today's session, set logging, the library, exercise cards and progress work on real data; login, program editing and media upload are not built yet.
+**Status:** early build. Program import, today's session, set logging (with a rest timer you set to off, after every set or after each exercise), the library, exercise cards, progress and passkey sign-in work on real data; program editing and media upload are not built yet.
 
 <table>
   <tr>
@@ -88,6 +88,8 @@ To keep it running without a terminal (Windows), install it as a Task Scheduler 
 **If the phone says it can't reach the server, run `doctor` first.** It checks, in plain words: the task (installed, enabled, running, starts at logon), the supervisor, the server on 127.0.0.1:8000 only, `/api/health` on this PC and over `https://hr.<tailnet>.ts.net`, Tailscale connected and the `svc:hr` serve config (approved host, no Funnel), that the live build is a clean commit on origin/main with no newer app changes, the database, its schema, and the newest off-machine backup (at most 36 hours old, integrity checked), free disk space, and leftover test browsers. Each FAIL line is followed by the command that fixes it; the exit code is 1 if anything failed. It also warns when ProtonVPN is connected: ProtonVPN blocks this PC (not the phone) from the tailnet unless its split tunneling excludes `100.64.0.0/10` and `fd7a:115c:a1e0::/48`.
 
 The live server only runs a build of a clean, pushed commit (Settings › About shows it as `build <commit>`). `deploy` refuses anything else, and `npm run build` refuses to write `frontend\dist` from a tree with uncommitted changes. Tests and screenshots build into `frontend\dist-test`. `deploy` backs up the database first and stops if that fails; it does not migrate. To migrate, run `server.ps1 migrate`, which backs up first too.
+
+**Updating to a new version:** `git pull`, then `server.ps1 deploy`, then `server.ps1 doctor`. If doctor says the database schema is behind (the changelog entry says "Needs a database migration" too), run `server.ps1 migrate` and doctor again. The phone shows "Update available · Reload"; tap it, or it switches the next time the app opens.
 
 **Backups leave this machine.** Set `HR_BACKUP_DIR` in `.env` to a folder that a sync client copies to the cloud (or, later, a NAS share); see `.env.example`. A synced folder only leaves the machine while its sync app runs: when the folder is in Proton Drive, `doctor` warns if the Proton Drive app is not running (turn on its "Launch at startup" setting). The supervisor backs up once a day (it checks hourly), and `backup`, `deploy` and `migrate` back up on demand. Each backup is a consistent snapshot made with SQLite's online backup while the server runs, integrity-checked before it is copied into the folder, and renamed into place only when complete. Retention: the newest backup of each of the last 14 days and of each of the last 8 weeks; the newest is never deleted. To check a restore without touching the live database: `.\.venv\Scripts\python scripts\windows\backup_db.py restore-test` (restores the newest into a scratch copy, compares row counts with the live database, deletes the copy).
 
