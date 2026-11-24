@@ -89,8 +89,7 @@ Two self-hosted families, served from this system's `fonts/` folder (SIL Open Fo
 
 Progress charts follow the bundled chart method: one job per chart, color last, checked contrast.
 
-- **One series and one y-axis per chart.** Bodyweight, waist and a lift's estimated 1RM are filled lines; cardio minutes are teal bars. Never two measures on two scales; split them into two charts.
-- **The one multi-line chart: % gain** (Progress › Lift). Up to five lifts on one % scale, each the % change in est. 1RM from its first session in the period (one measure, one axis). Lines 2 px in `accent`, `cursed`, `recover`, `grade`, `text-2`, in that order (no area fill); points only at each line's two ends; a **direct label at the right end of each line** (name, then the value, in `text`, with a short tick in the line's color), labels pushed apart so none overlap; no legend box. Color is never the only cue: the label names the line, and the list row it came from shows the same tick. Assisted lifts are inverted (less assistance is a gain) and labeled "assist". The 0% gridline is drawn in `border-strong`.
+- **One series and one y-axis per chart, no exceptions.** Bodyweight, waist and a lift's estimated 1RM are filled lines; cardio minutes are teal bars. Never two measures on two scales; split them into two charts.
 - **Line:** 2 px `accent`, area fill `accent-soft`, points 5 px radius with a `card` center; the selected point grows to 7 px. **Bars:** `recover`, 4 px rounded tops, a planned bar is `recover-soft` with a dashed edge.
 - **Y-axis:** the data's range plus about 10% on each side (the goal line included), never below 0 for weights, reps, seconds and minutes; two to four gridlines on round numbers inside that range. Only a % change chart may go below 0.
 - **Goal or target:** a dashed 2 px `grade` line labeled at its right end ("Goal 185", "Grade 1 · 190", "Target 345").

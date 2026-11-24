@@ -547,90 +547,24 @@ test('chart headline: the latest value until a point is tapped; the change line 
   assert.deepEqual(errors, []);
 });
 
-test('Your lifts: every lift in the period, most recent first; a row charts it and is remembered', async () => {
+test('Lift tab: no chart and no view toggle, just Your lifts, most recent first, in words', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/progress`);
   await page.getByRole('tab', { name: 'Lift' }).click();
+  assert.equal(await page.locator('.chart-panel svg.hr-chart').count(), 0);
+  assert.equal(await page.getByRole('button', { name: '% gain' }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Pounds' }).count(), 0);
   await page.getByRole('button', { name: 'Year', exact: true }).click();
   const rows = page.locator('.lift-row');
   const names = await rows.locator('.option-name').allInnerTexts();
   assert.equal(names[0], 'Assisted Pull-up'); // logged today in the demo
   assert.ok(names.includes('Lat Pulldown') && names.includes('Hammer Curl'));
-  // The most recently logged lift is charted, and assistance says lower is better.
-  assert.match(await page.locator('.chart-panel .hr-eyebrow').first().innerText(), /Assisted Pull-up/i);
   assert.match(await rows.first().innerText(), /lower is better/);
+  assert.match(await rows.first().innerText(), /One session/);
   const lat = rows.filter({ hasText: 'Lat Pulldown' });
   assert.match(await lat.innerText(), /▲ Up [\d.]+ lb/); // a word and an arrow, not color alone
   assert.match(await lat.innerText(), /PR/);
   assert.match(await lat.locator('svg.sparkline').getAttribute('aria-label'), /^Lat Pulldown: \d+ sessions, from/);
-  await lat.click();
-  assert.equal(await lat.getAttribute('aria-pressed'), 'true');
-  assert.match(await page.locator('.chart-panel .hr-eyebrow').first().innerText(), /Lat Pulldown/i);
-  assert.match(await page.locator('.readout__change').innerText(), /from first to last/);
-  await page.reload(); // remembered on this device
-  await page.getByRole('tab', { name: 'Lift' }).click();
-  await page.getByRole('button', { name: 'Year', exact: true }).click();
-  assert.match(await page.locator('.chart-panel .hr-eyebrow').first().innerText(), /Lat Pulldown/i);
-  await context.close();
-  assert.deepEqual(errors, []);
-});
-
-test('% gain: up to five lines, labeled at their ends, rows add and remove them, kept after a reload', async () => {
-  const { context, page, errors } = await phone();
-  // Two more lifts today, so six are on record: one more than the chart can hold.
-  for (const id of ['s4', 's6']) {
-    await page.goto(`${BASE}/#/log/${id}`);
-    await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
-  }
-  await page.goto(`${BASE}/#/progress`);
-  await page.getByRole('tab', { name: 'Lift' }).click();
-  await page.getByRole('button', { name: '% gain' }).click();
-  await page.getByRole('button', { name: 'Year', exact: true }).click();
-  const lines = page.locator('svg.hr-chart path.ml-line');
-  assert.equal(await page.locator('.lift-row').count(), 6);
-  assert.equal(await lines.count(), 5); // the five most recently logged
-  const labels = await page.locator('svg.hr-chart text.ml-name').allTextContents();
-  assert.equal(labels.length, 5);
-  assert.match((await page.locator('svg.hr-chart text.ml-value').allTextContents()).join(' '), /assist/); // inverted, labeled
-  assert.equal(await page.locator('.legend').count(), 0);
-  // The sixth cannot be added until one is removed.
-  const off = page.locator('.lift-row[aria-pressed="false"]');
-  assert.equal(await off.count(), 1);
-  await off.click();
-  assert.match(await page.getByRole('status').innerText(), /Up to 5 lines/);
-  assert.equal(await lines.count(), 5);
-  const first = page.locator('.lift-row[aria-pressed="true"]').first();
-  const removed = await first.locator('.option-name').innerText();
-  await first.click(); // remove
-  assert.equal(await lines.count(), 4);
-  await page.locator('.lift-row[aria-pressed="false"]').filter({ hasNotText: removed }).click(); // add the sixth
-  assert.equal(await lines.count(), 5);
-  await page.reload();
-  await page.getByRole('tab', { name: 'Lift' }).click();
-  await page.getByRole('button', { name: 'Year', exact: true }).click();
-  assert.equal(await page.getByRole('button', { name: '% gain' }).getAttribute('aria-pressed'), 'true'); // view kept
-  assert.equal(await lines.count(), 5);
-  const kept = await page.locator('.lift-row', { hasText: removed }).getAttribute('aria-pressed');
-  assert.equal(kept, 'false'); // the choice kept too
-  // Back to Pounds: one lift, the row tap charts it.
-  await page.getByRole('button', { name: 'Pounds' }).click();
-  assert.equal(await lines.count(), 0);
-  assert.equal(await page.locator('svg.hr-chart path.hr-line').count(), 1);
-  await context.close();
-  assert.deepEqual(errors, []);
-});
-
-test('% gain: the last line cannot be removed', async () => {
-  const { context, page, errors } = await phone();
-  await page.goto(`${BASE}/#/progress`);
-  await page.getByRole('tab', { name: 'Lift' }).click();
-  await page.getByRole('button', { name: '% gain' }).click();
-  await page.getByRole('button', { name: 'Year', exact: true }).click();
-  const on = page.locator('.lift-row[aria-pressed="true"]');
-  while ((await on.count()) > 1) await on.first().click();
-  await on.first().click();
-  assert.match(await page.getByRole('status').innerText(), /At least one lift/);
-  assert.equal(await page.locator('svg.hr-chart path.ml-line').count(), 1);
   await context.close();
   assert.deepEqual(errors, []);
 });
@@ -693,7 +627,7 @@ test("deleting a session's sets removes it everywhere and PRs are worked out aga
 test('chart y-axes never go below 0', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/progress`);
-  for (const tab of ['Weight', 'Lift']) {
+  for (const tab of ['Weight', 'Waist']) {
     await page.getByRole('tab', { name: tab }).click();
     const yTicks = await page.locator('svg.hr-chart text.hr-axis[text-anchor="end"]').allTextContents();
     assert.ok(yTicks.length >= 2, `${tab}: has y ticks`);

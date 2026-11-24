@@ -7,6 +7,10 @@ change how things work.
 
 ## [Unreleased]
 
+### Removed
+- Progress › Lift no longer has the Pounds / % gain switch or its chart: it was crowded and the
+  % gain labels overlapped. Each exercise's history chart is still on its card.
+
 ## [0.6.1] - 2026-11-23
 
 ### Added

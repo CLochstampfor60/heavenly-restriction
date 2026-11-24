@@ -16,7 +16,6 @@ import {
   axisDomain,
   canRemoveSet,
   chooseLifts,
-  gainPoints,
   inPeriod,
   liftRow,
   sortLifts,
@@ -375,14 +374,6 @@ test('a Your lifts row: latest, first-to-last change, PR, last logged; a stop is
   assert.equal(liftRow(sessions.slice(1, 2), 'month', '2026-11-23').change, null); // one session
   const rows = sortLifts([{ name: 'B', lastDate: '2026-11-02' }, { name: 'A', lastDate: '2026-11-16' }, { name: 'C', lastDate: '2026-11-16' }]);
   assert.deepEqual(rows.map((r) => r.name), ['A', 'C', 'B']);
-});
-
-test('% gain from the first session; assisted inverted so improvement is positive', () => {
-  const pts = [{ date: 'a', value: 100 }, { date: 'b', value: 110 }];
-  assert.deepEqual(gainPoints(pts, false).map((p) => Math.round(p.value)), [0, 10]);
-  const assist = [{ date: 'a', value: 50 }, { date: 'b', value: 40 }]; // 10 lb less help
-  assert.deepEqual(gainPoints(assist, true).map((p) => Math.round(p.value)), [0, 20]);
-  assert.deepEqual(gainPoints([{ date: 'a', value: 0 }], false), []);
 });
 
 test('chart choice: the saved lifts that are still listed, else the most recent, at most max', () => {

@@ -422,14 +422,6 @@ export function sortLifts(rows) {
   return [...rows].sort((a, b) => (a.lastDate === b.lastDate ? a.name.localeCompare(b.name) : a.lastDate < b.lastDate ? 1 : -1));
 }
 
-// % change from the first session in the period. Assisted lifts are inverted (less assistance
-// is a gain), so up is always better.
-export function gainPoints(points, assisted) {
-  const v0 = points[0]?.value;
-  if (!v0) return [];
-  return points.map((p) => ({ date: p.date, value: ((assisted ? v0 - p.value : p.value - v0) / v0) * 100 }));
-}
-
 // Which lifts a chart shows: the saved choice where still listed, else the defaults (the most
 // recently logged first), at most `max`.
 export function chooseLifts(saved, listedIds, max) {
