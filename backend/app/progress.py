@@ -28,6 +28,7 @@ from app.models import (
     WorkoutSession,
 )
 from app.prs import e1rm
+from app.timing import session_seconds
 
 router = APIRouter(prefix="/api")
 
@@ -123,6 +124,22 @@ def progress(date: Date, db: DB) -> dict:
     for k in range(monthrange(date.year, date.month)[1]):
         d = first + timedelta(days=k)
         calendar[d.isoformat()] = status(d)
+
+    # ---- workout time per day (this month and this week), from timestamps: nothing entered
+    set_times: dict[int, list] = defaultdict(list)
+    for session_id, at in db.execute(select(SetLog.session_id, SetLog.logged_at)):
+        set_times[session_id].append(at)
+    durations = {}
+    for d in sorted(
+        {first + timedelta(days=k) for k in range(len(calendar))}
+        | {monday + timedelta(days=k) for k in range(7)}
+    ):
+        s = sessions.get(d)
+        if s is None or d > date:
+            continue
+        seconds = session_seconds(s.started_at, s.finished_at, s.finished, set_times[s.id])
+        if seconds:
+            durations[d.isoformat()] = seconds
 
     # ---- cardio: planned target from the program, done from ticks
     target = sum(cardio_minutes(d, {}, only_done=False) for d in days_by_weekday.values())
@@ -245,6 +262,7 @@ def progress(date: Date, db: DB) -> dict:
         "lifting_weekdays": lifting,
         "week": week,
         "calendar": calendar,
+        "durations": durations,
         "pr_days": pr_days,
         "cardio": {
             "target": target,

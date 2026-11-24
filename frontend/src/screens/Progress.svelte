@@ -13,7 +13,8 @@
   import { source } from '../stores/source.svelte.js';
   import { cachedGet } from '../stores/sync.svelte.js';
   import { bodySeries, lastKnown, loadMetrics, metrics, removeMetrics, saveMetrics } from '../stores/metrics.svelte.js';
-  import { dayStatus, fmt, setText } from '../stores/workout.svelte.js';
+  import { formatDuration } from '../logic.js';
+  import { dayStatus, fmt, setText, todaySeconds } from '../stores/workout.svelte.js';
 
   // Demo mode draws everything from the made-up fixtures; real mode from /api/progress.
   const sessionsOf = (id) => sessionsFor(id);
@@ -53,6 +54,25 @@
     if (key > todayKey) return null;
     return real ? (realStatus[key] ?? null) : calendarStatus(key);
   };
+
+  // Workout time per day, from timestamps (nothing entered): the server's days, and this phone's
+  // copy of today, which is the freshest.
+  const durations = $derived.by(() => {
+    const out = { ...(real ? (api.durations ?? {}) : {}) };
+    const t = todaySeconds();
+    if (t) out[todayKey] = t;
+    return out;
+  });
+  const weekTimes = $derived(
+    Array.from({ length: 7 }, (_, k) => addDays(monday, k))
+      .map((d) => ({ d, key: dateKey(d) }))
+      .filter(({ key }) => key <= todayKey && durations[key])
+      .map(({ d, key }) => ({
+        key,
+        label: key === todayKey ? 'Today' : `${DAY_NAMES[d.getDay()]} ${d.getMonth() + 1}/${d.getDate()}`,
+        text: formatDuration(durations[key]),
+      })),
+  );
 
   // Real-mode series, shaped like the demo SERIES; a range with no points is left out.
   const monthTitle = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -324,6 +344,17 @@
     </div>
   </section>
 
+  {#if weekTimes.length}
+    <section class="stack-tight" aria-labelledby="time-h">
+      <span id="time-h" class="hr-eyebrow">Workout time · this week</span>
+      <ul class="time-list">
+        {#each weekTimes as t (t.key)}
+          <li class="time-row"><span>{t.label}</span><span class="hr-num">{t.text}</span></li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
   <section class="stack" aria-label="Measurements">
     <div class="metric-tabs" role="tablist" aria-label="Measurement">
       {#each Object.entries(S) as [id, s] (id)}
@@ -418,7 +449,7 @@
             class:hr-day--rest={d.status === 'rest'}
             class:hr-day--today={d.today}
             role="img"
-            aria-label="{monthName} {d.n}{d.today ? ', today' : ''}{d.status ? `, ${STATUS[d.status].word}` : ''}{d.pr ? ', personal record' : ''}"
+            aria-label="{monthName} {d.n}{d.today ? ', today' : ''}{d.status ? `, ${STATUS[d.status].word}` : ''}{durations[d.key] ? `, workout time ${formatDuration(durations[d.key])}` : ''}{d.pr ? ', personal record' : ''}"
           >
             <span class="hr-day__n">{d.n}</span>
             {#if d.status}<Icon name={STATUS[d.status].icon} />{/if}

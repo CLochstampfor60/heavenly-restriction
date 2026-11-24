@@ -6,6 +6,7 @@ Writes are idempotent where the phone may retry them: sets and stops carry a cli
 
 from collections import defaultdict
 from datetime import date as Date
+from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -32,6 +33,7 @@ from app.models import (
     WorkoutSession,
 )
 from app.prs import SetValue, is_pr
+from app.timing import client_time, iso, session_seconds, span_seconds, to_db
 
 router = APIRouter(prefix="/api")
 DB = Annotated[Session, Depends(get_db)]
@@ -104,6 +106,7 @@ def set_dict(s: SetLog) -> dict:
         "seconds": s.seconds,
         "rir": s.rir,
         "is_pr": s.is_pr,
+        "logged_at": iso(s.logged_at),
     }
 
 
@@ -242,8 +245,8 @@ def slot_dict(slot: ProgramSlot, notes: list[Note]) -> dict:
 
 
 def session_dict(db: Session, session: WorkoutSession) -> dict:
-    sets = db.scalars(
-        select(SetLog).where(SetLog.session_id == session.id).order_by(SetLog.logged_at)
+    sets = list(
+        db.scalars(select(SetLog).where(SetLog.session_id == session.id).order_by(SetLog.logged_at))
     )
     stops = db.scalars(select(StopEvent).where(StopEvent.session_id == session.id))
     notes = db.scalars(select(Note).where(Note.session_id == session.id))
@@ -253,6 +256,11 @@ def session_dict(db: Session, session: WorkoutSession) -> dict:
         "cardio": session.cardio or {},
         "finished": session.finished,
         "rest_timer": session.rest_timer,  # today's override: on | off | None (the setting)
+        "started_at": iso(session.started_at),
+        "finished_at": iso(session.finished_at),
+        "duration_s": session_seconds(
+            session.started_at, session.finished_at, session.finished, [s.logged_at for s in sets]
+        ),
         "order": [s.slot_key for s in session.slots],
         "slots": {
             s.slot_key: {
@@ -387,6 +395,9 @@ class SessionState(BaseModel):
     # Today's rest timer, overriding the setting for this session only. Left out (older app
     # copies): unchanged. null: follow the setting.
     rest_timer: Literal["on", "off"] | None = None
+    # When Start workout / Finish workout were tapped, from the phone. Left out: unchanged.
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
 
 
 @router.put("/sessions/{date}")
@@ -397,6 +408,10 @@ def put_session(date: Date, body: SessionState, db: DB) -> dict:
     session.finished = body.finished
     if "rest_timer" in body.model_fields_set:
         session.rest_timer = body.rest_timer
+    for key in ("started_at", "finished_at"):
+        if key in body.model_fields_set:
+            value = getattr(body, key)
+            setattr(session, key, to_db(value) if value else None)
     if body.cardio:
         bad = {v for v in body.cardio.values()} - {"todo", "done", "skipped"}
         if bad:
@@ -438,6 +453,8 @@ class SetIn(BaseModel):
     reps: int | None = Field(default=None, ge=0)
     seconds: int | None = Field(default=None, ge=0)
     rir: int | None = Field(default=None, ge=0, le=10)
+    # When the phone logged it (it may sync much later); see app/timing.client_time.
+    logged_at: datetime | None = None
 
 
 @router.post("/sessions/{date}/sets", status_code=201)
@@ -487,6 +504,7 @@ def log_set(date: Date, body: SetIn, response: Response, db: DB) -> dict:
         seconds=body.seconds,
         rir=body.rir,
         is_pr=pr,
+        logged_at=client_time(body.logged_at),
     )
     db.add(row)
     slot.done_as_id = ex.id
@@ -880,10 +898,12 @@ def card(exercise_id: int, db: DB) -> dict:
         .distinct()
     ).scalars()
     for session in rows:
-        sets = db.scalars(
-            select(SetLog)
-            .where(SetLog.session_id == session.id, SetLog.exercise_id == ex.id)
-            .order_by(SetLog.set_index)
+        sets = list(
+            db.scalars(
+                select(SetLog)
+                .where(SetLog.session_id == session.id, SetLog.exercise_id == ex.id)
+                .order_by(SetLog.set_index)
+            )
         )
         stop_row = db.scalar(
             select(StopEvent).where(
@@ -897,6 +917,8 @@ def card(exercise_id: int, db: DB) -> dict:
             {
                 "date": session.date.isoformat(),
                 "sets": [set_dict(s) for s in sets],
+                # This exercise's time that session: first to last logged set.
+                "duration_s": span_seconds([s.logged_at for s in sets]),
                 "stop": stop_dict(stop_row) if stop_row else None,
                 "note": note.text if note else "",
             }

@@ -290,6 +290,9 @@ class WorkoutSession(Base):
     # Rest timer for this session only (the pager's toggle): "on", "off", or None to follow
     # the account setting.
     rest_timer: Mapped[str | None] = mapped_column(String(8))
+    # When Start workout and Finish workout were tapped (naive UTC); see app/timing.py.
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )

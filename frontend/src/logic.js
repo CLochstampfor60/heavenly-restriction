@@ -274,3 +274,38 @@ export function libraryRegions(rows, listed, query = '') {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, list]) => ({ name, rows: list.sort((a, b) => a.name.localeCompare(b.name)) }));
 }
+
+// ---------- Workout timing (from timestamps; nothing is entered) ----------
+// Same rules as the server (backend/app/timing.py). Times are ISO strings or Dates.
+
+const ms = (t) => (t == null ? null : new Date(t).getTime());
+
+// First to last of two or more times, in whole seconds.
+export function spanSeconds(times) {
+  const list = times.map(ms).filter((t) => t != null && !Number.isNaN(t));
+  if (list.length < 2) return null;
+  return Math.floor((Math.max(...list) - Math.min(...list)) / 1000);
+}
+
+// Start workout or the first logged set, whichever came first, to Finish workout (when finished)
+// or the last logged set.
+export function sessionSeconds({ startedAt, finishedAt, finished, times }) {
+  const sets = times.map(ms).filter((t) => t != null && !Number.isNaN(t));
+  const starts = [ms(startedAt), ...sets].filter((t) => t != null);
+  if (!starts.length) return null;
+  const start = Math.min(...starts);
+  let end = null;
+  if (finished && finishedAt) end = ms(finishedAt);
+  else if (sets.length) end = Math.max(...sets);
+  if (end == null || end <= start) return null;
+  return Math.floor((end - start) / 1000);
+}
+
+// "under 1 min", "52 min", "1 h 05 min"; '' when unknown.
+export function formatDuration(seconds) {
+  if (seconds == null) return '';
+  const min = Math.floor(seconds / 60);
+  if (min < 1) return 'under 1 min';
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+}

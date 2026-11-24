@@ -15,6 +15,8 @@ import {
   pageList,
   placeholderFor,
   reopenSets,
+  sessionSeconds,
+  spanSeconds,
   statusAfterLog,
   unstopSets,
 } from '../logic.js';
@@ -40,7 +42,18 @@ const ENDED = ['done', 'stopped', 'skipped'];
 
 // restToday: the pager's rest timer toggle for today only ('on' | 'off'), or null to follow
 // Settings > Workout > Rest timer.
-export const day = $state({ order: [], slots: {}, cardio: [], gear: {}, gearOpen: false, finished: false, restToday: null });
+// startedAt / finishedAt: when Start workout and Finish workout were tapped (ISO), for timing.
+export const day = $state({
+  order: [],
+  slots: {},
+  cardio: [],
+  gear: {},
+  gearOpen: false,
+  finished: false,
+  restToday: null,
+  startedAt: null,
+  finishedAt: null,
+});
 export const rest = $state({ running: false, endsAt: 0, total: 0, now: Date.now(), buzzed: false });
 export const ui = $state({ swapFor: null, banner: null });
 
@@ -72,6 +85,8 @@ function blankDay() {
     gearOpen: false,
     finished: false,
     restToday: null,
+    startedAt: null,
+    finishedAt: null,
   };
 }
 
@@ -110,6 +125,8 @@ function sessionRow() {
     gear: day.gear,
     finished: day.finished,
     restToday: day.restToday,
+    startedAt: day.startedAt,
+    finishedAt: day.finishedAt,
     cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
     slots: Object.fromEntries(
       Object.values(day.slots).map((s) => [
@@ -128,6 +145,8 @@ function serverState() {
     cardio: Object.fromEntries(day.cardio.map((c) => [c.id, c.status])),
     finished: day.finished,
     rest_timer: day.restToday,
+    started_at: day.startedAt,
+    finished_at: day.finishedAt,
     order: [...day.order],
     slots: Object.fromEntries(
       Object.values(day.slots).map((s) => [
@@ -151,7 +170,7 @@ function saveSet(slot, k) {
     s: set.s ?? null,
     rir: set.rir,
     pr: set.status === 'pr',
-    loggedAt: new Date().toISOString(),
+    loggedAt: set.at ?? new Date().toISOString(),
   };
   db.sets.put(row).catch(warn);
   enqueue({
@@ -167,6 +186,7 @@ function saveSet(slot, k) {
       reps: row.r,
       seconds: row.s,
       rir: row.rir,
+      logged_at: row.loggedAt, // when it was logged here; it may reach the server much later
     },
   });
 }
@@ -191,6 +211,8 @@ function restore(session, sets, stops) {
     gear: session.gear,
     finished: session.finished,
     restToday: session.restToday ?? null,
+    startedAt: session.startedAt ?? null,
+    finishedAt: session.finishedAt ?? null,
   });
   for (const [id, meta] of Object.entries(session.slots)) {
     if (day.slots[id]) Object.assign(day.slots[id], meta);
@@ -200,7 +222,7 @@ function restore(session, sets, stops) {
     const slot = day.slots[row.slotId];
     if (!slot) continue;
     while (slot.sets.length < row.set) slot.sets.push({ status: 'todo' });
-    slot.sets[row.set] = { w: row.w, r: row.r, s: row.s, rir: row.rir, status: row.pr ? 'pr' : 'done' };
+    slot.sets[row.set] = { w: row.w, r: row.r, s: row.s, rir: row.rir, status: row.pr ? 'pr' : 'done', at: row.loggedAt };
   }
   // A stop marks its own set only; it never covers sets logged after the exercise reopened.
   for (const row of stops) {
@@ -250,6 +272,7 @@ function fromServer(s) {
     s: x.seconds,
     rir: x.rir,
     pr: x.is_pr,
+    loggedAt: x.logged_at,
   }));
   const stops = s.stops.map((x) => ({
     id: x.client_id,
@@ -264,7 +287,16 @@ function fromServer(s) {
   const order = s.order.filter((k) => day.slots[k]);
   for (const k of day.order) if (!order.includes(k)) order.push(k);
   return {
-    session: { order, gear: s.gear, finished: s.finished, restToday: s.rest_timer ?? null, slots, cardio: s.cardio ?? {} },
+    session: {
+      order,
+      gear: s.gear,
+      finished: s.finished,
+      restToday: s.rest_timer ?? null,
+      startedAt: s.started_at ?? null,
+      finishedAt: s.finished_at ?? null,
+      slots,
+      cardio: s.cardio ?? {},
+    },
     sets,
     stops,
   };
@@ -290,6 +322,7 @@ export async function loadToday() {
         server.stops.length ||
         server.finished ||
         server.rest_timer ||
+        server.started_at ||
         Object.keys(server.cardio ?? {}).length)
     ) {
       const copy = fromServer(server);
@@ -562,6 +595,34 @@ export function later(slotId) {
 
 export function finish() {
   day.finished = true;
+  day.finishedAt = new Date().toISOString();
+}
+
+// Start workout tapped: the workout's clock starts (unless a set or an earlier Start already did).
+export function markStarted() {
+  day.startedAt ??= new Date().toISOString();
+}
+
+// ---------- Workout timing (see logic.js; nothing is entered) ----------
+
+function loggedTimes(slots) {
+  return slots.flatMap((s) => s.sets.filter((x) => isLogged(x) && x.at).map((x) => x.at));
+}
+
+// Today's workout: Start workout or the first set, to Finish workout or the last set.
+export function todaySeconds() {
+  return sessionSeconds({
+    startedAt: day.startedAt,
+    finishedAt: day.finishedAt,
+    finished: day.finished,
+    times: loggedTimes(Object.values(day.slots)),
+  });
+}
+
+// One exercise today: its first to its last logged set.
+export function exerciseSecondsToday(exerciseId) {
+  const slots = Object.values(day.slots).filter((s) => s.doneAs != null && String(s.doneAs) === String(exerciseId));
+  return spanSeconds(loggedTimes(slots));
 }
 
 // What Finish would end: see openAtFinish in logic.js.
@@ -640,7 +701,7 @@ export function logSet(slotId, { w, r, s, rir }) {
     isPr(value, priorSets(ex.id), { assisted: m.assisted, measure: m.measure, repFloor: m.min });
   const wasDone = slot.status === 'done' && !slot.sets.some((x) => x.status === 'todo');
   slot.doneAs = ex.id;
-  slot.sets[k] = { ...value, rir, status: pr ? 'pr' : 'done' };
+  slot.sets[k] = { ...value, rir, status: pr ? 'pr' : 'done', at: new Date().toISOString() };
   saveSet(slot, k);
   ui.banner = pr
     ? { slotId, text: setText(ex, value, m.perSide), e1: !m.assisted && m.measure === 'reps' && w ? Math.round(e1rm(w, r)) : null }

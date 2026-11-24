@@ -414,6 +414,55 @@ test('picking from All exercises swaps it in for today, logs under it, and survi
   assert.deepEqual(errors, []);
 });
 
+// ---------- Automatic workout timing ----------
+
+// A fresh phone on a fake clock (so minutes can pass in an instant), demo data, offline.
+async function phoneAt(time) {
+  const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
+  await context.addInitScript(() => localStorage.setItem('hr-demo', '1'));
+  const page = await context.newPage();
+  await page.clock.install({ time: new Date(time) });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('request', (r) => r.url().includes('/api/') && errors.push(`API request in demo mode: ${r.url()}`));
+  await page.goto(`${BASE}/#/`);
+  await page.waitForSelector('.app__bar');
+  await context.setOffline(true);
+  return { context, page, errors };
+}
+
+test('workout time is automatic: Today, Progress and the exercise card show it, offline and after a reload', async () => {
+  const { context, page, errors } = await phoneAt('2026-11-23T18:00:00');
+  await page.goto(`${BASE}/#/log/s3`);
+  await visible(page).getByRole('button', { name: 'Log set 1', exact: true }).click();
+  await page.clock.fastForward('20:00'); // 20 minutes later
+  await visible(page).getByRole('button', { name: 'Log set 2', exact: true }).click();
+  await page.getByRole('link', { name: 'Today' }).click();
+  await page.getByRole('button', { name: 'Finish workout' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Finish' }).click();
+  await page.locator('.workout-time').waitFor();
+  assert.equal(await page.locator('.workout-time').innerText(), 'Workout time 20 min');
+  await page.reload(); // saved with the session
+  await page.waitForSelector('.app__bar');
+  assert.equal(await page.locator('.workout-time').innerText(), 'Workout time 20 min');
+  await page.goto(`${BASE}/#/progress`);
+  const times = page.locator('section', { has: page.getByText(/Workout time/) });
+  assert.match(await times.innerText(), /Today\s+20 min/);
+  await page.goto(`${BASE}/#/exercise/row`);
+  const today = page.locator('.session-row', { hasText: 'today' });
+  assert.match(await today.innerText(), /20 min/); // Seated Cable Row: first to last set
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
+test('no time is shown until there is something to time', async () => {
+  const { context, page, errors } = await phoneAt('2026-11-23T18:00:00');
+  await page.goto(`${BASE}/#/progress`);
+  assert.equal(await page.getByText(/Workout time/).count(), 0); // the demo's seeded sets carry no times
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 // ---------- Today's set count: + Add set / Remove set (all offline) ----------
 
 test('+ Add set adds a prefilled set for today: one tap to add, one tap to log', async () => {

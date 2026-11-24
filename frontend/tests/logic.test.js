@@ -17,6 +17,9 @@ import {
   dedupeSwapGroups,
   libraryRegions,
   fitSets,
+  formatDuration,
+  sessionSeconds,
+  spanSeconds,
   MIN_SETS,
   placeholderFor,
   queueCounts,
@@ -298,4 +301,20 @@ test('All exercises: by region, minus listed and excluded, every search word mus
   assert.deepEqual(all.map((r) => [r.name, r.rows.map((x) => x.id)]), [['Back', [5, 3]], ['Core', [2]]]);
   assert.deepEqual(libraryRegions(rows, new Set(), 'row ca').map((r) => r.rows.map((x) => x.id)), [[5]]);
   assert.deepEqual(libraryRegions(rows, new Set(), 'upright'), []); // excluded stays hidden
+});
+
+test('workout timing: Start or first set, to Finish or last set; exercise: first to last set', () => {
+  const t = (min) => new Date(Date.UTC(2026, 10, 23, 18, min)).toISOString();
+  const times = [t(5), t(20), t(50)];
+  assert.equal(sessionSeconds({ startedAt: t(0), finishedAt: t(60), finished: true, times }), 3600);
+  assert.equal(sessionSeconds({ startedAt: null, finishedAt: null, finished: false, times }), 45 * 60);
+  assert.equal(sessionSeconds({ startedAt: t(10), finishedAt: null, finished: false, times }), 45 * 60);
+  assert.equal(sessionSeconds({ startedAt: null, finishedAt: t(59), finished: false, times }), 45 * 60);
+  assert.equal(sessionSeconds({ startedAt: t(0), finishedAt: null, finished: false, times: [] }), null);
+  assert.equal(spanSeconds([t(5), t(17)]), 12 * 60);
+  assert.equal(spanSeconds([t(5)]), null);
+  assert.equal(formatDuration(null), '');
+  assert.equal(formatDuration(30), 'under 1 min');
+  assert.equal(formatDuration(52 * 60 + 40), '52 min');
+  assert.equal(formatDuration(65 * 60), '1 h 05 min');
 });

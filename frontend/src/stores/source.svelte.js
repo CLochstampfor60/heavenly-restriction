@@ -147,7 +147,7 @@ function historyFromCard(sessions, today) {
         stop = { set: sets.length, symptom: s.stop.symptom, note: s.stop.note ?? '' };
         sets.push([s.stop.weight_lb ?? 0, null, null]);
       }
-      return { date: s.date, sets, stop, note: s.note || stop?.note || '' };
+      return { date: s.date, sets, stop, note: s.note || stop?.note || '', duration: s.duration_s ?? null };
     });
 }
 

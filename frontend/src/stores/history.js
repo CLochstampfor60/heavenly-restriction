@@ -2,7 +2,7 @@
 import { dateKey } from '../db.js';
 import { e1rm, isPr, topSet } from '../prs.js';
 import { CATALOG, HISTORY } from './source.svelte.js';
-import { day } from './workout.svelte.js';
+import { day, exerciseSecondsToday } from './workout.svelte.js';
 
 function todaySession(exerciseId) {
   // Route ids are strings; API ids are numbers.
@@ -20,7 +20,9 @@ function todaySession(exerciseId) {
       }
     }
   }
-  return sets.length ? { date: dateKey(), today: true, note: stop?.note ?? '', sets, stop } : null;
+  return sets.length
+    ? { date: dateKey(), today: true, note: stop?.note ?? '', sets, stop, duration: exerciseSecondsToday(exerciseId) }
+    : null;
 }
 
 // How a session is charted: est. 1RM for weighted reps; assistance for assisted exercises
@@ -40,6 +42,7 @@ export function sessionsFor(exerciseId, history = HISTORY, catalog = CATALOG) {
     date: s.date,
     today: false,
     note: s.note ?? '',
+    duration: s.duration ?? null, // this exercise's time that session: first to last set
     sets: s.sets.map(([w, r, sec], k) => ({ w, r, s: sec ?? null, stopped: k === s.stop?.set })),
     stop: s.stop ? { ...s.stop, w: s.sets[s.stop.set]?.[0], r: s.sets[s.stop.set]?.[1] } : null,
   }));

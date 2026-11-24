@@ -3,7 +3,7 @@
   import Nav from '../components/Nav.svelte';
   import SaveStatus from '../components/SaveStatus.svelte';
   import Sheet from '../components/Sheet.svelte';
-  import { finishMessage, finishPrompt } from '../logic.js';
+  import { finishMessage, finishPrompt, formatDuration } from '../logic.js';
   import { setDemo } from '../mode.js';
   import { go } from '../router.svelte.js';
   import { source } from '../stores/source.svelte.js';
@@ -18,12 +18,14 @@
     loggedCount,
     markCardio,
     markItem,
+    markStarted,
     openSlots,
     openSwap,
     planText,
     requiredIds,
     plannedSets,
     slotNote,
+    todaySeconds,
     toggleGear,
     undoStop,
   } from '../stores/workout.svelte.js';
@@ -101,8 +103,11 @@
 
   function heroAction() {
     if (!hero.slot) return askFinish();
+    markStarted(); // the workout's clock (automatic timing; nothing to enter)
     go(`/log/${hero.slot}`);
   }
+
+  const workoutTime = $derived(formatDuration(todaySeconds()));
 </script>
 
 <div class="app__scroll">
@@ -274,6 +279,7 @@
     <div class="finish-line">
       <span class="hr-chip hr-chip--done"><Icon name="check" />Done</span>
       <span class="small muted" role="status">{finishText || 'Workout finished'}</span>
+      {#if workoutTime}<span class="small muted hr-num workout-time">Workout time {workoutTime}</span>{/if}
     </div>
   {/if}
 </div>

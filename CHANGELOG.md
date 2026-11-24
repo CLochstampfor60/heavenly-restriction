@@ -15,6 +15,12 @@ change how things work.
   the whole library by body region (tap a region to open it), with a search field. Picking one
   swaps it in for today like any other swap. It works with no signal once the app has loaded
   the library.
+- Workout time, worked out automatically with nothing to tap: from Start workout or the first
+  logged set to Finish workout (or the last logged set). Today shows it once the workout is
+  finished, Progress lists it for each day this week, and each exercise's recent sessions on its
+  card show the time from its first to its last set. Each set keeps the time it was logged on
+  the phone, even if it reaches the server later. **Needs a database migration:**
+  `server.ps1 migrate`.
 
 ### Fixed
 - The swap sheet listed an exercise twice when it was both a substitution and a same-muscle

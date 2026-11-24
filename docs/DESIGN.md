@@ -36,6 +36,8 @@ The visual reference is the "Heavenly Restriction — App Screens" design canvas
 - Later moves the exercise to the bottom. Swap opens a bottom sheet (`hr-sheet`): the exercise's ranked substitutions first, then same-muscle options, then **All exercises**: the whole library grouped by region (`region-head` rows, collapsed, with counts) under its own search field (`hr-search`, "Search all exercises"); a search opens every region with a match and every word must match. Each exercise is listed once in the whole sheet, in the highest section it belongs to; the exercise being swapped out and excluded exercises never appear. A pick from any section swaps it in for today the same way, and the set is logged under the exercise actually done. The library is cached when Today loads, so the section works with no signal.
 - Bottom: primary button, compact size (Start workout / Continue: <exercise> / Finish workout) and `hr-nav` (Today, Library, Progress). Start workout and Continue open the pager at the first required page not yet ended (warm-up and cardio count); once every required exercise has ended, the button is Finish workout. Once the workout has begun, a secondary Finish workout button sits under the hero; with exercises still open it asks first in a sheet ("N exercises not done", Cancel / Finish): untouched required exercises become Skipped, a started one keeps its logged sets. Logging anything afterwards reopens the workout.
 
+- **Automatic workout timing** (no taps, no buttons): a workout runs from Start workout or its first logged set, whichever came first, to Finish workout (or its last logged set when Finish was not tapped). The finished line on Today reads "Workout time 52 min". Each set keeps the time it was logged on the phone (sent with it, so a set synced later still counts when it was done); Start and Finish times are saved with the session.
+
 ### 2. Set logging: the exercise pager (`Main.dc.html` for one page)
 Set logging is a pager, one page per item of today in Today's order (Later order respected): warm-up, main lifts, core, forearm block, cardio (after the forearm block), cool-down. Moving between pages changes nothing: leaving a page never starts, pauses or skips anything.
 
@@ -55,10 +57,11 @@ Set logging is a pager, one page per item of today in Today's order (Later order
 - Form media: privacy-enhanced YouTube player area plus a row of own clips (teal Offline badge), photos and external links ("Opens in Brave").
 - Notes: pinned cue, pinned load cap (`hr-jjk` "Binding Vow"), last session note.
 - History chart (see README › Charts): Top set / Est. 1RM toggle, PR points in `flash`, stop events as an amber octagon on the axis, tap a point for the readout.
-- Recent sessions (stop session tinted `stop-soft`), ranked substitutions.
+- Recent sessions (stop session tinted `stop-soft`), ranked substitutions. Each session shows the time spent on this exercise (first to last logged set, e.g. "12 min") beside its date when it has two or more sets.
 
 ### 4. Progress (`Progress.dc.html`)
 - This week: sessions N of 5 (segmented meter), cardio minutes vs 345 target (teal meter).
+- **Workout time · this week**: one row per day with a session ("Today 52 min", "Mon 11/16 48 min"), shown only when there is a time. The calendar day's label carries it too. Timing is automatic (see Today).
 - Measurement switch (Weight, Waist, Lift, Cardio) + Week / Month / Year (only the ranges that make sense per measurement), period arrows, readout, chart with dashed `grade` goal line. Cardio is teal bars; a planned bar is dashed.
 - Sets per muscle group this week: one `cursed` bar per muscle with a `grade` tick at the target.
 - Month calendar (`hr-cal` / `hr-day`) with legend; PR days get a red dot; today is outlined.

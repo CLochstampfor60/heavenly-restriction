@@ -1,6 +1,7 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import LineChart, { fmt1 } from '../components/LineChart.svelte';
+  import { formatDuration } from '../logic.js';
   import { go } from '../router.svelte.js';
   import { chartRule, longDate, sessionsFor, shortDate } from '../stores/history.js';
   import { prefs } from '../stores/prefs.svelte.js';
@@ -217,6 +218,7 @@
         <div class="session-row" class:session-row--stop={s.stop}>
           <div class="section-head">
             <span class="hr-eyebrow eyebrow-strong">{longDate(s.date)}{s.today ? ' · today' : ''}</span>
+            {#if s.duration}<span class="meta hr-num" aria-label="Time on this exercise: {formatDuration(s.duration)}">{formatDuration(s.duration)}</span>{/if}
             {#if s.pr}<span class="hr-pr hr-pr--quiet"><Icon name="bolt" />PR</span>{/if}
             {#if s.stop}<span class="hr-chip hr-chip--stopped"><Icon name="stop" />Stopped</span>{/if}
           </div>
