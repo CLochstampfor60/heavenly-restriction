@@ -7,7 +7,7 @@ change how things work.
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-23
+## [0.5.1] - 2026-11-23
 
 ### Added
 - Add or remove sets on an exercise page, for today only. "+ Add set" under the last set adds a
@@ -17,6 +17,14 @@ change how things work.
   Done, Finish workout and the exercise list follow the new count, which is saved with today's
   session on the phone and the server (it works offline and survives a reload). The program
   itself is unchanged. **Needs a database migration:** `server.ps1 migrate`.
+
+### Changed
+- A set number last time did not reach (an added or extra set) is now filled in from the set
+  just before it today, instead of from last time's final set.
+
+## [0.5.0] - 2026-11-23
+
+### Added
 - Set logging is a pager: one page per exercise of today (warm-up, main lifts, core, forearm,
   cardio, cool-down) in Today's order. Swipe the page sideways, or use the small arrows, to move
   between exercises in any order; moving changes nothing. The "4 of 10" label opens a list of all
@@ -79,8 +87,6 @@ change how things work.
   the icon's source file) and the compact bottom-bar buttons on Today.
 
 ### Changed
-- A set number last time did not reach (an added or extra set) is now filled in from the set
-  just before it today, instead of from last time's final set.
 - The rest length is the exercise's rest from the program when it has one, otherwise Default rest.
   Before, it was a fixed 90 s for main lifts and 60 s for core and forearm, whatever the program
   said; the imported program gives no rest times, so every exercise now rests for Default rest.
@@ -262,7 +268,8 @@ change how things work.
 - A FastAPI server that serves the app and its API from one origin, with secret scanning, linting
   and tests set up from the start.
 
-[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/CLochstampfor60/heavenly-restriction/releases/tag/v0.4.1
 [0.4.0]: https://github.com/CLochstampfor60/heavenly-restriction/compare/v0.3.0...v0.4.0
