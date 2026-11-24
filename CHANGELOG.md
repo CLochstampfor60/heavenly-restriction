@@ -18,6 +18,7 @@ change how things work.
 - Progress is reordered: this week first (sessions and cardio, then sets per muscle group right
   under them, then workout time), then the calendar, then the Weight / Waist / Lift / Cardio
   tabs, and records last.
+- The README's Progress screenshots show the new order.
 
 ### Removed
 - Progress › Lift no longer has the Pounds / % gain switch or its chart: it was crowded and the
