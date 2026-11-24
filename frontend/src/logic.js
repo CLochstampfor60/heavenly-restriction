@@ -380,3 +380,59 @@ export function axisDomain(values, { floor0 = true, pad = 0.1 } = {}) {
   }
   return { lo, hi, ticks };
 }
+
+// ---------- Lift tab: periods, "Your lifts", % gain ----------
+// sessions: one exercise's sessions oldest first, as history.sessionsFor gives them
+// ({ date, e1, pr, stop, top }); e1 is the session's value by the exercise's rule (est. 1RM,
+// assistance, seconds or reps).
+
+const dayKey = (y, m, d) => {
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.toISOString().slice(0, 10);
+};
+
+// Month: this calendar month. Year: the 12 months up to today.
+export function inPeriod(date, range, todayKey) {
+  if (date > todayKey) return false;
+  if (range === 'month') return date.slice(0, 7) === todayKey.slice(0, 7);
+  const [y, m, d] = todayKey.split('-').map(Number);
+  return date > dayKey(y - 1, m, d);
+}
+
+// One "Your lifts" row: the period's points (sessions with a value; a stop is not one), first,
+// latest, change, whether it holds a new best (PR), and when it was last logged.
+export function liftRow(sessions, range, todayKey) {
+  const inside = sessions.filter((s) => inPeriod(s.date, range, todayKey));
+  if (!inside.length) return null;
+  const points = inside.filter((s) => !s.stop && s.top).map((s) => ({ date: s.date, value: s.e1, pr: !!s.pr }));
+  const first = points[0]?.value ?? null;
+  const latest = points.at(-1)?.value ?? null;
+  return {
+    points,
+    first,
+    latest,
+    change: points.length >= 2 ? latest - first : null,
+    pr: points.some((p) => p.pr),
+    lastDate: inside.at(-1).date,
+  };
+}
+
+// Most recently logged first; then by name.
+export function sortLifts(rows) {
+  return [...rows].sort((a, b) => (a.lastDate === b.lastDate ? a.name.localeCompare(b.name) : a.lastDate < b.lastDate ? 1 : -1));
+}
+
+// % change from the first session in the period. Assisted lifts are inverted (less assistance
+// is a gain), so up is always better.
+export function gainPoints(points, assisted) {
+  const v0 = points[0]?.value;
+  if (!v0) return [];
+  return points.map((p) => ({ date: p.date, value: ((assisted ? v0 - p.value : p.value - v0) / v0) * 100 }));
+}
+
+// Which lifts a chart shows: the saved choice where still listed, else the defaults (the most
+// recently logged first), at most `max`.
+export function chooseLifts(saved, listedIds, max) {
+  const keep = (saved ?? []).map(String).filter((id) => listedIds.map(String).includes(id));
+  return (keep.length ? keep : listedIds.map(String)).slice(0, max);
+}

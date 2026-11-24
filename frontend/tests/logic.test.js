@@ -15,6 +15,11 @@ import {
   pageList,
   axisDomain,
   canRemoveSet,
+  chooseLifts,
+  gainPoints,
+  inPeriod,
+  liftRow,
+  sortLifts,
   cardioDefaults,
   cardioText,
   cardioType,
@@ -346,4 +351,42 @@ test('chart axis: data range plus ~10%, never below 0, two to four round ticks i
   assert.ok(axisDomain([-12, 8], { floor0: false }).lo < -12); // % change may go negative
   const flat = axisDomain([100, 100]);
   assert.ok(flat.lo < 100 && flat.hi > 100);
+});
+
+test('lift periods: Month is this calendar month, Year the last 12 months', () => {
+  assert.equal(inPeriod('2026-11-02', 'month', '2026-11-23'), true);
+  assert.equal(inPeriod('2026-10-31', 'month', '2026-11-23'), false);
+  assert.equal(inPeriod('2025-11-24', 'year', '2026-11-23'), true);
+  assert.equal(inPeriod('2025-11-23', 'year', '2026-11-23'), false);
+  assert.equal(inPeriod('2026-11-24', 'year', '2026-11-23'), false);
+});
+
+test('a Your lifts row: latest, first-to-last change, PR, last logged; a stop is not a value', () => {
+  const sessions = [
+    { date: '2026-09-01', e1: 150, top: {}, pr: false },
+    { date: '2026-11-02', e1: 160, top: {}, pr: false },
+    { date: '2026-11-09', e1: 0, top: null, stop: { w: 170 } },
+    { date: '2026-11-16', e1: 172, top: {}, pr: true },
+  ];
+  const month = liftRow(sessions, 'month', '2026-11-23');
+  assert.deepEqual([month.first, month.latest, month.change, month.pr, month.lastDate], [160, 172, 12, true, '2026-11-16']);
+  assert.equal(month.points.length, 2);
+  assert.equal(liftRow(sessions.slice(0, 1), 'month', '2026-11-23'), null); // nothing this month
+  assert.equal(liftRow(sessions.slice(1, 2), 'month', '2026-11-23').change, null); // one session
+  const rows = sortLifts([{ name: 'B', lastDate: '2026-11-02' }, { name: 'A', lastDate: '2026-11-16' }, { name: 'C', lastDate: '2026-11-16' }]);
+  assert.deepEqual(rows.map((r) => r.name), ['A', 'C', 'B']);
+});
+
+test('% gain from the first session; assisted inverted so improvement is positive', () => {
+  const pts = [{ date: 'a', value: 100 }, { date: 'b', value: 110 }];
+  assert.deepEqual(gainPoints(pts, false).map((p) => Math.round(p.value)), [0, 10]);
+  const assist = [{ date: 'a', value: 50 }, { date: 'b', value: 40 }]; // 10 lb less help
+  assert.deepEqual(gainPoints(assist, true).map((p) => Math.round(p.value)), [0, 20]);
+  assert.deepEqual(gainPoints([{ date: 'a', value: 0 }], false), []);
+});
+
+test('chart choice: the saved lifts that are still listed, else the most recent, at most max', () => {
+  assert.deepEqual(chooseLifts(['3', 9], ['1', '2', '3'], 5), ['3']);
+  assert.deepEqual(chooseLifts([9], ['1', '2', '3', '4', '5', '6'], 5), ['1', '2', '3', '4', '5']);
+  assert.deepEqual(chooseLifts(null, [7, 8], 1), ['7']);
 });

@@ -136,7 +136,7 @@ function historyFromCard(sessions, today) {
   return sessions
     .filter((s) => s.date !== today) // today's sets come from the live session instead
     .map((s) => {
-      const sets = s.sets.map((x) => [x.weight_lb ?? 0, x.reps, x.seconds]);
+      const sets = s.sets.map((x) => [x.weight_lb ?? 0, x.reps, x.seconds, x.client_id]);
       let stop = null;
       if (s.stop) {
         stop = { set: sets.length, symptom: s.stop.symptom, note: s.stop.note ?? '' };

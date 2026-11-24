@@ -221,6 +221,46 @@ def progress(date: Date, db: DB) -> dict:
             "year": year_pts,
         }
 
+    # ---- every lift of the last 12 months, set by set, for the Lift tab ("Your lifts", the
+    # Pounds and % gain charts). The phone works out est. 1RM, PRs and periods itself, so a set
+    # deleted offline drops out of every view at once.
+    year_ago = date - timedelta(days=365)
+    lift_rows = db.execute(
+        select(SetLog, WorkoutSession.date)
+        .join(WorkoutSession, WorkoutSession.id == SetLog.session_id)
+        .where(WorkoutSession.date >= year_ago, WorkoutSession.date <= date)
+        .order_by(WorkoutSession.date, SetLog.set_index)
+    ).all()
+    stop_rows = db.execute(
+        select(StopEvent, WorkoutSession.date)
+        .join(WorkoutSession, WorkoutSession.id == StopEvent.session_id)
+        .where(WorkoutSession.date >= year_ago, WorkoutSession.date <= date)
+    ).all()
+    by_ex: dict[int, dict[Date, dict]] = defaultdict(dict)
+    for s, d in lift_rows:
+        sess = by_ex[s.exercise_id].setdefault(d, {"date": d.isoformat(), "sets": [], "stop": None})
+        sess["sets"].append({"id": s.client_id, "w": s.weight_lb, "r": s.reps, "s": s.seconds})
+    for st, d in stop_rows:
+        sess = by_ex[st.exercise_id].setdefault(
+            d, {"date": d.isoformat(), "sets": [], "stop": None}
+        )
+        sess["stop"] = {"w": st.weight_lb, "symptom": st.symptom}
+    lifts = []
+    for ex_id, per_day in by_ex.items():
+        ex = db.get(Exercise, ex_id)
+        if ex is None or ex.routine:
+            continue
+        lifts.append(
+            {
+                "exercise_id": ex.id,
+                "name": ex.name,
+                "assisted": ex.is_assisted,
+                "measure": ex.measure,
+                "per_side": ex.per_side,
+                "sessions": [per_day[d] for d in sorted(per_day)],
+            }
+        )
+
     # ---- sets per muscle group this week
     muscle = db.execute(
         select(func.coalesce(Exercise.region, "Other"), func.count(SetLog.id))
@@ -271,6 +311,7 @@ def progress(date: Date, db: DB) -> dict:
         "week": week,
         "calendar": calendar,
         "durations": durations,
+        "lifts": lifts,
         "pr_days": pr_days,
         "cardio": {
             "target": target,

@@ -108,3 +108,24 @@ def test_cardio_minutes_use_what_was_logged(client) -> None:
     assert client.put(f"/api/sessions/{MON}", json=bad).status_code == 422
     bad = {"cardio_log": {"cardio1": {"type": "bike", "minutes": -5}}}
     assert client.put(f"/api/sessions/{MON}", json=bad).status_code == 422
+
+
+def test_lifts_carry_every_exercise_set_by_set(client) -> None:
+    data = plan(client)
+    pulldown = ex_id(data, "Demo Pulldown — wide grip")
+    key = next(s["key"] for s in data["slots"] if s["exercise_id"] == pulldown)
+    log(client, MON, key, pulldown, 0, w=100, r=8)
+    log(client, MON, key, pulldown, 1, w=105, r=6)
+    lifts = progress(client, MON)["lifts"]
+    lift = next(x for x in lifts if x["exercise_id"] == pulldown)
+    assert lift["name"] == "Demo Pulldown — wide grip"
+    assert lift["sessions"] == [
+        {
+            "date": MON.isoformat(),
+            "sets": [
+                {"id": f"{MON}/{key}/0", "w": 100.0, "r": 8, "s": None},
+                {"id": f"{MON}/{key}/1", "w": 105.0, "r": 6, "s": None},
+            ],
+            "stop": None,
+        }
+    ]

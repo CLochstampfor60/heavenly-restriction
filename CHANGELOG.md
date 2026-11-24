@@ -7,6 +7,12 @@ change how things work.
 
 ## [Unreleased]
 
+### Added
+- Progress › Lift lists "Your lifts": every exercise logged in the period, most recently logged
+  first, each with its latest est. 1RM (or assistance, "lower is better"), the change over the
+  period in words, a PR mark for a new best, and a small trend line. Tapping a row charts that
+  lift, and the phone remembers it. The chart now covers any lift, not only the most-logged one.
+
 ### Changed
 - Progress charts: the big number is now the latest value in the period (a tapped point only
   after a tap), and a separate line gives the change from first to last with an arrow and a word.

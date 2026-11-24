@@ -547,6 +547,34 @@ test('chart headline: the latest value until a point is tapped; the change line 
   assert.deepEqual(errors, []);
 });
 
+test('Your lifts: every lift in the period, most recent first; a row charts it and is remembered', async () => {
+  const { context, page, errors } = await phone();
+  await page.goto(`${BASE}/#/progress`);
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  const rows = page.locator('.lift-row');
+  const names = await rows.locator('.option-name').allInnerTexts();
+  assert.equal(names[0], 'Assisted Pull-up'); // logged today in the demo
+  assert.ok(names.includes('Lat Pulldown') && names.includes('Hammer Curl'));
+  // The most recently logged lift is charted, and assistance says lower is better.
+  assert.match(await page.locator('.chart-panel .hr-eyebrow').first().innerText(), /Assisted Pull-up/i);
+  assert.match(await rows.first().innerText(), /lower is better/);
+  const lat = rows.filter({ hasText: 'Lat Pulldown' });
+  assert.match(await lat.innerText(), /▲ Up [\d.]+ lb/); // a word and an arrow, not color alone
+  assert.match(await lat.innerText(), /PR/);
+  assert.match(await lat.locator('svg.sparkline').getAttribute('aria-label'), /^Lat Pulldown: \d+ sessions, from/);
+  await lat.click();
+  assert.equal(await lat.getAttribute('aria-pressed'), 'true');
+  assert.match(await page.locator('.chart-panel .hr-eyebrow').first().innerText(), /Lat Pulldown/i);
+  assert.match(await page.locator('.readout__change').innerText(), /from first to last/);
+  await page.reload(); // remembered on this device
+  await page.getByRole('tab', { name: 'Lift' }).click();
+  await page.getByRole('button', { name: 'Year', exact: true }).click();
+  assert.match(await page.locator('.chart-panel .hr-eyebrow').first().innerText(), /Lat Pulldown/i);
+  await context.close();
+  assert.deepEqual(errors, []);
+});
+
 test('chart y-axes never go below 0', async () => {
   const { context, page, errors } = await phone();
   await page.goto(`${BASE}/#/progress`);

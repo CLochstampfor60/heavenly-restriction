@@ -1,6 +1,7 @@
 // One exercise's sessions, oldest first: past sessions plus today's, once a set is logged.
 import { dateKey } from '../db.js';
 import { e1rm, isPr, topSet } from '../prs.js';
+import { isDeleted } from './deleted.svelte.js';
 import { CATALOG, HISTORY } from './source.svelte.js';
 import { day, exerciseSecondsToday } from './workout.svelte.js';
 
@@ -35,18 +36,34 @@ export function chartRule(ex) {
 
 // Each session gets its top set and a PR flag. A session with a stop event is never a PR and
 // does not move the running best.
-export function sessionsFor(exerciseId, history = HISTORY, catalog = CATALOG) {
+// Sets are [w, r, s, id]: id is the server's client_id (demo history: a stable made-up one).
+// Sets deleted from history are left out, so PRs and charts are worked out without them; a
+// session with nothing left drops out. withToday adds today's live session (this phone's copy).
+export function sessionsFor(exerciseId, history = HISTORY, catalog = CATALOG, withToday = history === HISTORY) {
   const ex = catalog[exerciseId] ?? {};
   const rule = { assisted: !!ex.assisted, measure: ex.measure ?? 'reps' };
-  const past = (history[exerciseId] ?? []).map((s) => ({
-    date: s.date,
-    today: false,
-    note: s.note ?? '',
-    duration: s.duration ?? null, // this exercise's time that session: first to last set
-    sets: s.sets.map(([w, r, sec], k) => ({ w, r, s: sec ?? null, stopped: k === s.stop?.set })),
-    stop: s.stop ? { ...s.stop, w: s.sets[s.stop.set]?.[0], r: s.sets[s.stop.set]?.[1] } : null,
-  }));
-  const today = history === HISTORY ? todaySession(exerciseId) : null;
+  const past = (history[exerciseId] ?? [])
+    .map((s) => {
+      const sets = s.sets
+        .map(([w, r, sec, id], k) => ({
+          w,
+          r,
+          s: sec ?? null,
+          id: id ?? `${exerciseId}|${s.date}|${k}`,
+          stopped: k === s.stop?.set,
+        }))
+        .filter((x) => x.stopped || !isDeleted(x.id));
+      return {
+        date: s.date,
+        today: false,
+        note: s.note ?? '',
+        duration: s.duration ?? null, // this exercise's time that session: first to last set
+        sets,
+        stop: s.stop ? { ...s.stop, w: s.sets[s.stop.set]?.[0], r: s.sets[s.stop.set]?.[1] } : null,
+      };
+    })
+    .filter((s) => s.sets.length);
+  const today = withToday ? todaySession(exerciseId) : null;
   let prior = [];
   return [...past, ...(today ? [today] : [])].map((s) => {
     const done = s.sets.filter((x) => !x.stopped);

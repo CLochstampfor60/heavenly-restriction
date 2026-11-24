@@ -90,6 +90,13 @@ button.hr-toggle { width: 100%; color: var(--text); text-align: left; }
 .rest-toggle { margin-left: auto; }
 /* Today's set count: "+ Add set" under the rows, and a remove button on rows that can go. */
 .add-set { width: 100%; }
+/* Progress › Lift: "Your lifts" rows (tap to chart) with a sparkline. */
+.lift-row { display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap-row); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--card-edge); color: var(--text); text-align: left; cursor: pointer; width: 100%; }
+.lift-row[aria-pressed="true"] { background: var(--card-2); border-color: var(--accent); }
+.lift-row__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lift-row__change { display: flex; align-items: center; gap: var(--space-2); }
+.sparkline { flex: none; }
+.sparkline path, .sparkline line { fill: none; stroke: var(--text-2); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 /* Cardio type switch: four choices fit 360 px when a label may wrap to two lines. */
 .cardio-type .hr-seg__btn { white-space: normal; line-height: 18px; padding: var(--space-1) var(--space-2); }
 /* Progress: workout time per day this week (automatic, from timestamps). */

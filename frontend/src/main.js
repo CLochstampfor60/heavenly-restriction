@@ -6,6 +6,7 @@ import './app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import { checkAuth, needsSignIn } from './stores/auth.svelte.js';
+import { loadDeleted } from './stores/deleted.svelte.js';
 import { watchSystemTheme } from './settings.svelte.js';
 import { loadPrefs } from './stores/prefs.svelte.js';
 import { checkPersistence } from './stores/storage.svelte.js';
@@ -27,6 +28,7 @@ checkAuth().then(async () => {
     return;
   }
   await loadPrefs(); // before loadToday, so a rest timer left running obeys the setting
+  await loadDeleted(); // sets deleted from history stay hidden, offline too
   await loadToday();
   mount(App, { target });
 });

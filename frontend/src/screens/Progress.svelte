@@ -1,6 +1,7 @@
 <script>
   import BarChart from '../components/BarChart.svelte';
   import Icon from '../components/Icon.svelte';
+  import LiftPanel from '../components/LiftPanel.svelte';
   import LineChart, { fmt1 } from '../components/LineChart.svelte';
   import Nav from '../components/Nav.svelte';
   import Sheet from '../components/Sheet.svelte';
@@ -382,6 +383,9 @@
       {/each}
     </div>
     <div class="chart-panel">
+      {#if metric === 'lift'}
+        <LiftPanel api={real ? api : null} />
+      {:else}
       {#if ranges.length > 1}
         <div class="hr-seg" role="group" aria-label="Time range">
           {#each ranges as id (id)}
@@ -418,6 +422,7 @@
       <span class="meta">{chartFoot}</span>
       {#if real && (metric === 'body' || metric === 'waist')}
         <button class="hr-btn hr-btn--secondary" onclick={openLog}><Icon name={m.icon} />Log weight and waist</button>
+      {/if}
       {/if}
       {/if}
     </div>
