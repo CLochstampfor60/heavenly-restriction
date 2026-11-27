@@ -16,7 +16,7 @@
     "browsers:clean": "node scripts/browser.mjs --kill"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.2",
     "playwright-core": "1.65.1",
     "svelte": "5.57.3",
     "vite": "8.3.8"
